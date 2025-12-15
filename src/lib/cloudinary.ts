@@ -22,7 +22,8 @@ export type ImageTransformType =
   // Banners
   | 'hero'             // Banners/Hero sections legacy (1600x800)
   | 'hero-banner'      // Banner principal/Hero (1440x810)
-  | 'catalog-banner'   // Banners intercalados en grids (800x600)
+  | 'catalog-banner'   // Banners intercalados en grids HORIZONTALES (800x600)
+  | 'vertical-banner'  // Banners verticales aspect-[9/16] (600x1067)
   | 'landing-banner'   // Landing pages full-width (1600x900)
   | 'mobile-banner'    // Banners mobile (750x1000)
   // General
@@ -69,18 +70,23 @@ const TRANSFORM_CONFIGS: Record<ImageTransformType, string> = {
   // g_auto: Auto-enfoque en contenido importante
   'hero-banner': 'f_auto,q_95,c_fill,g_auto,w_1440,h_810,fl_progressive',
 
-  // Banner Catálogo - 800x600, banners intercalados en grids de productos
+  // Banner Catálogo HORIZONTAL - 800x600, banners intercalados en grids de productos
   // Calidad balanceada para múltiples banners por página
   'catalog-banner': 'f_auto,q_90,c_fill,g_auto,w_800,h_600,fl_progressive',
 
-  // Banner Landing - 1260x310px, dimensiones del dashboard
-  // c_fill: Escala y recorta para llenar exactamente 1260x310, enfocando contenido importante
+  // Banner VERTICAL - 600x1067 (aspect ratio 9:16), banners verticales tipo stories
+  // c_fit: Mantiene imagen completa sin recortar, escala para caber dentro de las dimensiones
+  // Sin g_auto porque c_fit no necesita gravity
+  'vertical-banner': 'f_auto,q_90,c_fit,w_600,h_1067,fl_progressive',
+
+  // Banner Landing - 1210x310px, dimensiones del dashboard
+  // c_fill: Escala y recorta para llenar exactamente 1210x310, enfocando contenido importante
   // g_auto: Auto-enfoque en contenido importante para recorte inteligente
-  'landing-banner': 'f_auto,q_95,c_fill,g_auto,w_1260,h_310,fl_progressive',
+  'landing-banner': 'f_auto,q_100,c_pad,w_2520,h_620,fl_progressive',
 
   // Banner Mobile - 414x310px, dimensiones del dashboard
   // c_fill: Escala y recorta para llenar exactamente las dimensiones móviles
-  'mobile-banner': 'f_auto,q_90,c_fill,g_auto,w_414,h_310,fl_progressive',
+  'mobile-banner': 'f_auto,q_100,c_pad,w_828,h_620,fl_progressive',
 
   // Original - alta calidad sin transformación de tamaño
   original: 'f_auto,q_95,fl_progressive',
@@ -231,7 +237,8 @@ export const IMAGE_DIMENSIONS: Record<ImageTransformType, { width: number; heigh
   hero: { width: 1600, height: 800 },
   'hero-banner': { width: 1440, height: 810 },
   'catalog-banner': { width: 800, height: 600 },
-  'landing-banner': { width: 1260, height: 310 }, // Dimensiones del dashboard
+  'vertical-banner': { width: 600, height: 1067 }, // Aspect ratio 9:16
+  'landing-banner': { width: 1210, height: 310 }, // Dimensiones del dashboard
   'mobile-banner': { width: 414, height: 310 }, // Dimensiones del dashboard
   // General
   original: { width: 1200, height: 1200 },

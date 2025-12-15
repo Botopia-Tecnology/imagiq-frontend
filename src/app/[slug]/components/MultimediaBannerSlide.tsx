@@ -108,7 +108,7 @@ export default function MultimediaBannerSlide({
   }
 
   return (
-    <div className="relative w-full aspect-[1260/310] overflow-hidden">
+    <div className="relative w-full aspect-[828/620] md:aspect-[2520/620] overflow-hidden">
       {/* Fondo - Imagen o Video */}
       {mediaContent}
 
@@ -125,7 +125,7 @@ export default function MultimediaBannerSlide({
                 style={{
                   left: `${pos.x}%`,
                   top: `${pos.y}%`,
-                  transform: 'translate(0, 0)',
+                  transform: 'translate(-50%, -50%)',
                   color: box.styles?.color || banner.color_font,
                   fontSize: box.styles?.fontSize || '2rem',
                   fontWeight: box.styles?.fontWeight || '700',
@@ -153,7 +153,7 @@ export default function MultimediaBannerSlide({
                 style={{
                   left: `${pos.x}%`,
                   top: `${pos.y}%`,
-                  transform: 'translate(0, 0)',
+                  transform: 'translate(-50%, -50%)',
                   color: box.styles?.color || banner.color_font,
                   fontSize: box.styles?.fontSize || '1.25rem',
                   fontWeight: box.styles?.fontWeight || '400',
@@ -182,7 +182,7 @@ export default function MultimediaBannerSlide({
                 style={{
                   left: `${pos.x}%`,
                   top: `${pos.y}%`,
-                  transform: 'translate(0, 0)',
+                  transform: 'translate(-50%, -50%)',
                   fontSize: box.styles?.fontSize || '1rem',
                   fontWeight: box.styles?.fontWeight || '600',
                   backgroundColor: box.styles?.backgroundColor || banner.color_font,
@@ -206,33 +206,37 @@ export default function MultimediaBannerSlide({
       ) : (
         /* Sistema LEGACY: Renderizar title/description/cta tradicional */
         <div
-          className="absolute pointer-events-auto max-w-2xl"
+          className="absolute pointer-events-auto px-12"
           style={{
             color: banner.color_font,
             left: `${position.x}%`,
             top: `${position.y}%`,
-            transform: 'translate(0, 0)',
+            transform: 'translate(-50%, -70%)',
             textAlign: getTextAlign(),
           }}
         >
           {banner.title && (
-            <h2 
-              className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4"
+            <h2
+              className="font-bold mb-4"
               style={{
-                color: banner.color_font,
                 ...textStyles?.title,
+                color: banner.color_font,
+                fontSize: '2.5rem', // 32px - tamaño grande para landing banners
+                lineHeight: '1.2',
               }}
             >
               {banner.title}
             </h2>
           )}
-        
+
           {banner.description && (
-            <p 
-              className="text-base md:text-xl lg:text-2xl mb-6"
+            <p
+              className="mb-6 mx-auto"
               style={{
-                color: banner.color_font,
                 ...textStyles?.description,
+                color: banner.color_font,
+                fontSize: '1.125rem', // 18px - tamaño legible
+                lineHeight: '1.5',
               }}
             >
               {banner.description}
@@ -242,7 +246,7 @@ export default function MultimediaBannerSlide({
         {banner.cta && banner.link_url && (
           <Link
             href={banner.link_url}
-            className="inline-block px-8 py-3 rounded-full font-semibold text-base md:text-lg transition-transform hover:scale-105 active:scale-95"
+            className="inline-block py-3 rounded-full font-semibold text-base md:text-lg transition-transform hover:scale-105 active:scale-95"
             style={{
               backgroundColor: banner.color_font,
               color: '#000000',

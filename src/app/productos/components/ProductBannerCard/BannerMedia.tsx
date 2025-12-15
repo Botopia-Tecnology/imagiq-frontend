@@ -45,8 +45,9 @@ export function BannerMedia({
     }
   }, [videoUrl]);
 
-  // Optimizar imagen con Cloudinary
-  const optimizedImageUrl = imageUrl ? getCloudinaryUrl(imageUrl, 'catalog-banner') : null;
+  // Renderizar imagen original SIN transformaciones de Cloudinary
+  // para evitar 404 en imágenes que Cloudinary no puede procesar
+  const optimizedImageUrl = imageUrl;
 
   return (
     <div className="absolute inset-0">

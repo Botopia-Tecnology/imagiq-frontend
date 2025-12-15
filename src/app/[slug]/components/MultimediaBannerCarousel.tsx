@@ -54,8 +54,8 @@ export default function MultimediaBannerCarousel({ banners }: MultimediaBannerCa
 
   return (
     <section className="relative w-full px-4 md:px-6 lg:px-8 pt-15 md:pt-8 lg:pt-15">
-      {/* Container que se ajusta al contenido - 1260px para coincidir con dimensiones del banner */}
-      <div className="relative w-full mx-auto overflow-hidden rounded-3xl" style={{ maxWidth: '1260px' }}>
+      {/* Container que ocupa todo el ancho respetando los márgenes */}
+      <div className="relative w-full mx-auto overflow-hidden rounded-3xl">
         <div className="relative w-full">
           {banners.map((banner, index) => (
             <div

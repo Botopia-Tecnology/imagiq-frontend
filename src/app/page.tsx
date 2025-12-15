@@ -8,6 +8,7 @@
 import { Suspense } from "react";
 import { getHomeProducts, getStores, getProductsByCategory } from "@/lib/api-server";
 import { mapApiProductsToFrontend } from "@/lib/mappers/product-mapper";
+import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 
 // Server Components (sin "use client")
 import SEO from "@/components/SEO";
@@ -70,7 +71,7 @@ export default async function HomePage() {
   ]);
 
   // Helper para filtrar productos con stock > 0
-  const hasStock = (p: any) => {
+  const hasStock = (p: ProductCardProps) => {
     const stockTotal = p.apiProduct?.stockTotal;
     if (Array.isArray(stockTotal)) {
       return stockTotal.some(stock => stock > 0);

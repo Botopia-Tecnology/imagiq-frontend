@@ -3,7 +3,7 @@
 import { Plus } from "lucide-react";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import Image from "next/image";
-import { productEndpoints, type ProductApiData } from "@/lib/api";
+import { productEndpoints, type ProductApiData, type ApiResponse, type ProductApiResponse } from "@/lib/api";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
 import type { CartProduct } from "@/hooks/useCart";
 import { isBundle } from "@/lib/productMapper";
@@ -208,7 +208,7 @@ function isAccessoryCompatible(
 function hasStock(product: ProductApiData): boolean {
   if (!product.stockTotal || product.stockTotal.length === 0) return false;
 
-  const totalStock = product.stockTotal.reduce((sum, stock) => sum + (stock || 0), 0);
+  const totalStock = product.stockTotal.reduce((sum: number, stock: number) => sum + (stock || 0), 0);
   return totalStock > 0;
 }
 
@@ -316,8 +316,15 @@ export default function Sugerencias({
     }
 
     // Check if we already fetched for this exact combination
+    // Pero permitir re-fetch si no tenemos productos mostrados
     if (lastFetchKeyRef.current === fetchKey && hasFetchedRef.current) {
-      return;
+      // Si no hay productos mostrados, intentar de nuevo
+      if (sugerenciasCompatibles.length === 0 && sugerenciasUniversales.length === 0) {
+        // Resetear el flag para permitir un nuevo intento
+        hasFetchedRef.current = false;
+      } else {
+        return;
+      }
     }
 
     isFetchingRef.current = true;
@@ -327,11 +334,19 @@ export default function Sugerencias({
     const cachedCompatibles = getCachedData(modelos);
     const cachedUniversal = getCachedUniversalData();
 
-    // Si hay cache válido, mostrarlo inmediatamente mientras se hace el fetch fresco
-    if (cachedCompatibles && cachedUniversal && !hasFetchedRef.current) {
-      setSugerenciasCompatibles(cachedCompatibles.filter(p => !cartSkus.has(p.sku[0])));
-      setSugerenciasUniversales(cachedUniversal.filter(p => !cartSkus.has(p.sku[0])));
-      setLoading(false);
+    // Si hay cache válido (aunque sea solo uno), mostrarlo inmediatamente mientras se hace el fetch fresco
+    // Esto asegura que siempre se muestren productos cuando están disponibles
+    if (!hasFetchedRef.current) {
+      if (cachedCompatibles) {
+        setSugerenciasCompatibles(cachedCompatibles.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
+      }
+      if (cachedUniversal) {
+        setSugerenciasUniversales(cachedUniversal.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
+      }
+      // Si tenemos al menos un tipo de cache, mostrar y continuar con fetch en background
+      if (cachedCompatibles || cachedUniversal) {
+        setLoading(false);
+      }
     }
 
     // SIEMPRE intentar hacer el fetch fresco, incluso si hay cache
@@ -354,9 +369,15 @@ export default function Sugerencias({
 
         if (!response.success || !response.data?.products) {
           // Si no hay productos pero la respuesta fue exitosa, usar cache si existe
+          // Asegurar que siempre mostramos cache si está disponible
+          if (cachedCompatibles) {
+            setSugerenciasCompatibles(cachedCompatibles.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
+          }
+          if (cachedUniversal) {
+            setSugerenciasUniversales(cachedUniversal.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
+          }
+          // Si tenemos cache, mostrarlo y terminar
           if (cachedCompatibles || cachedUniversal) {
-            setSugerenciasCompatibles(cachedCompatibles?.filter(p => !cartSkus.has(p.sku[0])) || []);
-            setSugerenciasUniversales(cachedUniversal?.filter(p => !cartSkus.has(p.sku[0])) || []);
             setLoading(false);
             isFetchingRef.current = false;
             hasFetchedRef.current = true;
@@ -369,13 +390,14 @@ export default function Sugerencias({
             continue;
           }
           // Último intento fallido: usar cache si existe, sino arrays vacíos
-          if (cachedCompatibles || cachedUniversal) {
-            setSugerenciasCompatibles(cachedCompatibles?.filter(p => !cartSkus.has(p.sku[0])) || []);
-            setSugerenciasUniversales(cachedUniversal?.filter(p => !cartSkus.has(p.sku[0])) || []);
-          } else {
-            setSugerenciasCompatibles([]);
-            setSugerenciasUniversales([]);
-          }
+          const filteredCompatibles: ProductApiData[] = cachedCompatibles !== null
+            ? (cachedCompatibles as ProductApiData[]).filter((p: ProductApiData) => !cartSkus.has(p.sku[0]))
+            : [];
+          const filteredUniversales: ProductApiData[] = cachedUniversal !== null
+            ? (cachedUniversal as ProductApiData[]).filter((p: ProductApiData) => !cartSkus.has(p.sku[0]))
+            : [];
+          setSugerenciasCompatibles(filteredCompatibles);
+          setSugerenciasUniversales(filteredUniversales);
           setLoading(false);
           isFetchingRef.current = false;
           hasFetchedRef.current = true;
@@ -440,13 +462,24 @@ export default function Sugerencias({
         if (attempt === maxRetries) {
           if (cachedCompatibles || cachedUniversal) {
             console.log("Usando cache después de fallos en API");
-            setSugerenciasCompatibles(cachedCompatibles?.filter(p => !cartSkus.has(p.sku[0])) || []);
-            setSugerenciasUniversales(cachedUniversal?.filter(p => !cartSkus.has(p.sku[0])) || []);
-          } else {
-            // Si no hay cache, mantener lo que ya está mostrado o arrays vacíos
-            if (sugerenciasCompatibles.length === 0 && sugerenciasUniversales.length === 0) {
+            if (cachedCompatibles) {
+              setSugerenciasCompatibles(cachedCompatibles.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
+            } else {
               setSugerenciasCompatibles([]);
+            }
+            if (cachedUniversal) {
+              setSugerenciasUniversales(cachedUniversal.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
+            } else {
               setSugerenciasUniversales([]);
+            }
+          } else {
+            // Si no hay cache, intentar usar lo que ya está mostrado
+            // Si no hay nada mostrado, dejar arrays vacíos pero no ocultar el componente
+            // para que pueda intentar de nuevo en el siguiente render
+            if (sugerenciasCompatibles.length === 0 && sugerenciasUniversales.length === 0) {
+              // No establecer arrays vacíos aquí, permitir que el componente intente de nuevo
+              // Solo marcar como no cargando para que no quede en loading infinito
+              setLoading(false);
             }
           }
           setLoading(false);
@@ -462,7 +495,7 @@ export default function Sugerencias({
     }
   }, [modelos, cartSkus, cartCategories, fetchKey]);
 
-  // Only fetch when fetchKey actually changes (not when function reference changes)
+  // Always attempt to fetch when component mounts or fetchKey changes
   useEffect(() => {
     // Reset fetch state when key changes
     if (lastFetchKeyRef.current !== fetchKey) {
@@ -470,8 +503,9 @@ export default function Sugerencias({
       isFetchingRef.current = false;
     }
     
-    // Only fetch if we haven't fetched for this key yet
-    if (!hasFetchedRef.current && !isFetchingRef.current) {
+    // Always try to fetch if not currently fetching
+    // This ensures products are always loaded when possible
+    if (!isFetchingRef.current) {
       fetchAccessoriosRelacionados();
     }
   }, [fetchKey, fetchAccessoriosRelacionados]);
@@ -548,8 +582,11 @@ export default function Sugerencias({
 }
 
 // En fetchAccessoriosRelacionados, agregar timeout
-const fetchWithTimeout = async (promise: Promise<any>, timeoutMs: number) => {
-  const timeout = new Promise((_, reject) => 
+const fetchWithTimeout = async (
+  promise: Promise<ApiResponse<ProductApiResponse>>, 
+  timeoutMs: number
+): Promise<ApiResponse<ProductApiResponse>> => {
+  const timeout = new Promise<never>((_, reject) => 
     setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
   );
   return Promise.race([promise, timeout]);

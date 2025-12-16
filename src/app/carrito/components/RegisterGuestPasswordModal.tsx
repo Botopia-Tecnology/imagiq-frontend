@@ -82,7 +82,11 @@ export default function RegisterGuestPasswordModal({
     setLoading(true);
 
     try {
-      const response = await apiPost<{ message: string; user: any }>(
+      // 1. Registrar la contraseña
+      await apiPost<{ 
+        message: string; 
+        user: any;
+      }>(
         "/api/auth/register-guest-password",
         {
           email: userEmail,
@@ -91,30 +95,50 @@ export default function RegisterGuestPasswordModal({
       );
 
       toast.success("Cuenta creada con éxito");
-      
-      // Actualizar el usuario en localStorage y Contexto
-      const currentUser = localStorage.getItem("imagiq_user");
-      if (currentUser) {
-        try {
-          const user = JSON.parse(currentUser);
-          user.rol = 2; // Cambiar a usuario regular (formato español del backend)
-          user.role = 2; // Cambiar a usuario regular (formato inglés del frontend)
+
+      // 2. Iniciar sesión automáticamente con las nuevas credenciales
+      try {
+        console.log("🔄 [Modal] Iniciando sesión automática...");
+        const loginResponse = await apiPost<{
+          access_token: string;
+          user: any;
+        }>("/api/auth/login", {
+          email: userEmail,
+          contrasena: password,
+        });
+
+        if (loginResponse.access_token && loginResponse.user) {
+          // Guardar token y usuario del login real
+          localStorage.setItem("imagiq_token", loginResponse.access_token);
           
-          // Inyectar nombre si viene de props y no existe en user
-          if (userName && !user.nombre) {
-            user.nombre = userName;
-          }
-          if (userLastName && !user.apellido) {
-            user.apellido = userLastName;
-          }
+          const user = loginResponse.user;
+          // Asegurar formato de rol si es necesario, aunque el login debería traerlo bien
+          // loginResponse suele traer el usuario bien formateado
           
-          // Actualizar contexto global para "iniciar sesión" con los nuevos datos
-          // Esto actualiza el estado de la app y el localStorage
           login(user);
-          
-          console.log("✅ [Modal] Sesión actualizada a usuario regular:", user);
-        } catch (err) {
-          console.error("Error actualizando usuario:", err);
+          console.log("✅ [Modal] Sesión iniciada correctamente vía /api/auth/login");
+        } else {
+          throw new Error("Respuesta de login incompleta");
+        }
+      } catch (loginError) {
+        console.warn("⚠️ [Modal] Falló el login automático, intentando fallback manual:", loginError);
+        
+        // Fallback: Si el login explícito falla, intentamos armar la sesión con lo que tenemos
+        const currentUser = localStorage.getItem("imagiq_user");
+        if (currentUser) {
+          try {
+            const user = JSON.parse(currentUser);
+            user.rol = 2; // Cambiar a usuario regular
+            user.role = 2;
+            
+            if (userName && !user.nombre) user.nombre = userName;
+            if (userLastName && !user.apellido) user.apellido = userLastName;
+            
+            login(user);
+            console.log("✅ [Modal] Sesión actualizada (fallback manual)");
+          } catch (err) {
+            console.error("Error en fallback de sesión:", err);
+          }
         }
       }
 

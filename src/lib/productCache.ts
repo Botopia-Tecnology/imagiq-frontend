@@ -42,6 +42,7 @@ interface CacheConfig {
 class ProductCache {
   private cache: Map<string, CacheEntry> = new Map();
   private singleProductCache: Map<string, SingleProductCacheEntry> = new Map();
+  private prefetchedKeys: Set<string> = new Set(); // Set para verificación rápida O(1)
   private config: CacheConfig;
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -87,29 +88,55 @@ class ProductCache {
   }
 
   /**
+   * Verifica si una clave está marcada como precargada (verificación rápida O(1))
+   */
+  isPrefetched(key: string): boolean {
+    return this.prefetchedKeys.has(key);
+  }
+
+  /**
+   * Marca una clave como precargada
+   */
+  markAsPrefetched(key: string): void {
+    this.prefetchedKeys.add(key);
+  }
+
+  /**
    * Obtiene una entrada del caché si existe y no está expirada
    * También busca variaciones ignorando sortBy/sortOrder para mayor flexibilidad
    */
   get(params: ProductFilterParams): ApiResponse<ProductApiResponse> | null {
-    // Primero intentar búsqueda exacta
+    // Primero verificar rápidamente si está en el Set de precargadas
     const exactKey = this.generateCacheKey(params);
+    if (this.prefetchedKeys.has(exactKey)) {
+      // Si está marcada como precargada, buscar en el caché
+      const exactEntry = this.cache.get(exactKey);
+      if (exactEntry && !this.isExpired(exactEntry)) {
+        return exactEntry.data;
+      }
+      // Si está expirada, remover del Set
+      this.prefetchedKeys.delete(exactKey);
+    }
+
+    // Intentar búsqueda exacta
     const exactEntry = this.cache.get(exactKey);
     
     if (exactEntry && !this.isExpired(exactEntry)) {
+      // Marcar como precargada si no estaba
+      this.prefetchedKeys.add(exactKey);
       return exactEntry.data;
     }
     
-    // Si no hay coincidencia exacta, buscar ignorando sortBy/sortOrder
-    // Esto permite que el prefetch (sin sortBy) coincida con la búsqueda real (con sortBy)
+    // Si no hay coincidencia exacta, buscar ignorando sortBy/sortOrder, page, lazyLimit y lazyOffset
+    // Esto permite que el prefetch (con lazyLimit/lazyOffset) coincida con la búsqueda real (sin ellos o con valores diferentes)
     const paramsWithoutSort: ProductFilterParams = { ...params };
     delete paramsWithoutSort.sortBy;
     delete paramsWithoutSort.sortOrder;
+    delete paramsWithoutSort.page;
+    delete paramsWithoutSort.lazyLimit;
+    delete paramsWithoutSort.lazyOffset;
     
-    // También intentar sin page (para que cache de página 1 sirva como base)
-    const paramsWithoutSortPage: ProductFilterParams = { ...paramsWithoutSort };
-    delete paramsWithoutSortPage.page;
-    
-    // Buscar todas las claves que coincidan con los parámetros sin sort
+    // Buscar todas las claves que coincidan con los parámetros sin sort/page/lazy
     for (const [key, entry] of this.cache.entries()) {
       if (this.isExpired(entry)) continue;
       
@@ -117,15 +144,17 @@ class ProductCache {
       const keyParams = this.parseCacheKey(key);
       if (!keyParams) continue;
       
-      // Comparar ignorando sortBy, sortOrder y page
+      // Comparar ignorando sortBy, sortOrder, page, lazyLimit y lazyOffset
       const matchParams: ProductFilterParams = { ...keyParams };
       delete matchParams.sortBy;
       delete matchParams.sortOrder;
       delete matchParams.page;
+      delete matchParams.lazyLimit;
+      delete matchParams.lazyOffset;
       
-      const searchParams: ProductFilterParams = { ...paramsWithoutSortPage };
+      const searchParams: ProductFilterParams = { ...paramsWithoutSort };
       
-      // Comparar parámetros críticos
+      // Comparar solo parámetros críticos (categoria, menuUuid, submenuUuid, precioMin, etc.)
       // Manejar undefined correctamente: undefined debe coincidir con undefined o ausencia de propiedad
       const categoriaMatch = 
         (matchParams.categoria === undefined && searchParams.categoria === undefined) ||
@@ -139,14 +168,21 @@ class ProductCache {
         (matchParams.submenuUuid === undefined && searchParams.submenuUuid === undefined) ||
         matchParams.submenuUuid === searchParams.submenuUuid;
       
+      // Comparar precioMin (importante para filtros)
+      const precioMinMatch = 
+        (matchParams.precioMin === undefined && searchParams.precioMin === undefined) ||
+        matchParams.precioMin === searchParams.precioMin;
+      
+      // Solo comparar parámetros críticos, ignorando limit, lazyLimit, lazyOffset, page, sortBy, sortOrder
       const criticalMatch = 
         categoriaMatch &&
         menuUuidMatch &&
         submenuUuidMatch &&
-        matchParams.lazyLimit === searchParams.lazyLimit &&
-        matchParams.lazyOffset === searchParams.lazyOffset;
+        precioMinMatch;
       
       if (criticalMatch) {
+        // Marcar como precargada si no estaba (usar la clave encontrada)
+        this.prefetchedKeys.add(key);
         return entry.data;
       }
     }
@@ -191,6 +227,7 @@ class ProductCache {
       const oldestKey = this.findOldestEntry();
       if (oldestKey) {
         this.cache.delete(oldestKey);
+        this.prefetchedKeys.delete(oldestKey);
       }
     }
 
@@ -202,6 +239,8 @@ class ProductCache {
     };
 
     this.cache.set(key, entry);
+    // Marcar automáticamente como precargada
+    this.prefetchedKeys.add(key);
   }
 
   /**
@@ -226,6 +265,7 @@ class ProductCache {
    */
   invalidate(params: ProductFilterParams): boolean {
     const key = this.generateCacheKey(params);
+    this.prefetchedKeys.delete(key);
     return this.cache.delete(key);
   }
 
@@ -245,6 +285,7 @@ class ProductCache {
 
     keysToDelete.forEach(key => {
       if (this.cache.delete(key)) {
+        this.prefetchedKeys.delete(key);
         deletedCount++;
       }
     });
@@ -267,6 +308,7 @@ class ProductCache {
 
     keysToDelete.forEach(key => {
       if (this.cache.delete(key)) {
+        this.prefetchedKeys.delete(key);
         deletedCount++;
       }
     });
@@ -294,6 +336,7 @@ class ProductCache {
   clear(): void {
     this.cache.clear();
     this.singleProductCache.clear();
+    this.prefetchedKeys.clear();
   }
 
   /**

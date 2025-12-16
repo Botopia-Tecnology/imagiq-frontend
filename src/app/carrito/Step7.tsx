@@ -1166,6 +1166,12 @@ export default function Step7({ onBack }: Step7Props) {
     // =================================================================================
     const currentDeliveryMethod = (localStorage.getItem("checkout-delivery-method") || "domicilio").toLowerCase();
     
+    console.log("🔍 [Step7] DEBUG - Estado inicial:", {
+      currentDeliveryMethod,
+      candidateWarehouseCode,
+      checkCondition: currentDeliveryMethod === "domicilio" && !candidateWarehouseCode
+    });
+    
     // Variable local para la bodega (inicia con el estado actual)
     let finalWarehouseCode = candidateWarehouseCode;
 
@@ -1200,14 +1206,44 @@ export default function Step7({ onBack }: Step7Props) {
             canPickUp?: boolean;
             canPickup?: boolean;
             codeBodega?: string;
-            nearest?: { codBodega?: string };
+            codigoBodega?: string;
+            nearest?: { codBodega?: string; codigoBodega?: string };
+            default?: { codBodega?: string; codigoBodega?: string };
+            stores?: Record<string, Array<{ codBodega?: string; distance?: number }>>;
           };
 
           let newWarehouseCode: string | undefined;
-          if (responseData.nearest?.codBodega) {
+          
+          // Intentar múltiples caminos para obtener el código de bodega
+          if (responseData.default?.codigoBodega) {
+            newWarehouseCode = responseData.default.codigoBodega;
+            console.log("✅ [Step7] Bodega encontrada en default.codigoBodega:", newWarehouseCode);
+          } else if (responseData.default?.codBodega) {
+            newWarehouseCode = responseData.default.codBodega;
+            console.log("✅ [Step7] Bodega encontrada en default.codBodega:", newWarehouseCode);
+          } else if (responseData.nearest?.codigoBodega) {
+            newWarehouseCode = responseData.nearest.codigoBodega;
+            console.log("✅ [Step7] Bodega encontrada en nearest.codigoBodega:", newWarehouseCode);
+          } else if (responseData.nearest?.codBodega) {
             newWarehouseCode = responseData.nearest.codBodega;
+            console.log("✅ [Step7] Bodega encontrada en nearest.codBodega:", newWarehouseCode);
+          } else if (responseData.codigoBodega) {
+            newWarehouseCode = responseData.codigoBodega;
+            console.log("✅ [Step7] Bodega encontrada en codigoBodega:", newWarehouseCode);
           } else if (responseData.codeBodega) {
-             newWarehouseCode = responseData.codeBodega || (responseData as any).codBodega;
+            newWarehouseCode = responseData.codeBodega;
+            console.log("✅ [Step7] Bodega encontrada en codeBodega:", newWarehouseCode);
+          } else if (responseData.stores) {
+            // Si hay stores, usar la primera tienda de la primera ciudad (más cercana)
+            const cities = Object.keys(responseData.stores);
+            if (cities.length > 0) {
+              const firstCity = cities[0];
+              const storesInCity = responseData.stores[firstCity];
+              if (storesInCity && storesInCity.length > 0 && storesInCity[0].codBodega) {
+                newWarehouseCode = storesInCity[0].codBodega;
+                console.log(`✅ [Step7] Bodega encontrada en stores.${firstCity}[0].codBodega:`, newWarehouseCode);
+              }
+            }
           }
 
           if (newWarehouseCode) {
@@ -1216,6 +1252,7 @@ export default function Step7({ onBack }: Step7Props) {
             finalWarehouseCode = newWarehouseCode; // Actualizar variable local para uso inmediato
           } else {
              console.warn("⚠️ [Step7] Recálculo completado pero NO se obtuvo bodega válida.");
+             console.log("🔍 [Step7] Estructura de respuesta recibida:", JSON.stringify(responseData, null, 2));
           }
         } else {
            console.error("❌ [Step7] Falló el recálculo de candidate-stores.");
@@ -1375,11 +1412,24 @@ export default function Step7({ onBack }: Step7Props) {
         // Para delivery: usar la bodega de candidate-stores
         // Esta bodega puede surtir TODO el pedido completo
         // Usar la variable local finalWarehouseCode que puede haber sido actualizada por el recálculo
+        
+        console.log("🔍 [Step7] DEBUG - Verificando finalWarehouseCode:", {
+          finalWarehouseCode,
+          candidateWarehouseCode,
+          tipoFinal: typeof finalWarehouseCode,
+          tipoCandidate: typeof candidateWarehouseCode
+        });
+        
         codigo_bodega = finalWarehouseCode;
         
         // VALIDACIÓN CRÍTICA PARA DOMICILIO
         if (!codigo_bodega) {
            console.error("❌ [Step7] ERROR: Método domicilio seleccionado pero no hay codigo_bodega (candidate store es null).");
+           console.error("❌ [Step7] DEBUG - Estados:", {
+             finalWarehouseCode,
+             candidateWarehouseCode,
+             codigo_bodega
+           });
            
            // Intento final de recuperación: Asignar bodega por defecto si es válido
            // O simplemente detener el proceso

@@ -4,7 +4,9 @@ import { MenuItemCard } from "./MenuItemCard";
 import { CloseButton } from "@/components/navbar/components/CloseButton";
 import type { MenuItem } from "./types";
 import { usePrefetchProducts } from "@/hooks/usePrefetchProducts";
-import { menusEndpoints } from "@/lib/api";
+import { menusEndpoints, type ProductFilterParams } from "@/lib/api";
+import { executeBatchPrefetch } from "@/lib/batchPrefetch";
+import { usePrefetchCoordinator } from "@/hooks/usePrefetchCoordinator";
 
 
 type Props = {
@@ -16,16 +18,14 @@ type Props = {
 };
 
 export const DesktopView: FC<Props> = ({ items, categoryName, categoryCode, onItemClick, loading = false }) => {
-  const { prefetchWithDebounce, cancelPrefetch, prefetchProducts } = usePrefetchProducts();
+  const { prefetchWithDebounce, cancelPrefetch } = usePrefetchProducts();
+  const { shouldPrefetch } = usePrefetchCoordinator();
   
   // Ref para manejar timers de debounce de submenús
   const submenuPrefetchTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   
   // Ref para rastrear qué menús ya están precargando productos de submenús
   const menuSubmenuProductsPrefetchingRef = useRef<Set<string>>(new Set());
-  
-  // Ref para rastrear timers de prefetch de productos de submenús por menú
-  const submenuProductsPrefetchTimersRef = useRef<Map<string, Array<ReturnType<typeof setTimeout>>>>(new Map());
 
   // Prefetch productos cuando el usuario hace hover sobre un menú
   const handleMenuHover = useCallback((menuUuid: string) => {
@@ -59,53 +59,53 @@ export const DesktopView: FC<Props> = ({ items, categoryName, categoryCode, onIt
           return;
         }
         
-        // Si hay submenús activos, precargar productos de cada uno
+        // Si hay submenús activos, precargar productos usando batch
         if (submenusResponse.success && submenusResponse.data) {
           const activeSubmenus = submenusResponse.data.filter(submenu => submenu.activo && submenu.uuid);
           
           if (activeSubmenus.length > 0) {
             menuSubmenuProductsPrefetchingRef.current.add(menuUuid);
             
-            // Limpiar timers anteriores si existen
-            const existingProductTimers = submenuProductsPrefetchTimersRef.current.get(menuUuid);
-            if (existingProductTimers) {
-              existingProductTimers.forEach(t => clearTimeout(t));
-            }
-            
-            const productTimers: Array<ReturnType<typeof setTimeout>> = [];
-            
-            // Precargar productos de cada submenú activo con delay escalonado
-            activeSubmenus.forEach((submenu, index) => {
-              if (!submenu.uuid) return;
-              
-              // Delay escalonado: 0ms, 100ms, 200ms, etc.
-              const productTimer = setTimeout(() => {
-                prefetchProducts({
-                  categoryCode,
-                  menuUuid,
-                  submenuUuid: submenu.uuid,
-                }).catch(() => {
-                  // Silenciar errores
-                });
-              }, index * 100); // Escalonar cada 100ms
-              
-              productTimers.push(productTimer);
+            // Construir parámetros para batch request
+            const buildParams = (submenuUuid: string): ProductFilterParams => ({
+              page: 1,
+              limit: 50,
+              precioMin: 1,
+              lazyLimit: 6,
+              lazyOffset: 0,
+              sortBy: "precio",
+              sortOrder: "desc",
+              categoria: categoryCode,
+              menuUuid: menuUuid,
+              submenuUuid: submenuUuid,
             });
+
+            // Filtrar submenús que deben precargarse usando coordinador
+            const submenusToPrefetch: ProductFilterParams[] = [];
             
-            // Guardar timers para poder cancelarlos
-            submenuProductsPrefetchTimersRef.current.set(menuUuid, productTimers);
+            for (const submenu of activeSubmenus) {
+              if (!submenu.uuid) continue;
+              const params = buildParams(submenu.uuid);
+              if (shouldPrefetch(params)) {
+                submenusToPrefetch.push(params);
+              }
+            }
+
+            if (submenusToPrefetch.length > 0) {
+              // Ejecutar batch prefetch usando helper centralizado
+              await executeBatchPrefetch(submenusToPrefetch, 'DesktopView');
+            }
           }
         }
-      } catch (error) {
+      } catch {
         // Silenciar errores en prefetch - no afectar la UX
-        console.debug("[SubmenuPrefetch] Error silencioso:", error);
       } finally {
         submenuPrefetchTimers.current.delete(menuUuid);
       }
     }, 100); // Debounce de 100ms
     
     submenuPrefetchTimers.current.set(menuUuid, timer);
-  }, [categoryCode, prefetchWithDebounce, prefetchProducts]);
+  }, [categoryCode, prefetchWithDebounce, shouldPrefetch]);
 
   // Cancelar prefetch cuando el usuario deja de hacer hover
   const handleMenuLeave = useCallback((menuUuid: string) => {
@@ -123,16 +123,9 @@ export const DesktopView: FC<Props> = ({ items, categoryName, categoryCode, onIt
       submenuPrefetchTimers.current.delete(menuUuid);
     }
     
-    // Limpiar timers de prefetch de productos de submenús
-    const productTimers = submenuProductsPrefetchTimersRef.current.get(menuUuid);
-    if (productTimers) {
-      productTimers.forEach(t => clearTimeout(t));
-      submenuProductsPrefetchTimersRef.current.delete(menuUuid);
-    }
-    
     // Nota: No removemos de menuSubmenuProductsPrefetchingRef porque queremos
     // que los productos sigan precargándose en background aunque el usuario deje de hacer hover
-  }, [categoryCode, cancelPrefetch]);
+  }, [categoryCode, cancelPrefetch, shouldPrefetch]);
 
   // Filtrar solo items activos
   const activeItems = items.filter(item => item.activo);

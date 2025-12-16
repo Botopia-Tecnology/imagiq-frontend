@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useMemo, useCallback, useEffect, useRef } from "react";
+import { useMemo, useCallback, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useSubmenus } from "@/hooks/useSubmenus";
 import type { Menu } from "@/lib/api";
@@ -36,17 +36,11 @@ export default function SubmenuCarousel({
   const { submenus, loading, error } = useSubmenus(menu.uuid);
   const { prefetchWithDebounce, cancelPrefetch, prefetchProducts } = usePrefetchProducts();
   
-  // Ref para rastrear qué submenús ya se están precargando automáticamente
+  // Ref para rastrear qué submenús se están precargando por hover
   const autoPrefetchingRef = useRef<Set<string>>(new Set());
   
-  // Ref para rastrear qué submenús ya fueron precargados automáticamente
+  // Ref para rastrear qué submenús ya fueron precargados por hover
   const autoPrefetchedRef = useRef<Set<string>>(new Set());
-  
-  // Ref para el timer de inicio de precarga automática
-  const autoPrefetchStartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
-  // Ref para rastrear timers de prefetch escalonados por submenú
-  const submenuPrefetchTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const handleSubmenuClick = (submenuId: string) => {
     // Encontrar el submenú por UUID para obtener su nombre
@@ -101,82 +95,9 @@ export default function SubmenuCarousel({
     };
   }, [activeSubmenu]);
 
-  // Sistema de precarga automática de productos de todos los submenús
-  // Se ejecuta cuando se está en una sección (hay menuUuid) y los submenús están cargados
-  useEffect(() => {
-    // Solo precargar si tenemos todos los datos necesarios
-    if (!categoryCode || !menuUuid || loading || error || submenus.length === 0) {
-      return;
-    }
-
-    // Limpiar timers anteriores si existen
-    if (autoPrefetchStartTimerRef.current) {
-      clearTimeout(autoPrefetchStartTimerRef.current);
-    }
-    
-    // Limpiar timers de prefetch escalonados anteriores
-    submenuPrefetchTimersRef.current.forEach((timer) => {
-      clearTimeout(timer);
-    });
-    submenuPrefetchTimersRef.current.clear();
-    
-    // Resetear estados de precarga cuando cambian los parámetros
-    autoPrefetchingRef.current.clear();
-    autoPrefetchedRef.current.clear();
-
-    // Esperar 1 segundo después de que los submenús se carguen para iniciar precarga automática
-    // Esto da tiempo a que la página se estabilice y no interfiere con la carga inicial
-    autoPrefetchStartTimerRef.current = setTimeout(() => {
-      const activeSubmenus = submenus.filter(submenu => submenu.activo && submenu.uuid);
-      
-      // Precargar productos de cada submenú activo con delay escalonado
-      activeSubmenus.forEach((submenu, index) => {
-        if (!submenu.uuid) return;
-        
-        // Verificar si ya se precargó o se está precargando
-        if (autoPrefetchedRef.current.has(submenu.uuid) || autoPrefetchingRef.current.has(submenu.uuid)) {
-          return;
-        }
-
-        autoPrefetchingRef.current.add(submenu.uuid);
-
-        // Delay escalonado por submenú: 0ms, 150ms, 300ms, etc.
-        const timer = setTimeout(() => {
-          prefetchProducts({
-            categoryCode,
-            menuUuid: menuUuid,
-            submenuUuid: submenu.uuid,
-          })
-            .then(() => {
-              // Marcar como precargado
-              autoPrefetchedRef.current.add(submenu.uuid!);
-              autoPrefetchingRef.current.delete(submenu.uuid!);
-              submenuPrefetchTimersRef.current.delete(submenu.uuid!);
-            })
-            .catch(() => {
-              // Silenciar errores
-              autoPrefetchingRef.current.delete(submenu.uuid!);
-              submenuPrefetchTimersRef.current.delete(submenu.uuid!);
-            });
-        }, index * 150); // Escalonar cada 150ms
-        
-        // Guardar timer para poder cancelarlo si es necesario
-        submenuPrefetchTimersRef.current.set(submenu.uuid, timer);
-      });
-    }, 1000); // Iniciar después de 1 segundo
-
-    return () => {
-      if (autoPrefetchStartTimerRef.current) {
-        clearTimeout(autoPrefetchStartTimerRef.current);
-      }
-      
-      // Limpiar todos los timers de prefetch escalonados
-      submenuPrefetchTimersRef.current.forEach((timer) => {
-        clearTimeout(timer);
-      });
-      submenuPrefetchTimersRef.current.clear();
-    };
-  }, [categoryCode, menuUuid, submenus, loading, error, prefetchProducts]);
+  // NOTA: El batch automático de submenús fue eliminado.
+  // Ahora se maneja por usePreloadMenuSubmenus en CategorySection cuando el usuario entra a un menú.
+  // Esto evita duplicación y asegura que solo se carguen los submenús que no están en caché.
 
   // Prefetch productos cuando el usuario hace hover sobre un submenú
   // Al hacer hover, se PRIORIZA ese submenú específico (se acelera el prefetch)

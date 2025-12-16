@@ -127,17 +127,16 @@ class ProductCache {
       return exactEntry.data;
     }
     
-    // Si no hay coincidencia exacta, buscar ignorando sortBy/sortOrder
-    // Esto permite que el prefetch (sin sortBy) coincida con la búsqueda real (con sortBy)
+    // Si no hay coincidencia exacta, buscar ignorando sortBy/sortOrder, page, lazyLimit y lazyOffset
+    // Esto permite que el prefetch (con lazyLimit/lazyOffset) coincida con la búsqueda real (sin ellos o con valores diferentes)
     const paramsWithoutSort: ProductFilterParams = { ...params };
     delete paramsWithoutSort.sortBy;
     delete paramsWithoutSort.sortOrder;
+    delete paramsWithoutSort.page;
+    delete paramsWithoutSort.lazyLimit;
+    delete paramsWithoutSort.lazyOffset;
     
-    // También intentar sin page (para que cache de página 1 sirva como base)
-    const paramsWithoutSortPage: ProductFilterParams = { ...paramsWithoutSort };
-    delete paramsWithoutSortPage.page;
-    
-    // Buscar todas las claves que coincidan con los parámetros sin sort
+    // Buscar todas las claves que coincidan con los parámetros sin sort/page/lazy
     for (const [key, entry] of this.cache.entries()) {
       if (this.isExpired(entry)) continue;
       
@@ -145,15 +144,17 @@ class ProductCache {
       const keyParams = this.parseCacheKey(key);
       if (!keyParams) continue;
       
-      // Comparar ignorando sortBy, sortOrder y page
+      // Comparar ignorando sortBy, sortOrder, page, lazyLimit y lazyOffset
       const matchParams: ProductFilterParams = { ...keyParams };
       delete matchParams.sortBy;
       delete matchParams.sortOrder;
       delete matchParams.page;
+      delete matchParams.lazyLimit;
+      delete matchParams.lazyOffset;
       
-      const searchParams: ProductFilterParams = { ...paramsWithoutSortPage };
+      const searchParams: ProductFilterParams = { ...paramsWithoutSort };
       
-      // Comparar parámetros críticos
+      // Comparar solo parámetros críticos (categoria, menuUuid, submenuUuid, precioMin, etc.)
       // Manejar undefined correctamente: undefined debe coincidir con undefined o ausencia de propiedad
       const categoriaMatch = 
         (matchParams.categoria === undefined && searchParams.categoria === undefined) ||
@@ -167,12 +168,17 @@ class ProductCache {
         (matchParams.submenuUuid === undefined && searchParams.submenuUuid === undefined) ||
         matchParams.submenuUuid === searchParams.submenuUuid;
       
+      // Comparar precioMin (importante para filtros)
+      const precioMinMatch = 
+        (matchParams.precioMin === undefined && searchParams.precioMin === undefined) ||
+        matchParams.precioMin === searchParams.precioMin;
+      
+      // Solo comparar parámetros críticos, ignorando limit, lazyLimit, lazyOffset, page, sortBy, sortOrder
       const criticalMatch = 
         categoriaMatch &&
         menuUuidMatch &&
         submenuUuidMatch &&
-        matchParams.lazyLimit === searchParams.lazyLimit &&
-        matchParams.lazyOffset === searchParams.lazyOffset;
+        precioMinMatch;
       
       if (criticalMatch) {
         // Marcar como precargada si no estaba (usar la clave encontrada)

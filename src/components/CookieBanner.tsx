@@ -218,11 +218,6 @@ export default function CookieBanner() {
 
     // 4. Ocultar banner
     setShow(false);
-
-    // 5. Forzar reload para que los scripts se carguen con el nuevo consentimiento
-    setTimeout(() => {
-      window.location.reload();
-    }, 500);
   };
 
   const handleReject = () => {
@@ -231,11 +226,6 @@ export default function CookieBanner() {
 
     // Ocultar banner temporalmente (volverá a aparecer en próxima visita)
     setShow(false);
-
-    // Reload para aplicar el rechazo
-    setTimeout(() => {
-      window.location.reload();
-    }, 500);
   };
 
   const handleClose = () => {

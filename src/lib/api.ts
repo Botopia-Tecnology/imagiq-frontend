@@ -379,6 +379,70 @@ export const productEndpoints = {
     apiClient.get<BundleDirectResponse>(
       `/api/products/v2/bundles/${baseCodigoMarket}/${codCampana}/${productSku}`
     ),
+
+  // Batch endpoint for multiple product requests
+  // Maximum 100 queries per batch request (will split into multiple batches if needed)
+  getBatch: async (queries: ProductFilterParams[]): Promise<ApiResponse<BatchProductResponse>> => {
+    if (queries.length === 0) {
+      return {
+        success: false,
+        data: { results: [] },
+        message: 'No queries provided',
+      };
+    }
+
+    const BATCH_SIZE = 100;
+    
+    // Si hay más de 100 queries, dividir en múltiples batches
+    if (queries.length > BATCH_SIZE) {
+      const batches: ProductFilterParams[][] = [];
+      for (let i = 0; i < queries.length; i += BATCH_SIZE) {
+        batches.push(queries.slice(i, i + BATCH_SIZE));
+      }
+
+      // Ejecutar todos los batches en paralelo
+      const batchPromises = batches.map(batch => 
+        apiClient.post<BatchProductResponse>('/api/products/v2/batch', { queries: batch })
+      );
+
+      const responses = await Promise.allSettled(batchPromises);
+      
+      // Combinar todos los resultados
+      const allResults: BatchProductResult[] = [];
+      let currentIndex = 0;
+
+      responses.forEach((response, batchIndex) => {
+        if (response.status === 'fulfilled' && response.value.success && response.value.data) {
+          // Ajustar índices para que correspondan a la posición en el array original
+          response.value.data.results.forEach((result) => {
+            allResults.push({
+              ...result,
+              index: currentIndex + result.index,
+            });
+          });
+          currentIndex += batches[batchIndex].length;
+        } else {
+          // Si un batch falla, agregar errores para cada query en ese batch
+          batches[batchIndex].forEach((_, queryIndex) => {
+            allResults.push({
+              index: currentIndex + queryIndex,
+              success: false,
+              error: response.status === 'rejected' ? String(response.reason) : 'Batch request failed',
+            });
+          });
+          currentIndex += batches[batchIndex].length;
+        }
+      });
+
+      return {
+        success: true,
+        data: { results: allResults },
+      };
+    }
+
+    // Si hay 100 o menos queries, hacer una sola petición
+    return apiClient.post<BatchProductResponse>('/api/products/v2/batch', { queries });
+  },
 };
 
 // Categories API endpoints
@@ -474,6 +538,14 @@ export const populateSubmenusCache = (completeCategories: VisibleCategoryComplet
       }
     });
   });
+};
+
+/**
+ * Obtiene los submenús desde el caché sin hacer petición HTTP
+ * Retorna undefined si no están en caché
+ */
+export const getSubmenusFromCache = (menuUuid: string): Submenu[] | undefined => {
+  return submenusByMenuCache[menuUuid];
 };
 
 export const menusEndpoints = {
@@ -712,6 +784,22 @@ export interface FavoriteApiResponse {
   currentPage: number;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
+}
+
+// Batch endpoint types
+export interface BatchProductRequest {
+  queries: ProductFilterParams[];
+}
+
+export interface BatchProductResult {
+  index: number;
+  success: boolean;
+  data?: ProductApiResponse;
+  error?: string;
+}
+
+export interface BatchProductResponse {
+  results: BatchProductResult[];
 }
 
 // Visible Categories types (legacy - deprecated)

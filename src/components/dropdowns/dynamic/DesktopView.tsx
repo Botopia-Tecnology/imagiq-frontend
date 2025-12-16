@@ -4,7 +4,8 @@ import { MenuItemCard } from "./MenuItemCard";
 import { CloseButton } from "@/components/navbar/components/CloseButton";
 import type { MenuItem } from "./types";
 import { usePrefetchProducts } from "@/hooks/usePrefetchProducts";
-import { menusEndpoints } from "@/lib/api";
+import { menusEndpoints, productEndpoints, type ProductFilterParams } from "@/lib/api";
+import { productCache } from "@/lib/productCache";
 
 
 type Props = {
@@ -59,41 +60,63 @@ export const DesktopView: FC<Props> = ({ items, categoryName, categoryCode, onIt
           return;
         }
         
-        // Si hay submenús activos, precargar productos de cada uno
+        // Si hay submenús activos, precargar productos usando batch
         if (submenusResponse.success && submenusResponse.data) {
           const activeSubmenus = submenusResponse.data.filter(submenu => submenu.activo && submenu.uuid);
           
           if (activeSubmenus.length > 0) {
             menuSubmenuProductsPrefetchingRef.current.add(menuUuid);
             
-            // Limpiar timers anteriores si existen
-            const existingProductTimers = submenuProductsPrefetchTimersRef.current.get(menuUuid);
-            if (existingProductTimers) {
-              existingProductTimers.forEach(t => clearTimeout(t));
-            }
-            
-            const productTimers: Array<ReturnType<typeof setTimeout>> = [];
-            
-            // Precargar productos de cada submenú activo con delay escalonado
-            activeSubmenus.forEach((submenu, index) => {
-              if (!submenu.uuid) return;
-              
-              // Delay escalonado: 0ms, 100ms, 200ms, etc.
-              const productTimer = setTimeout(() => {
-                prefetchProducts({
-                  categoryCode,
-                  menuUuid,
-                  submenuUuid: submenu.uuid,
-                }).catch(() => {
-                  // Silenciar errores
-                });
-              }, index * 100); // Escalonar cada 100ms
-              
-              productTimers.push(productTimer);
+            // Construir parámetros para batch request
+            const buildParams = (submenuUuid: string): ProductFilterParams => ({
+              page: 1,
+              limit: 50,
+              precioMin: 1,
+              lazyLimit: 6,
+              lazyOffset: 0,
+              sortBy: "precio",
+              sortOrder: "desc",
+              categoria: categoryCode,
+              menuUuid: menuUuid,
+              submenuUuid: submenuUuid,
             });
-            
-            // Guardar timers para poder cancelarlos
-            submenuProductsPrefetchTimersRef.current.set(menuUuid, productTimers);
+
+            // Filtrar submenús que ya están en caché
+            const submenusToPrefetch = activeSubmenus.filter((submenu) => {
+              if (!submenu.uuid) return false;
+              const params = buildParams(submenu.uuid);
+              return !productCache.get(params);
+            });
+
+            if (submenusToPrefetch.length > 0) {
+              try {
+                // Hacer una sola petición batch con todos los submenús
+                const batchRequests = submenusToPrefetch
+                  .filter(submenu => submenu.uuid)
+                  .map(submenu => buildParams(submenu.uuid!));
+                
+                const batchResponse = await productEndpoints.getBatch(batchRequests);
+
+                if (batchResponse.success && batchResponse.data) {
+                  // Procesar respuestas y guardar en caché
+                  batchResponse.data.results.forEach((result) => {
+                    if (result.success && result.data) {
+                      const submenu = submenusToPrefetch[result.index];
+                      if (submenu?.uuid) {
+                        const params = buildParams(submenu.uuid);
+                        productCache.set(params, {
+                          data: result.data,
+                          success: true,
+                        });
+                      }
+                    }
+                  });
+                }
+              } catch (error) {
+                // Silenciar errores - no afectar la UX
+                console.debug('[DesktopView] Error en batch prefetch:', error);
+              }
+            }
           }
         }
       } catch (error) {

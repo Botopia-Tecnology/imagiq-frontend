@@ -17,6 +17,8 @@ import { useVisibleCategories } from "@/hooks/useVisibleCategories";
 import { useLogos } from "@/hooks/useLogos";
 import { usePreloadCategoryMenus } from "@/hooks/usePreloadCategoryMenus";
 import { usePrefetchProducts } from "@/hooks/usePrefetchProducts";
+import { productEndpoints, type ProductFilterParams } from "@/lib/api";
+import { productCache } from "@/lib/productCache";
 import { useOfertasDirectas } from "@/hooks/useOfertasDirectas";
 import { usePrefetchOfertas } from "@/hooks/usePrefetchOfertas";
 import { useHeroContext } from "@/contexts/HeroContext";
@@ -100,10 +102,6 @@ export default function Navbar() {
   // Esto asegura que los datos estén en caché cuando el usuario abra el dropdown
   const { ofertas: ofertasPreload } = useOfertasDirectas();
 
-  // Ref para rastrear timers de prefetch de menús por categoría
-  const menuPrefetchTimersRef = useRef<
-    Map<string, Array<ReturnType<typeof setTimeout>>>
-  >(new Map());
 
   // Ref para rastrear qué categorías ya se están precargando automáticamente
   const autoPrefetchingRef = useRef<Set<string>>(new Set());
@@ -158,73 +156,123 @@ export default function Navbar() {
   useEffect(() => {
     // Esperar 3 segundos después de que la página cargue para iniciar precarga automática
     // Esto da tiempo a que los menús se carguen y no interfiere con la carga inicial
-    autoPrefetchStartTimerRef.current = setTimeout(() => {
-      const startAutoPrefetch = () => {
-        const menuRoutes = getNavbarRoutes();
+    autoPrefetchStartTimerRef.current = setTimeout(async () => {
+      const menuRoutes = getNavbarRoutes();
 
-        // Obtener todas las categorías dinámicas
-        const dynamicCategories = menuRoutes.filter(
-          (item) =>
-            item.categoryCode && item.uuid && !isStaticCategoryUuid(item.uuid)
-        );
+      // Obtener todas las categorías dinámicas
+      const dynamicCategories = menuRoutes.filter(
+        (item) =>
+          item.categoryCode && item.uuid && !isStaticCategoryUuid(item.uuid)
+      );
 
-        // Precargar productos de categoría + menús para cada categoría
-        // Con un delay escalonado más largo para evitar demasiadas peticiones simultáneas
-        dynamicCategories.forEach((item, categoryIndex) => {
-          if (!item.categoryCode || !item.uuid) return;
+      // Construir función para crear parámetros de prefetch
+      const buildPrefetchParams = (
+        categoryCode: string,
+        menuUuid?: string
+      ): ProductFilterParams => ({
+        page: 1,
+        limit: 50,
+        precioMin: 1,
+        lazyLimit: 6,
+        lazyOffset: 0,
+        sortBy: "precio",
+        sortOrder: "desc",
+        categoria: categoryCode,
+        ...(menuUuid && { menuUuid }),
+      });
 
-          // Delay escalonado por categoría: 0ms, 2000ms, 4000ms, etc. (aumentado para evitar 429)
-          setTimeout(() => {
-            // Verificar si ya se precargó o se está precargando (por hover o automático)
-            if (
-              autoPrefetchedRef.current.has(item.uuid!) ||
-              autoPrefetchingRef.current.has(item.uuid!)
-            ) {
-              return;
-            }
+      // Recopilar todas las combinaciones de categoría y categoría+menú
+      const allCombinations: Array<{ params: ProductFilterParams; categoryUuid: string }> = [];
 
-            autoPrefetchingRef.current.add(item.uuid!);
+      for (const item of dynamicCategories) {
+        if (!item.categoryCode || !item.uuid) continue;
 
-            // Esperar un poco para que los menús se carguen si aún no están disponibles
-            setTimeout(() => {
-              const menus = getMenus(item.uuid!) || [];
+        // Verificar si ya se precargó o se está precargando (por hover o automático)
+        if (
+          autoPrefetchedRef.current.has(item.uuid) ||
+          autoPrefetchingRef.current.has(item.uuid)
+        ) {
+          continue;
+        }
 
-              // Si no hay menús aún, marcar como en proceso pero no hacer nada
-              // Se reintentará cuando se haga hover o en la siguiente iteración
-              if (menus.length === 0) {
-                autoPrefetchingRef.current.delete(item.uuid!);
-                return;
-              }
+        autoPrefetchingRef.current.add(item.uuid);
 
-              // Precargar productos de la categoría base
-              prefetchProducts({
-                categoryCode: item.categoryCode!,
-              }).finally(() => {
-                // Precargar productos de cada menú activo con delay escalonado más largo
-                menus.forEach((menu, menuIndex) => {
-                  if (menu.activo && menu.uuid && item.categoryCode) {
-                    // Delay escalonado por menú: 0ms, 500ms, 1000ms, etc. (aumentado para evitar 429)
-                    setTimeout(() => {
-                      prefetchProducts({
-                        categoryCode: item.categoryCode!,
-                        menuUuid: menu.uuid,
-                      }).catch(() => {
-                        // Silenciar errores
-                      });
-                    }, menuIndex * 500);
-                  }
-                });
+        // Esperar un poco para que los menús se carguen
+        await new Promise(resolve => setTimeout(resolve, 100));
 
-                // Marcar como precargado
-                autoPrefetchedRef.current.add(item.uuid!);
-                autoPrefetchingRef.current.delete(item.uuid!);
+        const menus = getMenus(item.uuid) || [];
+
+        // Si no hay menús aún, continuar
+        if (menus.length === 0) {
+          autoPrefetchingRef.current.delete(item.uuid);
+          continue;
+        }
+
+        // Agregar combinación de categoría base
+        const categoryParams = buildPrefetchParams(item.categoryCode);
+        if (!productCache.get(categoryParams)) {
+          allCombinations.push({
+            params: categoryParams,
+            categoryUuid: item.uuid,
+          });
+        }
+
+        // Agregar combinaciones de categoría + menú
+        for (const menu of menus) {
+          if (menu.activo && menu.uuid) {
+            const menuParams = buildPrefetchParams(item.categoryCode, menu.uuid);
+            if (!productCache.get(menuParams)) {
+              allCombinations.push({
+                params: menuParams,
+                categoryUuid: item.uuid,
               });
-            }, 500); // Esperar 500ms para que los menús se carguen
-          }, categoryIndex * 1000); // Escalonar cada categoría cada 1000ms (1 segundo)
-        });
-      };
+            }
+          }
+        }
+      }
 
-      startAutoPrefetch();
+      // Si hay combinaciones pendientes, hacer batch request
+      if (allCombinations.length > 0) {
+        try {
+          const batchRequests = allCombinations.map(combo => combo.params);
+          const batchResponse = await productEndpoints.getBatch(batchRequests);
+
+          if (batchResponse.success && batchResponse.data) {
+            // Procesar respuestas y guardar en caché
+            batchResponse.data.results.forEach((result) => {
+              if (result.success && result.data) {
+                const combo = allCombinations[result.index];
+                if (combo) {
+                  productCache.set(combo.params, {
+                    data: result.data,
+                    success: true,
+                  });
+                }
+              }
+            });
+
+            // Marcar todas las categorías como precargadas
+            const processedCategories = new Set(
+              allCombinations.map(c => c.categoryUuid)
+            );
+            processedCategories.forEach(uuid => {
+              autoPrefetchedRef.current.add(uuid);
+              autoPrefetchingRef.current.delete(uuid);
+            });
+
+            console.debug(`[Navbar] Batch completado: ${allCombinations.length} combinaciones procesadas`);
+          }
+        } catch (error) {
+          // Silenciar errores - no afectar la UX
+          console.debug('[Navbar] Error en batch prefetch:', error);
+          // Limpiar estados en caso de error
+          dynamicCategories.forEach(item => {
+            if (item.uuid) {
+              autoPrefetchingRef.current.delete(item.uuid);
+            }
+          });
+        }
+      }
     }, 1500); // Iniciar después de 1.5 segundos
 
     return () => {
@@ -232,7 +280,7 @@ export default function Navbar() {
         clearTimeout(autoPrefetchStartTimerRef.current);
       }
     };
-  }, [getNavbarRoutes, getMenus, prefetchProducts]);
+  }, [getNavbarRoutes, getMenus]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -587,69 +635,65 @@ export default function Navbar() {
                                 categoryCode: item.categoryCode,
                               });
 
-                              // Prefetch de todos los menús de esta categoría (priorizado)
+                              // Prefetch de todos los menús de esta categoría (priorizado usando batch)
                               // Esperar un poco para que los menús se carguen si aún no están disponibles
-                              const categoryKey =
-                                item.uuid || item.categoryCode;
-                              const timers: Array<
-                                ReturnType<typeof setTimeout>
-                              > = [];
-
-                              // Limpiar timers anteriores si existen
-                              const existingTimers =
-                                menuPrefetchTimersRef.current.get(categoryKey);
-                              if (existingTimers) {
-                                existingTimers.forEach((timer) =>
-                                  clearTimeout(timer)
-                                );
-                              }
-
-                              const initialTimer = setTimeout(() => {
+                              const initialTimer = setTimeout(async () => {
                                 if (
                                   item.uuid &&
                                   !isStaticCategoryUuid(item.uuid)
                                 ) {
                                   const menus = getMenus(item.uuid) || [];
 
-                                  // Hacer prefetch de cada menú activo con un delay escalonado
-                                  // para evitar demasiadas peticiones simultáneas
-                                  // Pero más rápido que el sistema automático (priorizado)
-                                  menus.forEach((menu, index) => {
-                                    if (
-                                      menu.activo &&
-                                      menu.uuid &&
-                                      item.categoryCode
-                                    ) {
-                                      // Delay escalonado para hover: 100ms, 200ms, 300ms, etc. (optimizado para mejor respuesta)
-                                      const menuTimer = setTimeout(() => {
-                                        prefetchProducts({
-                                          categoryCode: item.categoryCode!,
-                                          menuUuid: menu.uuid,
-                                        }).catch(() => {
-                                          // Silenciar errores
-                                        });
-                                      }, 100 + index * 100); // Escalonar cada 100ms (más rápido que automático pero seguro)
-
-                                      timers.push(menuTimer);
-                                    }
+                                  // Construir parámetros para batch request
+                                  const buildParams = (menuUuid?: string): ProductFilterParams => ({
+                                    page: 1,
+                                    limit: 50,
+                                    precioMin: 1,
+                                    lazyLimit: 6,
+                                    lazyOffset: 0,
+                                    sortBy: "precio",
+                                    sortOrder: "desc",
+                                    categoria: item.categoryCode!,
+                                    ...(menuUuid && { menuUuid }),
                                   });
 
-                                  // Guardar timers para poder cancelarlos
-                                  menuPrefetchTimersRef.current.set(
-                                    categoryKey,
-                                    timers
-                                  );
+                                  // Recopilar combinaciones de menús que no están en caché
+                                  const menuCombinations: ProductFilterParams[] = [];
+                                  
+                                  for (const menu of menus) {
+                                    if (menu.activo && menu.uuid && item.categoryCode) {
+                                      const params = buildParams(menu.uuid);
+                                      if (!productCache.get(params)) {
+                                        menuCombinations.push(params);
+                                      }
+                                    }
+                                  }
+
+                                  // Si hay combinaciones, hacer batch request (más rápido que individual)
+                                  if (menuCombinations.length > 0) {
+                                    try {
+                                      const batchResponse = await productEndpoints.getBatch(menuCombinations);
+                                      if (batchResponse.success && batchResponse.data) {
+                                        batchResponse.data.results.forEach((result) => {
+                                          if (result.success && result.data) {
+                                            const params = menuCombinations[result.index];
+                                            productCache.set(params, {
+                                              data: result.data,
+                                              success: true,
+                                            });
+                                          }
+                                        });
+                                      }
+                                    } catch (error) {
+                                      // Silenciar errores - no afectar la UX
+                                      console.debug('[Navbar] Error en batch hover prefetch:', error);
+                                    }
+                                  }
 
                                   // Marcar como precargado por hover
                                   autoPrefetchedRef.current.add(item.uuid);
                                 }
                               }, 50); // Esperar solo 50ms (más rápido que automático)
-
-                              timers.push(initialTimer);
-                              menuPrefetchTimersRef.current.set(
-                                categoryKey,
-                                timers
-                              );
                             }
                           }}
                           onMouseLeave={() => {
@@ -657,23 +701,10 @@ export default function Navbar() {
 
                             // Cancelar prefetch cuando el usuario deja de hacer hover
                             if (item.categoryCode) {
-                              const categoryKey =
-                                item.uuid || item.categoryCode;
-
                               // Cancelar prefetch de la categoría base
                               cancelPrefetch({
                                 categoryCode: item.categoryCode,
                               });
-
-                              // Cancelar todos los timers de prefetch de menús
-                              const timers =
-                                menuPrefetchTimersRef.current.get(categoryKey);
-                              if (timers) {
-                                timers.forEach((timer) => clearTimeout(timer));
-                                menuPrefetchTimersRef.current.delete(
-                                  categoryKey
-                                );
-                              }
 
                               // Cancelar prefetches de todos los menús de esta categoría
                               if (

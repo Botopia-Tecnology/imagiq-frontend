@@ -8,7 +8,9 @@
 import { useMemo, useCallback, useEffect, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useSubmenus } from "@/hooks/useSubmenus";
-import type { Menu } from "@/lib/api";
+import type { Menu, ProductFilterParams } from "@/lib/api";
+import { productEndpoints } from "@/lib/api";
+import { productCache } from "@/lib/productCache";
 import SeriesSlider from "./SeriesSlider";
 import type { SeriesItem } from "../config/series-configs";
 import { submenuNameToFriendly } from "../utils/submenuUtils";
@@ -44,9 +46,6 @@ export default function SubmenuCarousel({
   
   // Ref para el timer de inicio de precarga automática
   const autoPrefetchStartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
-  // Ref para rastrear timers de prefetch escalonados por submenú
-  const submenuPrefetchTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const handleSubmenuClick = (submenuId: string) => {
     // Encontrar el submenú por UUID para obtener su nombre
@@ -101,7 +100,7 @@ export default function SubmenuCarousel({
     };
   }, [activeSubmenu]);
 
-  // Sistema de precarga automática de productos de todos los submenús
+  // Sistema de precarga automática de productos de todos los submenús usando batch
   // Se ejecuta cuando se está en una sección (hay menuUuid) y los submenús están cargados
   useEffect(() => {
     // Solo precargar si tenemos todos los datos necesarios
@@ -109,16 +108,10 @@ export default function SubmenuCarousel({
       return;
     }
 
-    // Limpiar timers anteriores si existen
+    // Limpiar timer anterior si existe
     if (autoPrefetchStartTimerRef.current) {
       clearTimeout(autoPrefetchStartTimerRef.current);
     }
-    
-    // Limpiar timers de prefetch escalonados anteriores
-    submenuPrefetchTimersRef.current.forEach((timer) => {
-      clearTimeout(timer);
-    });
-    submenuPrefetchTimersRef.current.clear();
     
     // Resetear estados de precarga cuando cambian los parámetros
     autoPrefetchingRef.current.clear();
@@ -126,57 +119,94 @@ export default function SubmenuCarousel({
 
     // Esperar 1 segundo después de que los submenús se carguen para iniciar precarga automática
     // Esto da tiempo a que la página se estabilice y no interfiere con la carga inicial
-    autoPrefetchStartTimerRef.current = setTimeout(() => {
+    autoPrefetchStartTimerRef.current = setTimeout(async () => {
       const activeSubmenus = submenus.filter(submenu => submenu.activo && submenu.uuid);
       
-      // Precargar productos de cada submenú activo con delay escalonado
-      activeSubmenus.forEach((submenu, index) => {
-        if (!submenu.uuid) return;
-        
-        // Verificar si ya se precargó o se está precargando
-        if (autoPrefetchedRef.current.has(submenu.uuid) || autoPrefetchingRef.current.has(submenu.uuid)) {
-          return;
-        }
-
-        autoPrefetchingRef.current.add(submenu.uuid);
-
-        // Delay escalonado por submenú: 0ms, 150ms, 300ms, etc.
-        const timer = setTimeout(() => {
-          prefetchProducts({
-            categoryCode,
-            menuUuid: menuUuid,
-            submenuUuid: submenu.uuid,
-          })
-            .then(() => {
-              // Marcar como precargado
-              autoPrefetchedRef.current.add(submenu.uuid!);
-              autoPrefetchingRef.current.delete(submenu.uuid!);
-              submenuPrefetchTimersRef.current.delete(submenu.uuid!);
-            })
-            .catch(() => {
-              // Silenciar errores
-              autoPrefetchingRef.current.delete(submenu.uuid!);
-              submenuPrefetchTimersRef.current.delete(submenu.uuid!);
-            });
-        }, index * 150); // Escalonar cada 150ms
-        
-        // Guardar timer para poder cancelarlo si es necesario
-        submenuPrefetchTimersRef.current.set(submenu.uuid, timer);
+      // Construir parámetros para batch request
+      const buildParams = (submenuUuid: string): ProductFilterParams => ({
+        page: 1,
+        limit: 50,
+        precioMin: 1,
+        lazyLimit: 6,
+        lazyOffset: 0,
+        sortBy: "precio",
+        sortOrder: "desc",
+        categoria: categoryCode,
+        menuUuid: menuUuid,
+        submenuUuid: submenuUuid,
       });
+
+      // Filtrar submenús que ya están en caché o se están precargando
+      const submenusToPrefetch = activeSubmenus.filter((submenu) => {
+        if (!submenu.uuid) return false;
+        if (autoPrefetchedRef.current.has(submenu.uuid) || autoPrefetchingRef.current.has(submenu.uuid)) {
+          return false;
+        }
+        // Verificar si ya está en caché
+        const params = buildParams(submenu.uuid);
+        return !productCache.get(params);
+      });
+
+      if (submenusToPrefetch.length === 0) {
+        return;
+      }
+
+      // Marcar todos como en proceso
+      submenusToPrefetch.forEach((submenu) => {
+        if (submenu.uuid) {
+          autoPrefetchingRef.current.add(submenu.uuid);
+        }
+      });
+
+      try {
+        // Hacer una sola petición batch con todos los submenús
+        const batchRequests = submenusToPrefetch
+          .filter(submenu => submenu.uuid)
+          .map(submenu => buildParams(submenu.uuid!));
+        
+        const batchResponse = await productEndpoints.getBatch(batchRequests);
+
+        if (batchResponse.success && batchResponse.data) {
+          // Procesar respuestas y guardar en caché
+          batchResponse.data.results.forEach((result) => {
+            if (result.success && result.data) {
+              const submenu = submenusToPrefetch[result.index];
+              if (submenu?.uuid) {
+                const params = buildParams(submenu.uuid);
+                productCache.set(params, {
+                  data: result.data,
+                  success: true,
+                });
+                autoPrefetchedRef.current.add(submenu.uuid);
+                autoPrefetchingRef.current.delete(submenu.uuid);
+              }
+            } else {
+              // Silenciar errores individuales
+              const submenu = submenusToPrefetch[result.index];
+              if (submenu?.uuid) {
+                autoPrefetchingRef.current.delete(submenu.uuid);
+              }
+            }
+          });
+        }
+      } catch (error) {
+        // Silenciar errores - no afectar la UX
+        console.debug('[SubmenuCarousel] Error en batch prefetch:', error);
+        // Limpiar estados de prefetch en caso de error
+        submenusToPrefetch.forEach((submenu) => {
+          if (submenu.uuid) {
+            autoPrefetchingRef.current.delete(submenu.uuid);
+          }
+        });
+      }
     }, 1000); // Iniciar después de 1 segundo
 
     return () => {
       if (autoPrefetchStartTimerRef.current) {
         clearTimeout(autoPrefetchStartTimerRef.current);
       }
-      
-      // Limpiar todos los timers de prefetch escalonados
-      submenuPrefetchTimersRef.current.forEach((timer) => {
-        clearTimeout(timer);
-      });
-      submenuPrefetchTimersRef.current.clear();
     };
-  }, [categoryCode, menuUuid, submenus, loading, error, prefetchProducts]);
+  }, [categoryCode, menuUuid, submenus, loading, error]);
 
   // Prefetch productos cuando el usuario hace hover sobre un submenú
   // Al hacer hover, se PRIORIZA ese submenú específico (se acelera el prefetch)

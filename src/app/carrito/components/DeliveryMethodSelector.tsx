@@ -97,7 +97,7 @@ export const DeliveryMethodSelector: React.FC<DeliveryMethodSelectorProps> = ({
       <h2 className="text-xl font-semibold text-gray-900">Información de entrega</h2>
 
       {!canContinue && deliveryMethod === "domicilio" && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+        <div className="p-3 bg-gray-100 border border-gray-300 rounded-lg">
           <p className="text-sm font-bold text-gray-900">
             Por favor selecciona una dirección para continuar.
           </p>

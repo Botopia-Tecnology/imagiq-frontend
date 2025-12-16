@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/features/auth/context";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,10 @@ export default function CreateAccountPage() {
   const [hasEmailError, setHasEmailError] = useState(false);
   const [hasPhoneError, setHasPhoneError] = useState(false);
   const [hasDocumentError, setHasDocumentError] = useState(false);
+
+  // Estados para el paso 3 (Dirección)
+  const [isAddressFormValid, setIsAddressFormValid] = useState(false);
+  const addressSubmitRef = useRef<(() => void) | null>(null);
 
   // useEffect para cargar datos si viene desde login O restaurar progreso
   useEffect(() => {
@@ -371,10 +375,40 @@ export default function CreateAccountPage() {
     }
   };
 
-  const handleSkipStep = () => {
+  const handleSkipStep = async () => {
+    // Al omitir pasos opcionales (3 y 4), asegurar que el usuario esté autenticado
+    // porque ya completó los pasos requeridos (1: info personal, 2: verificación OTP)
+    
+    // Verificar que hay token y usuario guardados (del paso 2)
+    const token = localStorage.getItem("imagiq_token");
+    const userInfo = localStorage.getItem("imagiq_user");
+    
+    if (!token || !userInfo) {
+      console.warn("⚠️ No hay sesión activa al omitir. Redirigiendo a login...");
+      router.push("/login");
+      return;
+    }
+
+    // Asegurar que el contexto de autenticación esté sincronizado
+    try {
+      const user = JSON.parse(userInfo);
+      await login({
+        id: user.id,
+        email: user.email,
+        nombre: user.nombre,
+        apellido: user.apellido,
+        numero_documento: user.numero_documento,
+        telefono: user.telefono,
+      });
+      console.log("✅ Sesión iniciada automáticamente al omitir paso opcional");
+    } catch (err) {
+      console.error("❌ Error al iniciar sesión automáticamente:", err);
+    }
+
     // Limpiar progreso guardado al saltar pasos opcionales
     localStorage.removeItem("create_account_progress");
-    // Los pasos 3 y 4 son opcionales, ir directo a home
+    
+    // Los pasos 3 y 4 son opcionales, ir directo a home CON sesión iniciada
     router.push("/");
   };
 
@@ -454,7 +488,19 @@ export default function CreateAccountPage() {
           />
         );
       case 3:
-        return <AddressStep />;
+        return (
+          <AddressStep 
+            onFormValidChange={setIsAddressFormValid}
+            onSubmitRef={addressSubmitRef}
+            onAddressAdded={() => {
+              // Cuando se agregue una dirección, avanzar automáticamente
+              // Limpiar progreso guardado
+              localStorage.removeItem("create_account_progress");
+              // Ir a home
+              router.push("/");
+            }}
+          />
+        );
       case 4:
         return <PaymentStep />;
       default:
@@ -529,8 +575,19 @@ export default function CreateAccountPage() {
               )}
 
               <div className="flex gap-3 pt-4">
-                {/* Botón Atrás solo en paso 1 y pasos opcionales (3, 4) */}
-                {currentStep > 1 && currentStep !== 2 && (
+                {/* Botón Atrás solo en paso 1 y paso 4 (NO en paso 2 ni paso 3) */}
+                {currentStep === 1 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.push("/login")}
+                    disabled={isLoading}
+                    className="flex-1"
+                  >
+                    Volver al login
+                  </Button>
+                )}
+                {currentStep === 4 && (
                   <Button
                     type="button"
                     variant="outline"
@@ -551,11 +608,29 @@ export default function CreateAccountPage() {
                   >
                     {isLoading ? "Enviando..." : "Enviar código"}
                   </Button>
+                ) : currentStep === 3 ? (
+                  // En step 3: El botón "Continuar" ejecuta el submit del formulario de dirección
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (addressSubmitRef.current) {
+                        addressSubmitRef.current();
+                      }
+                    }}
+                    disabled={isLoading || !isAddressFormValid}
+                    className="flex-1 bg-black text-white hover:bg-gray-800"
+                  >
+                    {isLoading ? "Guardando..." : "Continuar"}
+                  </Button>
                 ) : (
                   <Button
                     type="button"
                     onClick={handleNextStep}
-                    disabled={isLoading || (currentStep === 1 && (hasEmailError || hasPhoneError || hasDocumentError))}
+                    disabled={
+                      isLoading || 
+                      (currentStep === 1 && (hasEmailError || hasPhoneError || hasDocumentError)) ||
+                      (currentStep === 2 && (!otpSent || otpCode.length !== 6))
+                    }
                     className="flex-1 bg-black text-white hover:bg-gray-800"
                   >
                     {isLoading

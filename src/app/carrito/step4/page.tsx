@@ -16,13 +16,6 @@ export default function Step4Page() {
 
     const token = localStorage.getItem("imagiq_token");
     
-    // Si hay token, permitir acceso (usuario regular logueado)
-    if (token) {
-      console.log("✅ [STEP4] Token encontrado, permitiendo acceso");
-      setIsChecking(false);
-      return;
-    }
-
     // Intentar obtener usuario desde el hook o localStorage directamente
     const userToCheck = loggedUser || (() => {
       try {
@@ -33,27 +26,38 @@ export default function Step4Page() {
       }
     })();
 
-    // Si hay usuario invitado (rol 3) con dirección, permitir acceso
-    // Verificar tanto 'rol' (backend) como 'role' (frontend) para compatibilidad
-    const userRole = (userToCheck as any)?.rol ?? (userToCheck as any)?.role;
-    if (userToCheck && userRole === 3) {
-      const savedAddress = localStorage.getItem("checkout-address");
-      if (savedAddress) {
-        try {
-          const address = JSON.parse(savedAddress);
-          if (address && address.id) {
-            console.log("✅ [STEP4] Usuario invitado con dirección, permitiendo acceso");
-            setIsChecking(false);
-            return;
-          }
-        } catch (err) {
-          console.error("❌ [STEP4] Error al parsear dirección:", err);
+    console.log("🔍 [STEP4] Verificando acceso:", { 
+      hasToken: !!token, 
+      hasUser: !!userToCheck,
+      userRol: userToCheck ? ((userToCheck as User & { rol?: number }).rol ?? (userToCheck as User).role) : null
+    });
+
+    // CASO 1: Usuario autenticado con token (rol 2 o rol 3) - SIEMPRE permitir acceso
+    if (token && userToCheck) {
+      const userRole = (userToCheck as User & { rol?: number }).rol ?? (userToCheck as User).role;
+      console.log(`✅ [STEP4] Usuario autenticado (rol ${userRole}) con token, permitiendo acceso`);
+      setIsChecking(false);
+      return;
+    }
+
+    // CASO 2: Usuario invitado sin token pero CON dirección agregada
+    const savedAddress = localStorage.getItem("checkout-address");
+    if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
+      try {
+        const address = JSON.parse(savedAddress);
+        // Validar que tenga los campos mínimos
+        if (address && address.ciudad && address.linea_uno) {
+          console.log("✅ [STEP4] Usuario invitado con dirección válida, permitiendo acceso");
+          setIsChecking(false);
+          return;
         }
+      } catch (err) {
+        console.error("❌ [STEP4] Error al parsear dirección:", err);
       }
     }
 
-    // Si no hay token ni usuario invitado con dirección, redirigir
-    console.warn("⚠️ [STEP4] Acceso denegado: No hay sesión activa. Redirigiendo a step2...");
+    // CASO 3: Sin sesión activa ni dirección - redirigir
+    console.warn("⚠️ [STEP4] Acceso denegado: No hay sesión activa ni dirección. Redirigiendo a step2...");
     router.push("/carrito/step2");
   }, [router, loggedUser, isChecking]);
 

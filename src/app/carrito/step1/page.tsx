@@ -31,10 +31,12 @@ export default function Step1Page() {
 
   const handleNext = async () => {
     // Obtener el rol del usuario (compatibilidad con backend que usa 'rol' y frontend que usa 'role')
-    const userRole = loggedUser?.role ?? loggedUser?.rol;
+    const userRole = (loggedUser as any)?.role ?? (loggedUser as any)?.rol;
     
-    // Si es usuario regular (tiene email y no es invitado), ir directamente a step3
-    if (loggedUser?.email && userRole !== 3) {
+    // Si es usuario regular (tiene token y NO es invitado rol 3), ir directamente a step3
+    const token = localStorage.getItem("imagiq_token");
+    if (token && loggedUser?.email && userRole !== 3) {
+      console.log("✅ [STEP1] Usuario regular autenticado (rol !== 3), yendo directo a step3");
       router.push("/carrito/step3");
       return;
     }
@@ -48,7 +50,7 @@ export default function Step1Page() {
       );
       
       if (savedAddress && savedAddress.id) {
-        console.log("✅ [STEP1] Dirección encontrada en localStorage, yendo a step3");
+        console.log("✅ [STEP1] Usuario invitado con dirección en localStorage, yendo a step3");
         router.push("/carrito/step3");
         return;
       }
@@ -68,10 +70,15 @@ export default function Step1Page() {
       } catch (error) {
         console.error("❌ [STEP1] Error consultando direcciones:", error);
       }
+      
+      // Si es invitado sin dirección, ir a step2 para agregar dirección
+      console.log("📍 [STEP1] Usuario invitado sin dirección, yendo a step2");
+      router.push("/carrito/step2");
+      return;
     }
 
-    // Si no tiene dirección o no es usuario logueado, ir a step2 para agregar dirección
-    console.log("📍 [STEP1] Usuario sin dirección, yendo a step2");
+    // Si NO está logueado, ir a step2 para registro como invitado
+    console.log("📍 [STEP1] Usuario no logueado, yendo a step2 para registro");
     router.push("/carrito/step2");
   };
 

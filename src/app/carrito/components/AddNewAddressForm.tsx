@@ -41,6 +41,7 @@ interface AddNewAddressFormProps {
   } | null; // Datos de geolocalización automática
   isRequestingLocation?: boolean; // Si está en proceso de obtener la ubicación
   enableAutoSelect?: boolean; // Habilitar selección automática de la primera predicción
+  hideBackButton?: boolean; // Ocultar el botón "Atrás" en el paso 2
 }
 
 export default function AddNewAddressForm({
@@ -53,6 +54,7 @@ export default function AddNewAddressForm({
   geoLocationData,
   isRequestingLocation = false,
   enableAutoSelect = false,
+  hideBackButton = false,
 }: AddNewAddressFormProps) {
   const { user, login } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
@@ -615,6 +617,32 @@ export default function AddNewAddressForm({
         );
       }
 
+      // CRÍTICO: Guardar SIEMPRE en checkout-address ANTES de sincronizar
+      // Esto garantiza que Step3 y Step4 puedan leer la dirección
+      if (globalThis.window !== undefined) {
+        let userEmail = user?.email || '';
+        try {
+          const userInfo = JSON.parse(globalThis.window.localStorage.getItem('imagiq_user') || '{}');
+          userEmail = userInfo?.email || userEmail;
+        } catch (e) {
+          console.error('Error parsing user info:', e);
+        }
+        
+        const checkoutAddress = {
+          id: shippingResponse.id,
+          usuario_id: shippingResponse.usuarioId || '',
+          email: userEmail,
+          linea_uno: shippingResponse.direccionFormateada || shippingResponse.lineaUno || '',
+          codigo_dane: shippingResponse.codigo_dane || '',
+          ciudad: shippingResponse.ciudad || '',
+          pais: shippingResponse.pais || 'Colombia',
+          esPredeterminada: true,
+        };
+        globalThis.window.localStorage.setItem('checkout-address', JSON.stringify(checkoutAddress));
+        globalThis.window.localStorage.setItem('imagiq_default_address', JSON.stringify(checkoutAddress));
+        console.log('✅ [AddNewAddressForm] Dirección guardada en checkout-address:', checkoutAddress);
+      }
+
       // Sincronizar la dirección con el header y localStorage
       try {
         // Obtener email del usuario desde localStorage si no está autenticado
@@ -634,34 +662,20 @@ export default function AddNewAddressForm({
       } catch (syncError) {
         console.error('⚠️ Error al sincronizar dirección con el header:', syncError);
         // No bloquear el flujo si falla la sincronización
-        // Al menos guardar en localStorage
-        if (globalThis.window !== undefined) {
-          let userEmail = user?.email || '';
-          const userInfo = JSON.parse(globalThis.window.localStorage.getItem('imagiq_user') || '{}');
-          userEmail = userInfo?.email || userEmail;
-          const checkoutAddress = {
-            id: shippingResponse.id,
-            usuario_id: shippingResponse.usuarioId || '',
-            email: userEmail,
-            linea_uno: shippingResponse.direccionFormateada || shippingResponse.lineaUno || '',
-            codigo_dane: shippingResponse.codigo_dane || '',
-            ciudad: shippingResponse.ciudad || '',
-            pais: shippingResponse.pais || 'Colombia',
-            esPredeterminada: true,
-          };
-          globalThis.window.localStorage.setItem('checkout-address', JSON.stringify(checkoutAddress));
-          globalThis.window.localStorage.setItem('imagiq_default_address', JSON.stringify(checkoutAddress));
-        }
+        // La dirección ya fue guardada en checkout-address arriba
       }
 
       // Callback with the created address - ESPERAR la promesa si devuelve una
+      console.log('📞 [AddNewAddressForm] Llamando a onAddressAdded callback con dirección:', shippingResponse.id);
       const result = onAddressAdded?.(shippingResponse);
 
       // Si onAddressAdded devuelve una promesa, esperarla (para consultar candidate stores)
       if (result instanceof Promise) {
-        console.log('⏳ Esperando consulta de candidate stores...');
+        console.log('⏳ [AddNewAddressForm] Esperando promesa de onAddressAdded (candidate stores)...');
         await result;
-        console.log('✅ Candidate stores consultados');
+        console.log('✅ [AddNewAddressForm] Promesa completada, candidate stores consultados');
+      } else {
+        console.log('✅ [AddNewAddressForm] onAddressAdded completado (no promesa)');
       }
 
       // Resetear el ref después de guardar
@@ -1475,19 +1489,21 @@ export default function AddNewAddressForm({
           {/* Si hay onSubmitRef, significa que el botón de guardar está fuera del formulario (Step 2) */}
           {/* Si NO hay onSubmitRef, debemos mostrar el botón de guardar aquí dentro (Modales) */}
           {(!withContainer && onSubmitRef) ? (
-            // En Step2: Solo mostrar "Atrás" que ocupe todo el ancho
-            <button
-              type="button"
-              onClick={() => setCurrentStep(1)}
-              disabled={disabled}
-              className={`w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium transition ${
-                disabled
-                  ? "bg-gray-100 cursor-not-allowed opacity-60"
-                  : "hover:bg-gray-50"
-              }`}
-            >
-              Atrás
-            </button>
+            // En Step2: Solo mostrar "Atrás" si NO está oculto con hideBackButton
+            !hideBackButton && (
+              <button
+                type="button"
+                onClick={() => setCurrentStep(1)}
+                disabled={disabled}
+                className={`w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium transition ${
+                  disabled
+                    ? "bg-gray-100 cursor-not-allowed opacity-60"
+                    : "hover:bg-gray-50"
+                }`}
+              >
+                Atrás
+              </button>
+            )
           ) : (
             // En Modal: Mostrar ambos botones
             <>

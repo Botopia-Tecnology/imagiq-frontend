@@ -200,44 +200,94 @@ function ContentBlocksOverlay({
   forceShow?: boolean; // Forzar mostrar sin clases responsive
   bannerLinkUrl?: string | null; // URL del banner como fallback para CTAs
 }>) {
+  const [imageOffset, setImageOffset] = React.useState({ left: 0, top: 0, width: 100, height: 100 });
+
+  React.useEffect(() => {
+    const calculateImageOffset = () => {
+      // Buscar la imagen en el DOM
+      const img = document.querySelector('.banner-media-container img') as HTMLImageElement;
+      if (!img || !img.complete || !img.naturalWidth) return;
+
+      const container = img.parentElement;
+      if (!container) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const imageAspect = img.naturalWidth / img.naturalHeight;
+      const containerAspect = containerRect.width / containerRect.height;
+
+      let renderedWidth: number;
+      let renderedHeight: number;
+      let offsetX: number;
+      let offsetY: number;
+
+      // Calcular dimensiones con object-contain
+      if (imageAspect > containerAspect) {
+        renderedWidth = containerRect.width;
+        renderedHeight = containerRect.width / imageAspect;
+        offsetX = 0;
+        offsetY = (containerRect.height - renderedHeight) / 2;
+      } else {
+        renderedHeight = containerRect.height;
+        renderedWidth = containerRect.height * imageAspect;
+        offsetX = (containerRect.width - renderedWidth) / 2;
+        offsetY = 0;
+      }
+
+      // Calcular porcentajes relativos al contenedor
+      setImageOffset({
+        left: (offsetX / containerRect.width) * 100,
+        top: (offsetY / containerRect.height) * 100,
+        width: (renderedWidth / containerRect.width) * 100,
+        height: (renderedHeight / containerRect.height) * 100,
+      });
+    };
+
+    calculateImageOffset();
+    window.addEventListener('resize', calculateImageOffset);
+
+    // Escuchar cuando la imagen se carga
+    const img = document.querySelector('.banner-media-container img');
+    if (img) {
+      img.addEventListener('load', calculateImageOffset);
+    }
+
+    return () => {
+      window.removeEventListener('resize', calculateImageOffset);
+      if (img) {
+        img.removeEventListener('load', calculateImageOffset);
+      }
+    };
+  }, []);
+
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ padding: '2%' }}>
-      <div className="relative w-full h-full pointer-events-auto">
-        {blocks.map((block) => {
+    <>
+      {blocks.map((block) => {
         const position = isMobile ? block.position_mobile : block.position_desktop;
-        
+
         // Configuración del contenedor: usar mobile si existe, sino desktop
-        const textAlign = isMobile && block.textAlign_mobile 
-          ? block.textAlign_mobile 
-          : block.textAlign || 'left';
-        const configuredMaxWidth = isMobile && block.maxWidth_mobile 
-          ? block.maxWidth_mobile 
-          : block.maxWidth || '600px';
-        const gap = isMobile && block.gap_mobile 
-          ? block.gap_mobile 
+        const textAlign = isMobile && block.textAlign_mobile
+          ? block.textAlign_mobile
+          : block.textAlign || 'center';
+        const gap = isMobile && block.gap_mobile
+          ? block.gap_mobile
           : block.gap || '12px';
 
         // Si forceShow está activo, no usar clases responsive
-        const visibilityClass = forceShow 
-          ? 'absolute' 
-          : `absolute ${isMobile ? 'md:hidden' : 'hidden md:block'}`;
+        const visibilityClass = forceShow
+          ? 'absolute z-10'
+          : `absolute z-10 ${isMobile ? 'md:hidden' : 'hidden md:block'}`;
 
-        // CÁLCULO INTELIGENTE: Limitar maxWidth basado en la posición para evitar overflow
-        // El bloque usa transform: translate(-50%, -50%), así que se expande en ambas direcciones
-        const safetyMargin = 4; // 4% de margen de seguridad
-        
-        // Calcular espacio disponible hacia los lados (el contenido se centra con translate -50%)
-        const spaceLeft = position.x - safetyMargin; // Espacio a la izquierda
-        const spaceRight = 100 - position.x - safetyMargin; // Espacio a la derecha
-        const availableHorizontalSpace = Math.min(spaceLeft, spaceRight) * 2; // Multiplicar por 2 porque se expande en ambas direcciones
-        
-        // Convertir configuredMaxWidth a un porcentaje si está en px
-        const maxWidthInVw = configuredMaxWidth.includes('px') 
-          ? `min(${configuredMaxWidth}, ${availableHorizontalSpace}vw)` 
-          : `min(${configuredMaxWidth}, ${availableHorizontalSpace}%)`;
-        
-        // Aplicar límite inteligente
-        const maxWidth = maxWidthInVw;
+        // Ajustar transform basado en textAlign (el dashboard guarda según la justificación)
+        let transformX = '-50%'; // Por defecto: centrado
+        if (textAlign === 'left') {
+          transformX = '0%'; // Izquierda: el punto está en el borde izquierdo
+        } else if (textAlign === 'right') {
+          transformX = '-100%'; // Derecha: el punto está en el borde derecho
+        }
+
+        // Calcular posición ajustada a la imagen renderizada
+        const adjustedLeft = imageOffset.left + (position.x / 100) * imageOffset.width;
+        const adjustedTop = imageOffset.top + (position.y / 100) * imageOffset.height;
 
         // Estilos del título: usar mobile si existe, sino desktop
         const titleStyles = block.title && {
@@ -250,37 +300,19 @@ function ContentBlocksOverlay({
           textShadow: (isMobile && block.title_mobile?.textShadow) || block.title.textShadow || '2px 2px 4px rgba(0,0,0,0.5)',
         };
 
-        // Calcular espacio disponible vertical (top/bottom)
-        const spaceTop = position.y - safetyMargin;
-        const spaceBottom = 100 - position.y - safetyMargin;
-        const availableVerticalSpace = Math.min(spaceTop, spaceBottom) * 2;
-        const maxHeight = `${availableVerticalSpace}vh`;
-
         return (
           <div
             key={block.id}
             className={visibilityClass}
             style={{
-              left: `${position.x}%`,
-              top: `${position.y}%`,
-              transform: 'translate(-50%, -50%)',
-              maxWidth,
-              maxHeight,
-              position: 'relative', // Necesario para stretched link
-              overflow: 'hidden', // Importante: cortar cualquier contenido que se salga
-              boxSizing: 'border-box',
+              left: `${adjustedLeft}%`,
+              top: `${adjustedTop}%`,
+              transform: `translate(${transformX}, -50%)`,
             }}
           >
             <div
               className="flex flex-col"
-              style={{
-                gap,
-                // Aplicar word-wrap para evitar desbordamiento de texto
-                wordWrap: 'break-word',
-                overflowWrap: 'break-word',
-                hyphens: 'auto',
-                maxWidth: '100%',
-              }}
+              style={{ gap }}
             >
               {/* Título */}
               {block.title && (
@@ -378,8 +410,7 @@ function ContentBlocksOverlay({
           </div>
         );
       })}
-      </div>
-    </div>
+    </>
   );
 }
 
@@ -613,9 +644,10 @@ export default function DynamicBannerClean({
             const optimizedImageUrl = getCloudinaryUrl(banner.desktop_image_url, 'hero-banner');
 
             bannerDesktopMedia = (
-              <div
-                className="w-full h-full bg-contain bg-center bg-no-repeat"
-                style={{ backgroundImage: `url(${optimizedImageUrl})` }}
+              <img
+                src={optimizedImageUrl}
+                alt={banner.name || 'Banner'}
+                className="w-full h-full object-contain"
                 key={`desktop-image-${banner.id}-${index}`}
               />
             );
@@ -648,9 +680,10 @@ export default function DynamicBannerClean({
             const optimizedMobileImageUrl = getCloudinaryUrl(banner.mobile_image_url, 'mobile-banner');
 
             bannerMobileMedia = (
-              <div
-                className="w-full h-full bg-contain bg-center bg-no-repeat"
-                style={{ backgroundImage: `url(${optimizedMobileImageUrl})` }}
+              <img
+                src={optimizedMobileImageUrl}
+                alt={banner.name || 'Banner'}
+                className="w-full h-full object-contain"
                 key={`mobile-image-${banner.id}-${index}`}
               />
             );
@@ -672,7 +705,7 @@ export default function DynamicBannerClean({
               {!forceMobileView && (
                 <div
                   ref={isActive ? desktopRef : null}
-                  className="hidden md:block absolute inset-0"
+                  className="banner-media-container hidden md:block absolute inset-0"
                 >
                   {bannerDesktopMedia}
                 </div>
@@ -681,7 +714,7 @@ export default function DynamicBannerClean({
               {/* Vista Mobile - siempre visible si forceMobileView está activo */}
               <div
                 ref={isActive ? mobileRef : null}
-                className={forceMobileView ? "absolute inset-0" : "block md:hidden absolute inset-0"}
+                className={`banner-media-container ${forceMobileView ? "absolute inset-0" : "block md:hidden absolute inset-0"}`}
               >
                 {bannerMobileMedia}
               </div>

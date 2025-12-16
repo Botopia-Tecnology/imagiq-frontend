@@ -233,7 +233,32 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         "imagiq_user",
         {}
       );
-      const userId = user?.id || user?.user_id;
+      let userId = user?.id || user?.user_id;
+
+      // Si no hay userId en imagiq_user, intentar obtenerlo de checkout-address o imagiq_default_address
+      if (!userId) {
+        try {
+          const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
+          if (savedAddress) {
+            const parsed = JSON.parse(savedAddress);
+            if (parsed.usuario_id) {
+              userId = parsed.usuario_id;
+            }
+          }
+          
+          if (!userId) {
+            const defaultAddress = globalThis.window?.localStorage.getItem("imagiq_default_address");
+            if (defaultAddress) {
+              const parsed = JSON.parse(defaultAddress);
+              if (parsed.usuario_id) {
+                userId = parsed.usuario_id;
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error recuperando user_id de direcciones (onlyReadCache):', e);
+        }
+      }
 
       if (!userId || products.length === 0) {
         console.log('❌ Sin user_id o sin productos');
@@ -412,7 +437,34 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       "imagiq_user",
       {}
     );
-    const userId = user?.id || user?.user_id;
+    let userId = user?.id || user?.user_id;
+
+    // Si no hay userId en imagiq_user, intentar obtenerlo de checkout-address o imagiq_default_address
+    if (!userId) {
+      try {
+        const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
+        if (savedAddress) {
+          const parsed = JSON.parse(savedAddress);
+          if (parsed.usuario_id) {
+            userId = parsed.usuario_id;
+            console.log('👤 [useDelivery] User ID recuperado de checkout-address:', userId);
+          }
+        }
+        
+        if (!userId) {
+          const defaultAddress = globalThis.window?.localStorage.getItem("imagiq_default_address");
+          if (defaultAddress) {
+            const parsed = JSON.parse(defaultAddress);
+            if (parsed.usuario_id) {
+              userId = parsed.usuario_id;
+              console.log('👤 [useDelivery] User ID recuperado de imagiq_default_address:', userId);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error recuperando user_id de direcciones:', e);
+      }
+    }
 
     console.log('👤 DEBUG useDelivery - User ID obtenido:', {
       userId,

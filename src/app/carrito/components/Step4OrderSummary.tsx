@@ -209,7 +209,34 @@ export default function Step4OrderSummary({
       "imagiq_user",
       {}
     );
-    const userId = user?.id || user?.user_id;
+    let userId = user?.id || user?.user_id;
+
+    // Si no hay userId en imagiq_user, intentar obtenerlo de checkout-address o imagiq_default_address
+    if (!userId) {
+      try {
+        const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
+        if (savedAddress) {
+          const parsed = JSON.parse(savedAddress);
+          if (parsed.usuario_id) {
+            userId = parsed.usuario_id;
+            // console.log('👤 [Step4OrderSummary] User ID recuperado de checkout-address:', userId);
+          }
+        }
+        
+        if (!userId) {
+          const defaultAddress = globalThis.window?.localStorage.getItem("imagiq_default_address");
+          if (defaultAddress) {
+            const parsed = JSON.parse(defaultAddress);
+            if (parsed.usuario_id) {
+              userId = parsed.usuario_id;
+              // console.log('👤 [Step4OrderSummary] User ID recuperado de imagiq_default_address:', userId);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error recuperando user_id de direcciones:', e);
+      }
+    }
 
     if (!userId) {
       setIsLoadingCanPickUp(false);
@@ -304,44 +331,50 @@ export default function Step4OrderSummary({
     // - Si solo es por debug (Step 7): establecer null sin loading para no bloquear la UI
     setGlobalCanPickUp(null);
     
-    // CORRECCIÓN: Solo activar loading si es CRÍTICO calcularlo (shouldCalculateCanPickUp=true)
-    // Si solo es por debug (shouldFetch=true pero shouldCalculateCanPickUp=false), NO activar loading
+    // CORRECCIÓN: Si no hay datos en caché, SIEMPRE intentar hacer fetch de respaldo
+    // Si shouldCalculateCanPickUp es true, mostramos loading.
+    // Si es false (Step 7), hacemos fetch silencioso.
+    
     if (shouldCalculateCanPickUp) {
       setIsLoadingCanPickUp(true);
-      console.log('⏳ [Step4OrderSummary] isLoadingCanPickUp establecido en true (esperando caché)');
-
-      // NUEVO: Intentar hacer fetch de respaldo si estamos en steps 4-6 donde useDelivery no está activo
-      // Esto soluciona el problema de que el caché no se llena cuando se cambia la dirección desde el navbar en estos pasos
-      if (typeof window !== 'undefined') {
-        const path = window.location.pathname;
-        const isCheckoutStep = path.includes('/step4') || path.includes('/step5') || path.includes('/step6');
-        
-        if (isCheckoutStep) {
-          console.log('🔄 [Step4OrderSummary] En Step 4-6 y sin caché - Iniciando fetch de respaldo...');
-          
-          // Hacer la petición asíncronamente sin bloquear
-          productEndpoints.getCandidateStores({
-            products: productsToCheck,
-            user_id: userId
-          })
-          .then((response) => {
-            if (response.data) {
-              console.log('✅ [Step4OrderSummary] Fetch de respaldo exitoso');
-              // Guardar en caché y notificar
-              // Esto disparará el evento canPickUpCache-updated que el listener capturará
-              setGlobalCanPickUpCache(cacheKey, response.data.canPickUp, response.data, addressId);
-            }
-          })
-          .catch((error) => {
-            console.error('❌ [Step4OrderSummary] Error en fetch de respaldo:', error);
-            // Si falla, quitar loading para no bloquear al usuario
-            setIsLoadingCanPickUp(false);
-          });
-        }
-      }
+      console.log('⏳ [Step4OrderSummary] isLoadingCanPickUp establecido en true (esperando caché o fetch respaldo)');
     } else {
       setIsLoadingCanPickUp(false);
-      console.log('📖 [Step4OrderSummary] Modo pasivo/debug, no establecer loading');
+      console.log('📖 [Step4OrderSummary] Modo pasivo/debug (Step 7), fetch silencioso iniciado');
+    }
+
+    // Intentar hacer fetch de respaldo siempre que no haya caché
+    // Esto soluciona el problema de que el caché no se llena tras un refresh en steps 4-7
+    if (typeof window !== 'undefined') {
+       // Ya no filtramos por path, si el componente está montado y no tiene datos, los necesita.
+        console.log('🔄 [Step4OrderSummary] Sin caché - Iniciando fetch de respaldo...');
+        
+        // Hacer la petición asíncronamente sin bloquear
+        productEndpoints.getCandidateStores({
+          products: productsToCheck,
+          user_id: userId
+        })
+        .then((response) => {
+          if (response.data) {
+            console.log('✅ [Step4OrderSummary] Fetch de respaldo exitoso');
+            // Guardar en caché y notificar
+            // Esto disparará el evento canPickUpCache-updated que el listener capturará
+            setGlobalCanPickUpCache(cacheKey, response.data.canPickUp, response.data, addressId);
+            
+            // Si estábamos en modo silencioso (Step 7), actualizar el estado local manualmente
+            // porque el listener podría no activarse o tener delay
+            if (!shouldCalculateCanPickUp) {
+               setGlobalCanPickUp(response.data.canPickUp);
+            }
+          }
+        })
+        .catch((error) => {
+          console.error('❌ [Step4OrderSummary] Error en fetch de respaldo:', error);
+          // Si falla, asegurarnos de quitar loading
+          if (shouldCalculateCanPickUp) {
+            setIsLoadingCanPickUp(false);
+          }
+        });
     }
   }, [products, shouldCalculateCanPickUp]);
 

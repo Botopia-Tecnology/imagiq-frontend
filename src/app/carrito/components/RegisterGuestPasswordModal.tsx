@@ -4,12 +4,15 @@ import React, { useState, useEffect } from "react";
 import { X, Eye, EyeOff } from "lucide-react";
 import { apiPost } from "@/lib/api-client";
 import { toast } from "sonner";
+import { useAuthContext } from "@/features/auth/context";
 
 interface RegisterGuestPasswordModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   userEmail: string;
+  userName?: string;
+  userLastName?: string;
 }
 
 export default function RegisterGuestPasswordModal({
@@ -17,7 +20,10 @@ export default function RegisterGuestPasswordModal({
   onClose,
   onSuccess,
   userEmail,
+  userName,
+  userLastName,
 }: RegisterGuestPasswordModalProps) {
+  const { login } = useAuthContext();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -84,19 +90,31 @@ export default function RegisterGuestPasswordModal({
         }
       );
 
-      toast.success(response.message || "¡Cuenta registrada exitosamente!");
+      toast.success("Cuenta creada con éxito");
       
-      // Actualizar el usuario en localStorage (actualizar tanto 'rol' como 'role' para compatibilidad)
+      // Actualizar el usuario en localStorage y Contexto
       const currentUser = localStorage.getItem("imagiq_user");
       if (currentUser) {
         try {
           const user = JSON.parse(currentUser);
           user.rol = 2; // Cambiar a usuario regular (formato español del backend)
           user.role = 2; // Cambiar a usuario regular (formato inglés del frontend)
-          localStorage.setItem("imagiq_user", JSON.stringify(user));
-          console.log("✅ [Modal] Usuario actualizado en localStorage:", user);
+          
+          // Inyectar nombre si viene de props y no existe en user
+          if (userName && !user.nombre) {
+            user.nombre = userName;
+          }
+          if (userLastName && !user.apellido) {
+            user.apellido = userLastName;
+          }
+          
+          // Actualizar contexto global para "iniciar sesión" con los nuevos datos
+          // Esto actualiza el estado de la app y el localStorage
+          login(user);
+          
+          console.log("✅ [Modal] Sesión actualizada a usuario regular:", user);
         } catch (err) {
-          console.error("Error actualizando usuario en localStorage:", err);
+          console.error("Error actualizando usuario:", err);
         }
       }
 

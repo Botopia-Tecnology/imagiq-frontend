@@ -360,26 +360,32 @@ export default function Step7({ onBack }: Step7Props) {
         });
       }
     } else {
-      const shippingAddress = localStorage.getItem("checkout-address");
+      // Buscar primero en checkout-address, si no existe buscar en imagiq_default_address (para invitados)
+      let shippingAddress = localStorage.getItem("checkout-address");
+      if (!shippingAddress) {
+        shippingAddress = localStorage.getItem("imagiq_default_address");
+        console.log("📍 [Step7 - useEffect] No hay checkout-address, usando imagiq_default_address para invitado");
+      }
+      
       if (shippingAddress) {
         try {
           const parsed = JSON.parse(shippingAddress);
           console.log("📍 [Step7 - useEffect] Dirección de envío cargada desde localStorage:", parsed);
           console.log("📍 [Step7 - useEffect] UUID de dirección:", parsed.id);
           console.log("📍 [Step7 - useEffect] Usuario ID (de dirección):", parsed.usuario_id);
-          console.log("📍 [Step7 - useEffect] Línea uno:", parsed.linea_uno);
+          console.log("📍 [Step7 - useEffect] Línea uno:", parsed.linea_uno || parsed.direccionFormateada);
           console.log("📍 [Step7 - useEffect] Ciudad:", parsed.ciudad);
           console.log("📍 [Step7 - useEffect] Código DANE:", parsed.codigo_dane);
           setShippingData({
             type: "delivery",
-            address: parsed.linea_uno,
+            address: parsed.linea_uno || parsed.direccionFormateada || parsed.lineaUno,
             city: parsed.ciudad,
           });
         } catch (error) {
           console.error("Error parsing shipping address:", error);
         }
       } else {
-        console.warn("⚠️ [Step7 - useEffect] No se encontró dirección en localStorage (checkout-address)");
+        console.warn("⚠️ [Step7 - useEffect] No se encontró dirección en localStorage (ni checkout-address ni imagiq_default_address)");
       }
     }
 
@@ -1555,21 +1561,25 @@ export default function Step7({ onBack }: Step7Props) {
   };
 
   // Callback cuando el usuario se registra exitosamente
-  const handleRegisterSuccess = () => {
+  const handleRegisterSuccess = async () => {
+    console.log("✅ [STEP7] handleRegisterSuccess ejecutado - Cerrando modal y procesando orden");
     setShowPasswordModal(false);
     setPendingOrder(false);
-    // Procesar la orden después de registrarse
-    processOrder();
+    
+    // Procesar la orden después de registrarse (sin delay, processOrder maneja isProcessing)
+    console.log("🔄 [STEP7] Iniciando processOrder después del registro exitoso");
+    await processOrder();
   };
 
   // Callback cuando el usuario cancela el modal
-  const handleModalClose = () => {
+  const handleModalClose = async () => {
+    console.log("🔍 [STEP7] handleModalClose ejecutado - Usuario continúa como invitado");
     setShowPasswordModal(false);
-    if (pendingOrder) {
-      // Si había una orden pendiente, procesarla como invitado
-      setPendingOrder(false);
-      processOrder();
-    }
+    setPendingOrder(false);
+    
+    // Procesar la orden como invitado (sin delay, processOrder maneja isProcessing)
+    console.log("🔄 [STEP7] Procesando orden como invitado");
+    await processOrder();
   };
 
   const getPaymentMethodLabel = (method: string) => {
@@ -2424,6 +2434,18 @@ export default function Step7({ onBack }: Step7Props) {
             }
             return "";
           })()
+        }
+        userName={
+          loggedUser?.nombre || 
+          (billingData?.nombre ? billingData.nombre.split(" ")[0] : "") ||
+          recipientData?.firstName ||
+          ""
+        }
+        userLastName={
+          loggedUser?.apellido ||
+          (billingData?.nombre ? billingData.nombre.split(" ").slice(1).join(" ") : "") ||
+          recipientData?.lastName ||
+          ""
         }
       />
     </div>

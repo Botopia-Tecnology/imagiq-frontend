@@ -253,32 +253,17 @@ export default function Step2({
       // Guardar userId temporalmente (solo en estado, no en localStorage todavía)
       setGuestUserId(registerResult.userId);
 
-      // 2. Enviar OTP por WhatsApp (método por defecto)
-      try {
-        await apiPost("/api/auth/otp/send-register", {
-          telefono: guestForm.celular,
-          metodo: "whatsapp",
-        });
-        setOtpSent(true);
-      } catch (otpError) {
-        // Si falla WhatsApp, intentar por email
-        try {
-          await apiPost("/api/auth/otp/send-email-register", {
-            email: guestForm.email,
-          });
-          setSendMethod('email');
-          setOtpSent(true);
-        } catch (emailError) {
-          throw new Error("No se pudo enviar el código de verificación. Por favor intenta de nuevo.");
-        }
-      }
+      // 2. Establecer estado inicial para OTP pero SIN enviarlo aún
+      // Esto permite que el usuario seleccione el método de envío (WhatsApp o Email)
+      setOtpSent(false);
 
       // 3. Guardar estado temporal en sessionStorage (se elimina al cerrar navegador)
       sessionStorage.setItem("guest-otp-process", JSON.stringify({
         guestForm,
         userId: registerResult.userId,
-        sendMethod,
+        sendMethod, // Método por defecto, pero no enviado aún
         timestamp: Date.now(),
+        otpSent: false // Flag explícito
       }));
 
       // 4. Cambiar a paso de OTP
@@ -603,7 +588,9 @@ export default function Step2({
         setGuestUserId(processData.userId);
         setSendMethod(processData.sendMethod || 'whatsapp');
         setGuestStep('otp'); // Continuar en paso OTP
-        setOtpSent(true);
+        // Restaurar estado de envío (si no existe, asumir enviado para compatibilidad hacia atrás, 
+        // pero para nuevos procesos será false hasta que se envíe)
+        setOtpSent(processData.otpSent !== undefined ? processData.otpSent : true);
       } catch (err) {
         console.error("Error restaurando proceso OTP:", err);
         sessionStorage.removeItem("guest-otp-process");

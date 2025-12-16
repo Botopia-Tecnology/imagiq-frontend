@@ -206,28 +206,48 @@ export default function Step3({
     return () => clearTimeout(timer);
   }, []);
 
-  // IMPORTANTE: Validar que haya dirección al cargar Step3, si no hay, redirigir a Step2
+  // IMPORTANTE: Validar que haya dirección al cargar Step3 SOLO para usuarios invitados
+  // Usuarios regulares (rol 2) pueden agregar dirección directamente en step3
   React.useEffect(() => {
     // Esperar un momento para que useDelivery cargue la dirección
     const checkAddress = setTimeout(() => {
-      // Verificar si hay dirección en localStorage
+      // Verificar el rol del usuario
+      const token = localStorage.getItem("imagiq_token");
+      let userRole = null;
+      try {
+        const userInfo = localStorage.getItem("imagiq_user");
+        if (userInfo) {
+          const user = JSON.parse(userInfo);
+          userRole = user.rol ?? user.role;
+        }
+      } catch (error) {
+        console.error("Error al obtener rol del usuario:", error);
+      }
+
+      // Si es usuario regular (rol !== 3) con token, NO redirigir
+      // Permitir que agregue dirección en step3
+      if (token && userRole !== 3) {
+        console.log("✅ [STEP3] Usuario regular puede agregar dirección aquí, NO redirigir");
+        return;
+      }
+
+      // Solo verificar dirección para usuarios invitados (rol 3)
       const savedAddress = safeGetLocalStorage<Address | null>(
         "checkout-address",
         null
       );
       
-      // Si no hay dirección guardada y el método de entrega es domicilio, redirigir a Step2
-      if (!savedAddress && deliveryMethod === "domicilio") {
-        console.log("⚠️ No hay dirección seleccionada, redirigiendo a Step2");
+      // Si es invitado sin dirección y el método de entrega es domicilio, redirigir a Step2
+      if (!savedAddress && deliveryMethod === "domicilio" && userRole === 3) {
+        console.log("⚠️ Usuario invitado sin dirección, redirigiendo a Step2");
         toast.error("Por favor selecciona una dirección para continuar");
         router.push("/carrito/step2");
         return;
       }
       
-      // También verificar el estado de address del hook useDelivery
-      // Si después de cargar no hay dirección y el método es domicilio, redirigir
-      if (!address && deliveryMethod === "domicilio" && hasCompletedInitialLoadRef.current) {
-        console.log("⚠️ No hay dirección en useDelivery, redirigiendo a Step2");
+      // También verificar el estado de address del hook useDelivery (solo para invitados)
+      if (!address && deliveryMethod === "domicilio" && hasCompletedInitialLoadRef.current && userRole === 3) {
+        console.log("⚠️ Usuario invitado sin dirección en useDelivery, redirigiendo a Step2");
         toast.error("Por favor selecciona una dirección para continuar");
         router.push("/carrito/step2");
       }

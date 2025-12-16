@@ -204,45 +204,18 @@ export default function Step4OrderSummary({
       console.log('📖 [Step4OrderSummary] shouldCalculateCanPickUp=false, solo leyendo del caché (Step7)');
     }
 
-    // Obtener user_id del localStorage
-    const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
-      "imagiq_user",
-      {}
-    );
-    let userId = user?.id || user?.user_id;
-
-    // Si no hay userId en imagiq_user, intentar obtenerlo de checkout-address o imagiq_default_address
-    if (!userId) {
-      try {
-        const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
-        if (savedAddress) {
-          const parsed = JSON.parse(savedAddress);
-          if (parsed.usuario_id) {
-            userId = parsed.usuario_id;
-            // console.log('👤 [Step4OrderSummary] User ID recuperado de checkout-address:', userId);
-          }
-        }
-        
-        if (!userId) {
-          const defaultAddress = globalThis.window?.localStorage.getItem("imagiq_default_address");
-          if (defaultAddress) {
-            const parsed = JSON.parse(defaultAddress);
-            if (parsed.usuario_id) {
-              userId = parsed.usuario_id;
-              // console.log('👤 [Step4OrderSummary] User ID recuperado de imagiq_default_address:', userId);
-            }
-          }
-        }
-      } catch (e) {
-        console.error('Error recuperando user_id de direcciones:', e);
-      }
-    }
+    // IMPORTANTE: Obtener userId de forma consistente usando la utilidad centralizada
+    const { getUserId } = await import('@/app/carrito/utils/getUserId');
+    const userId = getUserId();
 
     if (!userId) {
+      console.warn('⚠️ [Step4OrderSummary] No se encontró userId, no se puede buscar en caché');
       setIsLoadingCanPickUp(false);
       setGlobalCanPickUp(null);
       return;
     }
+
+    console.log('✅ [Step4OrderSummary] UserId obtenido:', userId);
 
     // Preparar TODOS los productos del carrito para construir la clave del caché
     // IMPORTANTE: Usar SKU regular (NO skuPostback) para coincidir con useDelivery
@@ -257,10 +230,21 @@ export default function Step4OrderSummary({
     let addressId: string | null = null;
     if (typeof globalThis.window !== "undefined") {
       try {
-        const savedAddress = globalThis.window.localStorage.getItem(
-          "checkout-address"
-        );
+        let savedAddress = globalThis.window.localStorage.getItem("checkout-address");
         console.log('🔍 [Step4OrderSummary] checkout-address raw:', savedAddress);
+        
+        // Si no hay checkout-address, intentar usar imagiq_default_address como fallback
+        if (!savedAddress || savedAddress === "null" || savedAddress === "undefined") {
+          console.log('⚠️ [Step4OrderSummary] No hay checkout-address, intentando con imagiq_default_address...');
+          const defaultAddress = globalThis.window.localStorage.getItem("imagiq_default_address");
+          if (defaultAddress && defaultAddress !== "null" && defaultAddress !== "undefined") {
+            // Copiar imagiq_default_address a checkout-address para mantener consistencia
+            globalThis.window.localStorage.setItem("checkout-address", defaultAddress);
+            savedAddress = defaultAddress;
+            console.log('✅ [Step4OrderSummary] imagiq_default_address copiado a checkout-address');
+          }
+        }
+        
         if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
           const parsed = JSON.parse(savedAddress) as { id?: string; ciudad?: string; linea_uno?: string };
           console.log('🔍 [Step4OrderSummary] checkout-address parsed:', { ciudad: parsed.ciudad, linea_uno: parsed.linea_uno, id: parsed.id });
@@ -306,6 +290,33 @@ export default function Step4OrderSummary({
       productsCount: productsToCheck.length,
       cacheKey: cacheKey.substring(0, 100) + '...'
     });
+
+    // DEBUG: Mostrar TODA la información del caché
+    console.log('🔍 [Step4OrderSummary] DEBUG COMPLETO DEL CACHÉ:');
+    console.log('  - userId:', userId);
+    console.log('  - addressId:', addressId);
+    console.log('  - productsToCheck:', productsToCheck);
+    console.log('  - cacheKey completa:', cacheKey);
+
+    // Verificar si hay algo en localStorage
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem('imagiq_candidate_stores_cache');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          console.log('📦 [Step4OrderSummary] Caché encontrado en localStorage:');
+          console.log('  - key en caché:', parsed.key);
+          console.log('  - addressId en caché:', parsed.addressId);
+          console.log('  - canPickUp en caché:', parsed.value);
+          console.log('  - timestamp:', new Date(parsed.timestamp).toLocaleString());
+          console.log('  - ¿Las claves coinciden?', parsed.key === cacheKey);
+        } catch (e) {
+          console.error('  - Error parseando caché:', e);
+        }
+      } else {
+        console.log('📦 [Step4OrderSummary] NO hay caché en localStorage');
+      }
+    }
 
     const cachedValue = getGlobalCanPickUpFromCache(cacheKey);
 

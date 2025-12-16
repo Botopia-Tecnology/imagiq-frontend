@@ -445,6 +445,11 @@ export default function Step2({
         localStorage.setItem("imagiq_token", result.access_token);
         localStorage.setItem("imagiq_user", JSON.stringify(userWithRole));
 
+        // CRÍTICO: Guardar userId de forma consistente en todas las fuentes
+        const { saveUserId } = await import('@/app/carrito/utils/getUserId');
+        saveUserId(result.user.id, result.user.email);
+        console.log('✅ [Step2] UserId guardado de forma consistente:', result.user.id);
+
         // Guardar cédula para autocompletar
         if (globalThis.window !== undefined) {
           globalThis.window.localStorage.setItem(
@@ -528,12 +533,32 @@ export default function Step2({
       return;
     }
 
-    // PRIORIDAD: Si el usuario invitado ya tiene dirección, continuar directamente a Step3
-    // Esto permite que usuarios invitados con dirección ya guardada avancen sin pasar por formularios
-    if (isRegisteredAsGuest && hasAddedAddress && typeof onContinue === "function") {
-      console.log("✅ [STEP2] Usuario invitado con dirección, avanzando a Step3");
+    // PRIORIDAD 1: Si ya tiene dirección agregada (invitado O regular), continuar a Step3
+    // Esto cubre tanto usuarios invitados como regulares que agregaron dirección
+    if (hasAddedAddress && typeof onContinue === "function") {
+      console.log("✅ [STEP2 handleContinue] Usuario con dirección agregada, avanzando a Step3");
       onContinue();
       return;
+    }
+
+    // PRIORIDAD 2: Si es usuario regular sin dirección, pedirle que agregue dirección
+    // (aunque los usuarios regulares NO deberían estar en step2)
+    const token = localStorage.getItem("imagiq_token");
+    if (token) {
+      try {
+        const userInfo = localStorage.getItem("imagiq_user");
+        if (userInfo) {
+          const user = JSON.parse(userInfo);
+          const userRole = user.rol ?? user.role;
+          if (userRole === 2) {
+            console.log("⚠️ [STEP2 handleContinue] Usuario regular sin dirección en step2 (no debería ocurrir)");
+            toast.error("Por favor agrega una dirección de envío para continuar");
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Error verificando rol de usuario:", error);
+      }
     }
 
     // Si está en paso de formulario de invitado, hacer el registro
@@ -899,11 +924,47 @@ export default function Step2({
 
   // Handler para cuando se agrega una dirección exitosamente
   const handleAddressAdded = async (address: Address) => {
+    console.log("🎯 [handleAddressAdded] INICIO - Dirección recibida:", {
+      id: address.id,
+      ciudad: address.ciudad,
+      hasId: !!address.id
+    });
     console.log("✅ Dirección agregada exitosamente:", address);
     console.log("📦 DEBUG - Productos en carrito:", {
       length: cartProducts.length,
       products: cartProducts.map(p => ({ sku: p.sku, quantity: p.quantity, name: p.name }))
     });
+
+    // CRÍTICO: Guardar la dirección en checkout-address INMEDIATAMENTE
+    // Esto es necesario para que Step3 y Step4 puedan leer la dirección
+    console.log("💾 [handleAddressAdded] Guardando dirección en checkout-address...");
+    try {
+      // IMPORTANTE: Obtener userId de forma consistente
+      const { getUserId } = await import('@/app/carrito/utils/getUserId');
+      const userId = getUserId();
+
+      // Obtener email del usuario desde localStorage
+      const savedUser = safeGetLocalStorage<{ email?: string; id?: string } | null>("imagiq_user", null);
+      const userEmail = savedUser?.email || '';
+
+      const checkoutAddress = {
+        id: address.id,
+        usuario_id: userId || address.usuarioId || '',
+        email: userEmail,
+        linea_uno: address.direccionFormateada || address.lineaUno || '',
+        codigo_dane: address.codigo_dane || '',
+        ciudad: address.ciudad || '',
+        pais: address.pais || 'Colombia',
+        esPredeterminada: address.esPredeterminada || true,
+      };
+      localStorage.setItem('checkout-address', JSON.stringify(checkoutAddress));
+      console.log('✅ Dirección guardada en checkout-address con userId consistente:', {
+        ...checkoutAddress,
+        usuario_id: checkoutAddress.usuario_id
+      });
+    } catch (error) {
+      console.error('❌ Error guardando dirección en checkout-address:', error);
+    }
 
     // Activar estado de loading
     setIsSavingAddress(true);
@@ -944,13 +1005,12 @@ export default function Step2({
       const { productEndpoints } = await import('@/lib/api');
       console.log('✅ Módulo productEndpoints importado');
 
-      // Obtener el user_id del localStorage
-      const savedUser = safeGetLocalStorage<{ id?: string } | null>("imagiq_user", null);
-      const userId = savedUser?.id;
+      // IMPORTANTE: Obtener userId de forma consistente usando la utilidad centralizada
+      const { getUserId } = await import('@/app/carrito/utils/getUserId');
+      const userId = getUserId();
 
       console.log('👤 DEBUG - Usuario obtenido:', {
         userId,
-        savedUser,
         hasUserId: !!userId
       });
 
@@ -997,15 +1057,18 @@ export default function Step2({
 
       console.log('✅ Candidate stores consultados exitosamente:', {
         canPickUp: response?.data?.canPickUp,
-        storesCount: response?.data?.stores ? Object.keys(response.data.stores).length : 0
+        storesCount: response?.data?.stores ? Object.keys(response.data.stores).length : 0,
+        hasData: !!response?.data,
+        responseKeys: response?.data ? Object.keys(response.data) : []
       });
 
       // IMPORTANTE: Procesar y guardar la respuesta en el caché
       // Esto es crucial para que Step3 pueda leer los datos del caché
       if (response?.data) {
-        console.log('💾 Guardando respuesta en caché...');
+        console.log('💾 [handleAddressAdded] Guardando respuesta en caché...');
         // Importar las funciones de caché
         const { buildGlobalCanPickUpKey, setGlobalCanPickUpCache } = await import('@/app/carrito/utils/globalCanPickUpCache');
+        console.log('📦 [handleAddressAdded] Funciones de caché importadas');
 
         // Construir la clave de caché con el addressId correcto
         const cacheKey = buildGlobalCanPickUpKey({
@@ -1013,20 +1076,46 @@ export default function Step2({
           products,
           addressId,
         });
+        console.log('🔑 [handleAddressAdded] Clave de caché construida:', cacheKey);
+        console.log('🔍 [handleAddressAdded] DEBUG COMPLETO AL GUARDAR:');
+        console.log('  - userId:', userId);
+        console.log('  - addressId:', addressId);
+        console.log('  - products:', products);
+        console.log('  - canPickUp:', response.data.canPickUp);
+        console.log('  - cacheKey completa:', cacheKey);
 
         // Guardar en caché con la respuesta completa
         setGlobalCanPickUpCache(cacheKey, response.data.canPickUp, response.data, addressId);
-        console.log('✅ Respuesta guardada en caché:', {
+        console.log('✅ [handleAddressAdded] Respuesta guardada en caché:', {
           cacheKey,
           canPickUp: response.data.canPickUp,
           addressId
         });
+
+        // Verificar que se guardó correctamente
+        if (typeof window !== 'undefined') {
+          const stored = window.localStorage.getItem('imagiq_candidate_stores_cache');
+          if (stored) {
+            try {
+              const parsed = JSON.parse(stored);
+              console.log('✅ [handleAddressAdded] VERIFICACIÓN - Caché guardado en localStorage:');
+              console.log('  - key en caché:', parsed.key);
+              console.log('  - addressId en caché:', parsed.addressId);
+              console.log('  - canPickUp en caché:', parsed.value);
+              console.log('  - ¿Las claves coinciden?', parsed.key === cacheKey);
+            } catch (e) {
+              console.error('  - Error verificando caché:', e);
+            }
+          } else {
+            console.error('❌ [handleAddressAdded] VERIFICACIÓN FALLIDA - NO se guardó en localStorage');
+          }
+        }
       } else {
-        console.warn('⚠️ La respuesta del endpoint no contiene datos para guardar en caché');
+        console.warn('⚠️ [handleAddressAdded] La respuesta del endpoint no contiene datos para guardar en caché');
       }
 
       // IMPORTANTE: Solo avanzar DESPUÉS de guardar en caché exitosamente
-      console.log('🏁 Candidate stores calculado y guardado en caché, ahora sí avanzando a Step3');
+      console.log('🏁 [handleAddressAdded] Candidate stores calculado y guardado en caché, ahora sí avanzando a Step3');
       
       // Marcar que se agregó la dirección exitosamente
       setHasAddedAddress(true);

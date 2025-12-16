@@ -9,10 +9,41 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useVisibleCategories } from './useVisibleCategories';
 import { usePreloadCategoryMenus } from './usePreloadCategoryMenus';
-import { menusEndpoints, type Submenu } from '@/lib/api';
-import { usePrefetchProducts } from './usePrefetchProducts';
+import { getSubmenusFromCache, type Submenu } from '@/lib/api';
+import { productCache } from '@/lib/productCache';
+import { executeBatchPrefetch } from '@/lib/batchPrefetch';
+import { usePrefetchCoordinator } from './usePrefetchCoordinator';
 import { isStaticCategoryUuid } from '@/constants/staticCategories';
-import type { VisibleCategory } from '@/lib/api';
+import type { VisibleCategory, ProductFilterParams } from '@/lib/api';
+
+// Mapeo de secciones de ofertas a filtros de API
+const ofertasFiltersMap: Record<string, { categoria?: string; menuUuid?: string }> = {
+  accesorios: { categoria: "IM", menuUuid: '87c54352-5181-45b7-831d-8e9470d2288c' },
+  "tv-monitores-audio": { categoria: "AV,IT" },
+  "smartphones-tablets": { categoria: "IM", menuUuid: 'ff59c937-78ac-4f83-8c5e-2c3048b4ebb7,7609faf8-4c39-4227-915e-0d439d717e84' },
+  electrodomesticos: { categoria: "DA" },
+};
+
+// Construir parámetros para una sección de ofertas
+const buildOfertasParams = (seccion: string): ProductFilterParams | null => {
+  const sectionFilters = ofertasFiltersMap[seccion];
+  if (!sectionFilters) {
+    return null;
+  }
+
+  const params: ProductFilterParams = {
+    page: 1,
+    limit: 50,
+    sortBy: 'precio',
+    sortOrder: 'desc',
+    precioMin: 1,
+    stockMinimo: 1,
+    conDescuento: true,
+    ...sectionFilters,
+  };
+
+  return params;
+};
 
 // Control de concurrencia: máximo de peticiones simultáneas (aumentado para precarga agresiva)
 const MAX_CONCURRENT_REQUESTS = 30;
@@ -27,9 +58,8 @@ const MENU_CHECK_INTERVAL = 100; // Verificar cada 100ms
 export function usePreloadAllProducts() {
   const { visibleCategories, loading: categoriesLoading } = useVisibleCategories();
   const { preloadedMenus, isLoaded: menusLoaded } = usePreloadCategoryMenus();
-  const { prefetchProducts } = usePrefetchProducts();
+  const { shouldPrefetch } = usePrefetchCoordinator();
   const hasPreloadedRef = useRef(false);
-  const prefetchingRef = useRef<Set<string>>(new Set());
 
   /**
    * Espera activamente a que todos los menús estén cargados
@@ -52,147 +82,150 @@ export function usePreloadAllProducts() {
       // Esperar un poco antes de verificar de nuevo
       await new Promise(resolve => setTimeout(resolve, MENU_CHECK_INTERVAL));
     }
-    
-    // Si llegamos aquí, algunos menús no se cargaron a tiempo, pero continuamos de todas formas
-    console.debug('[PreloadAllProducts] Algunos menús no se cargaron a tiempo, continuando de todas formas');
   }, []);
 
   /**
-   * Precarga todos los submenús de todos los menús en paralelo
+   * Obtiene todos los submenús desde el caché (ya precargados por usePreloadCategoryMenus)
+   * No hace peticiones HTTP, solo lee del caché
    */
-  const preloadAllSubmenus = useCallback(async (categories: VisibleCategory[]): Promise<Map<string, Submenu[]>> => {
+  const getSubmenusFromCacheMap = useCallback((categories: VisibleCategory[]): Map<string, Submenu[]> => {
     const submenusMap = new Map<string, Submenu[]>();
-    const submenuPromises: Array<Promise<void>> = [];
 
-    // Recopilar todos los menús de todas las categorías
-    const allMenus: Array<{ menuUuid: string; categoryCode: string }> = [];
-    
+    // Recopilar todos los menús de todas las categorías y leer submenús desde caché
     for (const category of categories) {
       if (!category.uuid || !category.nombre) continue;
       const menus = preloadedMenus[category.uuid] || [];
       
       for (const menu of menus) {
         if (menu.activo && menu.uuid) {
-          allMenus.push({
-            menuUuid: menu.uuid,
-            categoryCode: category.nombre,
-          });
+          // Leer submenús directamente del caché (ya precargados)
+          const cachedSubmenus = getSubmenusFromCache(menu.uuid);
+          if (cachedSubmenus) {
+            const activeSubmenus = cachedSubmenus.filter((submenu) => submenu.activo);
+            submenusMap.set(menu.uuid, activeSubmenus);
+          } else {
+            // Si no están en caché, usar array vacío (evitar peticiones HTTP)
+            submenusMap.set(menu.uuid, []);
+          }
         }
       }
     }
-
-    // Precargar todos los submenús en paralelo (sin límite de concurrencia para submenús)
-    for (const { menuUuid } of allMenus) {
-      const promise = menusEndpoints
-        .getSubmenus(menuUuid)
-        .then((response) => {
-          if (response.success && response.data) {
-            const activeSubmenus = (response.data as Submenu[]).filter(
-              (submenu) => submenu.activo
-            );
-            submenusMap.set(menuUuid, activeSubmenus);
-          }
-        })
-        .catch((error) => {
-          // Silenciar errores al cargar submenús
-          console.debug(`[PreloadAllProducts] Error cargando submenús para menú ${menuUuid}:`, error);
-        });
-
-      submenuPromises.push(promise);
-    }
-
-    // Esperar a que todos los submenús se carguen completamente
-    await Promise.allSettled(submenuPromises);
     
     return submenusMap;
   }, [preloadedMenus]);
 
   /**
-   * Precarga todas las combinaciones posibles de productos
+   * Construye los parámetros de API para un prefetch
+   */
+  const buildPrefetchParams = useCallback((
+    categoryCode: string,
+    menuUuid?: string,
+    submenuUuid?: string
+  ): ProductFilterParams => {
+    const params: ProductFilterParams = {
+      page: 1,
+      limit: 50,
+      precioMin: 1,
+      lazyLimit: 6,
+      lazyOffset: 0,
+      sortBy: "precio",
+      sortOrder: "desc",
+      categoria: categoryCode,
+    };
+
+    if (menuUuid) {
+      params.menuUuid = menuUuid;
+    }
+    if (submenuUuid) {
+      params.submenuUuid = submenuUuid;
+    }
+
+    return params;
+  }, []);
+
+  /**
+   * Precarga todas las combinaciones posibles de productos usando batch endpoint
    */
   const preloadAllCombinations = useCallback(async (categories: VisibleCategory[]) => {
     // Paso 1: Esperar activamente a que todos los menús estén cargados
     await waitForAllMenus(categories, menusLoaded);
 
-    // Paso 2: Precargar todos los submenús en paralelo y esperar a que terminen
-    const submenusMap = await preloadAllSubmenus(categories);
+    // Paso 2: Obtener todos los submenús desde el caché (ya precargados)
+    const submenusMap = getSubmenusFromCacheMap(categories);
 
-    // Paso 3: Generar todas las combinaciones de productos
-    const prefetchPromises: Array<Promise<void>> = [];
-    let activeRequests = 0;
+    // Paso 3: Generar todas las combinaciones de productos y filtrar las que ya están en caché
+    const allCombinations: Array<{ params: ProductFilterParams; key: string }> = [];
 
-    // Función para ejecutar prefetch con control de concurrencia mejorado
-    const executePrefetch = async (
-      categoryCode: string,
-      menuUuid?: string,
-      submenuUuid?: string
-    ): Promise<void> => {
-      // Generar clave única para evitar duplicados
-      const key = `${categoryCode}|${menuUuid || ''}|${submenuUuid || ''}`;
-      
-      if (prefetchingRef.current.has(key)) {
-        return;
-      }
-
-      prefetchingRef.current.add(key);
-
-      // Esperar si hay demasiadas peticiones activas
-      while (activeRequests >= MAX_CONCURRENT_REQUESTS) {
-        await new Promise(resolve => setTimeout(resolve, 50)); // Reducido de 100ms a 50ms
-      }
-
-      activeRequests++;
-
-      try {
-        await prefetchProducts({
-          categoryCode,
-          menuUuid,
-          submenuUuid,
-        });
-      } catch (error) {
-        // Silenciar errores - no afectar la UX
-        console.debug('[PreloadAllProducts] Error silencioso:', error);
-      } finally {
-        activeRequests--;
-        prefetchingRef.current.delete(key);
-      }
-    };
-
-    // Generar todas las combinaciones posibles
     for (const category of categories) {
       if (!category.uuid || !category.nombre) continue;
 
       const categoryCode = category.nombre;
       const menus = preloadedMenus[category.uuid] || [];
 
-      // 1. Precargar productos de la categoría base (sin menú ni submenú)
-      prefetchPromises.push(executePrefetch(categoryCode));
+      // 1. Combinación de categoría base (sin menú ni submenú)
+      const categoryParams = buildPrefetchParams(categoryCode);
+      if (shouldPrefetch(categoryParams)) {
+        allCombinations.push({
+          params: categoryParams,
+          key: `${categoryCode}|${''}|${''}`,
+        });
+      }
 
-      // 2. Para cada menú, precargar productos
+      // 2. Para cada menú, generar combinaciones
       for (const menu of menus) {
         if (!menu.activo || !menu.uuid) continue;
 
-        // Precargar productos de categoría + menú
-        prefetchPromises.push(executePrefetch(categoryCode, menu.uuid));
+        // Combinación de categoría + menú
+        const menuParams = buildPrefetchParams(categoryCode, menu.uuid);
+        if (shouldPrefetch(menuParams)) {
+          allCombinations.push({
+            params: menuParams,
+            key: `${categoryCode}|${menu.uuid}|${''}`,
+          });
+        }
 
-        // 3. Usar submenús ya precargados para precargar productos de cada combinación
+        // 3. Combinaciones de categoría + menú + submenú
         const submenus = submenusMap.get(menu.uuid) || [];
-        
         for (const submenu of submenus) {
           if (!submenu.uuid) continue;
-          prefetchPromises.push(
-            executePrefetch(categoryCode, menu.uuid, submenu.uuid)
-          );
+          const submenuParams = buildPrefetchParams(categoryCode, menu.uuid, submenu.uuid);
+          if (shouldPrefetch(submenuParams)) {
+            allCombinations.push({
+              params: submenuParams,
+              key: `${categoryCode}|${menu.uuid}|${submenu.uuid}`,
+            });
+          }
         }
       }
     }
 
-    // Ejecutar todas las precargas y esperar a que todas terminen
-    // Esto asegura que todas las combinaciones se precarguen antes de considerar completado
-    await Promise.allSettled(prefetchPromises);
-    
-    console.debug(`[PreloadAllProducts] Precarga completada: ${prefetchPromises.length} combinaciones procesadas`);
-  }, [preloadedMenus, prefetchProducts, preloadAllSubmenus, waitForAllMenus, menusLoaded]);
+    // 4. Agregar las 4 secciones de ofertas al batch
+    const ofertasSecciones = [
+      "smartphones-tablets",
+      "tv-monitores-audio",
+      "accesorios",
+      "electrodomesticos",
+    ];
+
+    for (const seccion of ofertasSecciones) {
+      const ofertasParams = buildOfertasParams(seccion);
+      if (ofertasParams && shouldPrefetch(ofertasParams)) {
+        allCombinations.push({
+          params: ofertasParams,
+          key: `ofertas:${seccion}`,
+        });
+      }
+    }
+
+    // Si no hay combinaciones pendientes, terminar
+    if (allCombinations.length === 0) {
+      return;
+    }
+
+    // Paso 5: Hacer una sola petición batch con todas las combinaciones usando helper centralizado
+    const batchQueries = allCombinations.map(combo => combo.params);
+    await executeBatchPrefetch(batchQueries, 'usePreloadAllProducts');
+  }, [preloadedMenus, getSubmenusFromCacheMap, waitForAllMenus, menusLoaded, buildPrefetchParams, shouldPrefetch]);
 
   useEffect(() => {
     // Solo ejecutar una vez
@@ -222,9 +255,8 @@ export function usePreloadAllProducts() {
 
       // Ejecutar precarga en background (no bloquea UI)
       // El orden estricto se maneja dentro de preloadAllCombinations
-      preloadAllCombinations(dynamicCategories).catch((error) => {
+      preloadAllCombinations(dynamicCategories).catch(() => {
         // Silenciar errores finales - no afectar UX
-        console.debug('[PreloadAllProducts] Error en precarga general:', error);
       });
     };
 

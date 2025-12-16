@@ -115,11 +115,10 @@ function BannerContent({
 
   const content = (
     <div
-      className={`absolute max-w-2xl px-6 ${
-        isMobile
-          ? "md:hidden flex flex-col items-center text-center"
-          : "hidden md:block"
-      }`}
+      className={`absolute max-w-2xl px-6 ${isMobile
+        ? "md:hidden flex flex-col items-center text-center"
+        : "hidden md:block"
+        }`}
       style={final}
     >
       {title && (
@@ -200,65 +199,6 @@ function ContentBlocksOverlay({
   forceShow?: boolean; // Forzar mostrar sin clases responsive
   bannerLinkUrl?: string | null; // URL del banner como fallback para CTAs
 }>) {
-  const [imageOffset, setImageOffset] = React.useState({ left: 0, top: 0, width: 100, height: 100 });
-
-  React.useEffect(() => {
-    const calculateImageOffset = () => {
-      // Buscar la imagen en el DOM
-      const img = document.querySelector('.banner-media-container img') as HTMLImageElement;
-      if (!img || !img.complete || !img.naturalWidth) return;
-
-      const container = img.parentElement;
-      if (!container) return;
-
-      const containerRect = container.getBoundingClientRect();
-      const imageAspect = img.naturalWidth / img.naturalHeight;
-      const containerAspect = containerRect.width / containerRect.height;
-
-      let renderedWidth: number;
-      let renderedHeight: number;
-      let offsetX: number;
-      let offsetY: number;
-
-      // Calcular dimensiones con object-contain
-      if (imageAspect > containerAspect) {
-        renderedWidth = containerRect.width;
-        renderedHeight = containerRect.width / imageAspect;
-        offsetX = 0;
-        offsetY = (containerRect.height - renderedHeight) / 2;
-      } else {
-        renderedHeight = containerRect.height;
-        renderedWidth = containerRect.height * imageAspect;
-        offsetX = (containerRect.width - renderedWidth) / 2;
-        offsetY = 0;
-      }
-
-      // Calcular porcentajes relativos al contenedor
-      setImageOffset({
-        left: (offsetX / containerRect.width) * 100,
-        top: (offsetY / containerRect.height) * 100,
-        width: (renderedWidth / containerRect.width) * 100,
-        height: (renderedHeight / containerRect.height) * 100,
-      });
-    };
-
-    calculateImageOffset();
-    window.addEventListener('resize', calculateImageOffset);
-
-    // Escuchar cuando la imagen se carga
-    const img = document.querySelector('.banner-media-container img');
-    if (img) {
-      img.addEventListener('load', calculateImageOffset);
-    }
-
-    return () => {
-      window.removeEventListener('resize', calculateImageOffset);
-      if (img) {
-        img.removeEventListener('load', calculateImageOffset);
-      }
-    };
-  }, []);
-
   return (
     <>
       {blocks.map((block) => {
@@ -285,10 +225,6 @@ function ContentBlocksOverlay({
           transformX = '-100%'; // Derecha: el punto está en el borde derecho
         }
 
-        // Calcular posición ajustada a la imagen renderizada
-        const adjustedLeft = imageOffset.left + (position.x / 100) * imageOffset.width;
-        const adjustedTop = imageOffset.top + (position.y / 100) * imageOffset.height;
-
         // Estilos del título: usar mobile si existe, sino desktop
         const titleStyles = block.title && {
           fontSize: (isMobile && block.title_mobile?.fontSize) || block.title.fontSize || '2rem',
@@ -305,8 +241,8 @@ function ContentBlocksOverlay({
             key={block.id}
             className={visibilityClass}
             style={{
-              left: `${adjustedLeft}%`,
-              top: `${adjustedTop}%`,
+              left: `${position.x}%`,
+              top: `${position.y}%`,
               transform: `translate(${transformX}, -50%)`,
             }}
           >
@@ -429,11 +365,11 @@ export default function DynamicBannerClean({
 }: Readonly<DynamicBannerProps>) {
   // Si hay mockBanner, usarlo en lugar del API
   const { banners: apiBanners, loading } = useDynamicBanner(placement || '');
-  const banners = React.useMemo(() => 
+  const banners = React.useMemo(() =>
     mockBanner ? [mockBanner] : apiBanners,
     [mockBanner, apiBanners]
   );
-  
+
   const controller = useCarouselController({
     itemsCount: banners.length,
     displayDuration,
@@ -522,13 +458,13 @@ export default function DynamicBannerClean({
         desktopPosition,
         desktopRef.current,
         (currentBanner.desktop_video_url || currentBanner.desktop_image_url) ??
-          undefined
+        undefined
       );
       const m = await compute(
         mobilePosition,
         mobileRef.current,
         (currentBanner.mobile_video_url || currentBanner.mobile_image_url) ??
-          undefined
+        undefined
       );
 
       if (!mounted) return;
@@ -591,7 +527,7 @@ export default function DynamicBannerClean({
   const hasCTAsInBlocks = contentBlocks.some(block => block.cta);
 
   const content = (
-    <div className={`relative w-full overflow-hidden ${className}`}>
+    <div className={`relative w-full overflow-hidden max-w-[1440px] mx-auto ${className}`}>
       <div className="relative w-full min-h-[700px] md:min-h-[500px] lg:min-h-[800px] rounded-lg overflow-hidden">
         {showOverlay && <div className="absolute inset-0 bg-black/30 z-10" />}
 
@@ -606,8 +542,8 @@ export default function DynamicBannerClean({
           let contentBlocks: ContentBlock[] = [];
           if (banner.content_blocks) {
             try {
-              contentBlocks = typeof banner.content_blocks === 'string' 
-                ? JSON.parse(banner.content_blocks) 
+              contentBlocks = typeof banner.content_blocks === 'string'
+                ? JSON.parse(banner.content_blocks)
                 : banner.content_blocks;
             } catch (e) {
               console.error('Error parsing content_blocks:', e);
@@ -632,7 +568,7 @@ export default function DynamicBannerClean({
                 playsInline
                 preload="metadata"
                 poster={optimizedPoster}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover"
                 onEnded={isActive ? controller.handleVideoEnd : undefined}
                 key={`desktop-video-${banner.id}-${index}`}
               >
@@ -647,7 +583,7 @@ export default function DynamicBannerClean({
               <img
                 src={optimizedImageUrl}
                 alt={banner.name || 'Banner'}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover"
                 key={`desktop-image-${banner.id}-${index}`}
               />
             );
@@ -668,7 +604,7 @@ export default function DynamicBannerClean({
                 playsInline
                 preload="metadata"
                 poster={optimizedMobilePoster}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover"
                 onEnded={isActive ? controller.handleVideoEnd : undefined}
                 key={`mobile-video-${banner.id}-${index}`}
               >
@@ -683,7 +619,7 @@ export default function DynamicBannerClean({
               <img
                 src={optimizedMobileImageUrl}
                 alt={banner.name || 'Banner'}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover"
                 key={`mobile-image-${banner.id}-${index}`}
               />
             );
@@ -774,11 +710,10 @@ export default function DynamicBannerClean({
               <button
                 key={index}
                 onClick={() => controller.goToIndex(index)}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  index === controller.currentIndex
-                    ? "bg-white w-8"
-                    : "bg-white/50 hover:bg-white/75"
-                }`}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${index === controller.currentIndex
+                  ? "bg-white w-8"
+                  : "bg-white/50 hover:bg-white/75"
+                  }`}
                 aria-label={`Ir al banner ${index + 1}`}
               />
             ))}

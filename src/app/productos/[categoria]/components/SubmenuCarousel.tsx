@@ -5,12 +5,10 @@
 
 "use client";
 
-import { useMemo, useCallback, useEffect, useRef } from "react";
+import { useMemo, useCallback, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useSubmenus } from "@/hooks/useSubmenus";
-import type { Menu, ProductFilterParams } from "@/lib/api";
-import { executeBatchPrefetch } from "@/lib/batchPrefetch";
-import { usePrefetchCoordinator } from "@/hooks/usePrefetchCoordinator";
+import type { Menu } from "@/lib/api";
 import SeriesSlider from "./SeriesSlider";
 import type { SeriesItem } from "../config/series-configs";
 import { submenuNameToFriendly } from "../utils/submenuUtils";
@@ -37,13 +35,12 @@ export default function SubmenuCarousel({
   const searchParams = useSearchParams();
   const { submenus, loading, error } = useSubmenus(menu.uuid);
   const { prefetchWithDebounce, cancelPrefetch, prefetchProducts } = usePrefetchProducts();
-  const { shouldPrefetch } = usePrefetchCoordinator();
   
-  // Ref para rastrear qué submenús ya fueron precargados automáticamente
+  // Ref para rastrear qué submenús se están precargando por hover
+  const autoPrefetchingRef = useRef<Set<string>>(new Set());
+  
+  // Ref para rastrear qué submenús ya fueron precargados por hover
   const autoPrefetchedRef = useRef<Set<string>>(new Set());
-  
-  // Ref para el timer de inicio de precarga automática
-  const autoPrefetchStartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSubmenuClick = (submenuId: string) => {
     // Encontrar el submenú por UUID para obtener su nombre
@@ -98,76 +95,9 @@ export default function SubmenuCarousel({
     };
   }, [activeSubmenu]);
 
-  // Sistema de precarga automática de productos de todos los submenús usando batch
-  // Se ejecuta cuando se está en una sección (hay menuUuid) y los submenús están cargados
-  useEffect(() => {
-    // Solo precargar si tenemos todos los datos necesarios
-    if (!categoryCode || !menuUuid || loading || error || submenus.length === 0) {
-      return;
-    }
-
-    // Limpiar timer anterior si existe
-    if (autoPrefetchStartTimerRef.current) {
-      clearTimeout(autoPrefetchStartTimerRef.current);
-    }
-    
-    // Resetear estados de precarga cuando cambian los parámetros
-    autoPrefetchedRef.current.clear();
-
-    // Esperar 1 segundo después de que los submenús se carguen para iniciar precarga automática
-    // Esto da tiempo a que la página se estabilice y no interfiere con la carga inicial
-    autoPrefetchStartTimerRef.current = setTimeout(async () => {
-      const activeSubmenus = submenus.filter(submenu => submenu.activo && submenu.uuid);
-      
-      // Construir parámetros para batch request
-      const buildParams = (submenuUuid: string): ProductFilterParams => ({
-        page: 1,
-        limit: 50,
-        precioMin: 1,
-        lazyLimit: 6,
-        lazyOffset: 0,
-        sortBy: "precio",
-        sortOrder: "desc",
-        categoria: categoryCode,
-        menuUuid: menuUuid,
-        submenuUuid: submenuUuid,
-      });
-
-      // Filtrar submenús que deben precargarse usando coordinador
-      const submenusToPrefetch: Array<{ submenu: typeof activeSubmenus[0]; params: ProductFilterParams }> = [];
-      
-      for (const submenu of activeSubmenus) {
-        if (!submenu.uuid) continue;
-        if (autoPrefetchedRef.current.has(submenu.uuid)) continue;
-        
-        const params = buildParams(submenu.uuid);
-        if (shouldPrefetch(params)) {
-          submenusToPrefetch.push({ submenu, params });
-        }
-      }
-
-      if (submenusToPrefetch.length === 0) {
-        return;
-      }
-
-      // Ejecutar batch prefetch usando helper centralizado
-      const batchQueries = submenusToPrefetch.map(item => item.params);
-      await executeBatchPrefetch(batchQueries, 'SubmenuCarousel');
-
-      // Marcar como precargados
-      submenusToPrefetch.forEach(({ submenu }) => {
-        if (submenu.uuid) {
-          autoPrefetchedRef.current.add(submenu.uuid);
-        }
-      });
-    }, 1000); // Iniciar después de 1 segundo
-
-    return () => {
-      if (autoPrefetchStartTimerRef.current) {
-        clearTimeout(autoPrefetchStartTimerRef.current);
-      }
-    };
-  }, [categoryCode, menuUuid, submenus, loading, error, shouldPrefetch]);
+  // NOTA: El batch automático de submenús fue eliminado.
+  // Ahora se maneja por usePreloadMenuSubmenus en CategorySection cuando el usuario entra a un menú.
+  // Esto evita duplicación y asegura que solo se carguen los submenús que no están en caché.
 
   // Prefetch productos cuando el usuario hace hover sobre un submenú
   // Al hacer hover, se PRIORIZA ese submenú específico (se acelera el prefetch)

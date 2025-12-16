@@ -16,6 +16,35 @@ import { usePrefetchCoordinator } from './usePrefetchCoordinator';
 import { isStaticCategoryUuid } from '@/constants/staticCategories';
 import type { VisibleCategory, ProductFilterParams } from '@/lib/api';
 
+// Mapeo de secciones de ofertas a filtros de API
+const ofertasFiltersMap: Record<string, { categoria?: string; menuUuid?: string }> = {
+  accesorios: { categoria: "IM", menuUuid: '87c54352-5181-45b7-831d-8e9470d2288c' },
+  "tv-monitores-audio": { categoria: "AV,IT" },
+  "smartphones-tablets": { categoria: "IM", menuUuid: 'ff59c937-78ac-4f83-8c5e-2c3048b4ebb7,7609faf8-4c39-4227-915e-0d439d717e84' },
+  electrodomesticos: { categoria: "DA" },
+};
+
+// Construir parámetros para una sección de ofertas
+const buildOfertasParams = (seccion: string): ProductFilterParams | null => {
+  const sectionFilters = ofertasFiltersMap[seccion];
+  if (!sectionFilters) {
+    return null;
+  }
+
+  const params: ProductFilterParams = {
+    page: 1,
+    limit: 50,
+    sortBy: 'precio',
+    sortOrder: 'desc',
+    precioMin: 1,
+    stockMinimo: 1,
+    conDescuento: true,
+    ...sectionFilters,
+  };
+
+  return params;
+};
+
 // Control de concurrencia: máximo de peticiones simultáneas (aumentado para precarga agresiva)
 const MAX_CONCURRENT_REQUESTS = 30;
 
@@ -173,13 +202,31 @@ export function usePreloadAllProducts() {
       }
     }
 
+    // 4. Agregar las 4 secciones de ofertas al batch
+    const ofertasSecciones = [
+      "smartphones-tablets",
+      "tv-monitores-audio",
+      "accesorios",
+      "electrodomesticos",
+    ];
+
+    for (const seccion of ofertasSecciones) {
+      const ofertasParams = buildOfertasParams(seccion);
+      if (ofertasParams && shouldPrefetch(ofertasParams)) {
+        allCombinations.push({
+          params: ofertasParams,
+          key: `ofertas:${seccion}`,
+        });
+      }
+    }
+
     // Si no hay combinaciones pendientes, terminar
     if (allCombinations.length === 0) {
       console.debug('[PreloadAllProducts] Todas las combinaciones ya están en caché');
       return;
     }
 
-    // Paso 4: Hacer una sola petición batch con todas las combinaciones usando helper centralizado
+    // Paso 5: Hacer una sola petición batch con todas las combinaciones usando helper centralizado
     const batchQueries = allCombinations.map(combo => combo.params);
     await executeBatchPrefetch(batchQueries, 'usePreloadAllProducts');
   }, [preloadedMenus, getSubmenusFromCacheMap, waitForAllMenus, menusLoaded, buildPrefetchParams, shouldPrefetch]);

@@ -676,12 +676,15 @@ export default function Step7({ onBack }: Step7Props) {
             // Dado que el usuario reporta problemas de persistencia, confiar en el caché es buena idea.
             
             // Simulamos una respuesta exitosa con los datos del caché
-            const responseData = cachedFullResponse;
+            const responseData = cachedFullResponse as unknown as {
+                nearest?: { codBodega?: string };
+                codeBodega?: string;
+            };
             let warehouseCode: string | undefined;
             if (responseData.nearest?.codBodega) {
               warehouseCode = responseData.nearest.codBodega;
             } else if (responseData.codeBodega) {
-              warehouseCode = responseData.codeBodega; // || (responseData as any).codBodega;
+              warehouseCode = responseData.codeBodega; 
             }
             
             setCandidateWarehouseCode(warehouseCode);

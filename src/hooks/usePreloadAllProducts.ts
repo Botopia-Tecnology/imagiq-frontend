@@ -82,9 +82,6 @@ export function usePreloadAllProducts() {
       // Esperar un poco antes de verificar de nuevo
       await new Promise(resolve => setTimeout(resolve, MENU_CHECK_INTERVAL));
     }
-    
-    // Si llegamos aquí, algunos menús no se cargaron a tiempo, pero continuamos de todas formas
-    console.debug('[PreloadAllProducts] Algunos menús no se cargaron a tiempo, continuando de todas formas');
   }, []);
 
   /**
@@ -222,7 +219,6 @@ export function usePreloadAllProducts() {
 
     // Si no hay combinaciones pendientes, terminar
     if (allCombinations.length === 0) {
-      console.debug('[PreloadAllProducts] Todas las combinaciones ya están en caché');
       return;
     }
 
@@ -259,9 +255,8 @@ export function usePreloadAllProducts() {
 
       // Ejecutar precarga en background (no bloquea UI)
       // El orden estricto se maneja dentro de preloadAllCombinations
-      preloadAllCombinations(dynamicCategories).catch((error) => {
+      preloadAllCombinations(dynamicCategories).catch(() => {
         // Silenciar errores finales - no afectar UX
-        console.debug('[PreloadAllProducts] Error en precarga general:', error);
       });
     };
 

@@ -100,18 +100,10 @@ export function usePreloadMenuSubmenus(
 
         // Si hay submenús sin cargar, hacer batch de ellos
         if (submenusToPrefetch.length > 0) {
-          console.debug(
-            `[usePreloadMenuSubmenus] Cargando ${submenusToPrefetch.length} submenús en batch para menú ${menuUuid}`
-          );
           await executeBatchPrefetch(submenusToPrefetch, 'usePreloadMenuSubmenus');
-        } else {
-          console.debug(
-            `[usePreloadMenuSubmenus] Todos los submenús del menú ${menuUuid} ya están en caché`
-          );
         }
-      } catch (error) {
+      } catch {
         // Silenciar errores - no afectar UX
-        console.debug('[usePreloadMenuSubmenus] Error al procesar submenús:', error);
       } finally {
         isProcessingRef.current = false;
       }

@@ -97,9 +97,8 @@ export const DesktopView: FC<Props> = ({ items, categoryName, categoryCode, onIt
             }
           }
         }
-      } catch (error) {
+      } catch {
         // Silenciar errores en prefetch - no afectar la UX
-        console.debug("[SubmenuPrefetch] Error silencioso:", error);
       } finally {
         submenuPrefetchTimers.current.delete(menuUuid);
       }

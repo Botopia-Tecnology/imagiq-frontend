@@ -29,7 +29,7 @@ export default function Step3Page() {
     console.log("🔍 [STEP3] Verificando acceso:", { 
       hasToken: !!token, 
       hasUser: !!userToCheck,
-      userRol: userToCheck?.rol,
+      userRol: (userToCheck as any)?.rol ?? (userToCheck as any)?.role,
       userEmail: userToCheck?.email
     });
 
@@ -43,7 +43,9 @@ export default function Step3Page() {
     // Si hay usuario, verificar si es invitado
     if (userToCheck) {
       // Si es usuario invitado (rol 3), verificar que tenga dirección guardada
-      if (userToCheck.rol === 3) {
+      // Verificar tanto 'rol' (backend) como 'role' (frontend) para compatibilidad
+      const userRole = (userToCheck as any).rol ?? (userToCheck as any).role;
+      if (userRole === 3) {
         const savedAddress = localStorage.getItem("checkout-address");
         if (savedAddress) {
           try {

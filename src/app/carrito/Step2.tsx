@@ -449,9 +449,16 @@ export default function Step2({
         // Preservar el carrito antes de guardar el usuario
         const currentCart = localStorage.getItem("cart-items");
 
+        // Asegurar que el usuario tenga el rol de invitado explícitamente
+        const userWithRole = {
+          ...result.user,
+          role: 3, // Para frontend (User type)
+          rol: 3   // Para backend
+        };
+
         // Guardar token y usuario - cuenta de invitado creada y verificada
         localStorage.setItem("imagiq_token", result.access_token);
-        localStorage.setItem("imagiq_user", JSON.stringify(result.user));
+        localStorage.setItem("imagiq_user", JSON.stringify(userWithRole));
 
         // Guardar cédula para autocompletar
         if (globalThis.window !== undefined) {
@@ -1543,6 +1550,7 @@ export default function Step2({
                 disabled={hasAddedAddress}
                 geoLocationData={geoLocationData}
                 isRequestingLocation={isRequestingLocation}
+                enableAutoSelect={true}
               />
             </div>
           )}

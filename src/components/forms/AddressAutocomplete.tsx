@@ -36,8 +36,9 @@ export function AddressAutocomplete({
   options,
   clearOnSelect = false,
   showSearchIcon = true,
-  validateCoverage = false
-}: AddressAutocompleteProps) {
+  validateCoverage = false,
+  enableAutoSelect = false
+}: AddressAutocompleteProps & { enableAutoSelect?: boolean }) {
   // Estado local del componente
   const [isOpen, setIsOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -220,31 +221,34 @@ export function AddressAutocomplete({
   /**
    * Abrir dropdown cuando hay predicciones disponibles
    * SOLO si no acabamos de seleccionar una opción
-   * Y SELECCIONAR AUTOMÁTICAMENTE LA PRIMERA OPCIÓN
+   * Y SELECCIONAR AUTOMÁTICAMENTE LA PRIMERA OPCIÓN (Si está habilitado)
    */
   useEffect(() => {
     if (predictions.length > 0 && inputValue.trim() && !isLoading && !justSelected) {
       setIsOpen(true);
       
       // Seleccionar automáticamente la primera predicción después de un pequeño delay
-      const autoSelectTimer = setTimeout(() => {
-        if (predictions.length > 0 && !selectedPlace) {
-          const firstPrediction = predictions[0];
-          setJustSelected(true);
-          setIsOpen(false);
-          clearResults();
-          selectPlace(firstPrediction);
-          
-          // Limpiar el flag después de un momento
-          setTimeout(() => {
-            setJustSelected(false);
-          }, 500);
-        }
-      }, 800); // Dar 800ms para que el usuario pueda ver las opciones y hacer click manualmente
-      
-      return () => clearTimeout(autoSelectTimer);
+      // SOLO SI enableAutoSelect es true
+      if (enableAutoSelect) {
+        const autoSelectTimer = setTimeout(() => {
+          if (predictions.length > 0 && !selectedPlace) {
+            const firstPrediction = predictions[0];
+            setJustSelected(true);
+            setIsOpen(false);
+            clearResults();
+            selectPlace(firstPrediction);
+            
+            // Limpiar el flag después de un momento
+            setTimeout(() => {
+              setJustSelected(false);
+            }, 500);
+          }
+        }, 800); // Dar 800ms para que el usuario pueda ver las opciones y hacer click manualmente
+        
+        return () => clearTimeout(autoSelectTimer);
+      }
     }
-  }, [predictions, inputValue, isLoading, justSelected, selectedPlace, selectPlace, clearResults]);
+  }, [predictions, inputValue, isLoading, justSelected, selectedPlace, selectPlace, clearResults, enableAutoSelect]);
 
   /**
    * Efecto para cerrar dropdown al hacer click fuera

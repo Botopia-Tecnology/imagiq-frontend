@@ -366,6 +366,8 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         setLastResponse({ success: true, data: cachedResponse });
       } else {
         console.log('⚠️ [Cache] No hay datos en caché, pero onlyReadCache=true - no se hará petición');
+        // FIX: Asegurar que storesLoading se ponga en false si no hay datos y no se hará petición
+        setStoresLoading(false);
       }
       return;
     }
@@ -373,12 +375,14 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     // PROTECCIÓN: Si canFetchFromEndpoint es false, NO hacer petición
     if (!canFetchFromEndpoint) {
       console.log('🚫 [Optimización] canFetchFromEndpoint=false - No se permite hacer peticiones en este contexto');
+      setStoresLoading(false); // Asegurar que loading se apague
       return;
     }
 
     // PROTECCIÓN CRÍTICA: NO hacer peticiones durante eliminación de trade-in
     if (isRemovingTradeInRef.current) {
       console.log('❌ Abortando: isRemovingTradeInRef.current = true');
+      setStoresLoading(false); // Asegurar que loading se apague
       return;
     }
 
@@ -393,6 +397,11 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     if (now - lastFetchTimeRef.current < 3000) {
       console.log('⏸️ Debounce activo: esperando antes de hacer otra petición a candidate-stores');
       console.log(`   Tiempo desde última petición: ${now - lastFetchTimeRef.current}ms (necesita >= 3000ms)`);
+      // FIX: Si entramos en debounce y no hay petición en vuelo, apagar loading
+      // Esto evita que se quede pegado en loading si se inicializó en true
+      if (!isFetchingRef.current) {
+        setStoresLoading(false);
+      }
       return;
     }
 
@@ -1034,8 +1043,14 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         : null;
       const isGloballyProcessing = globalProcessing === newAddressId;
 
-      if (isProcessingSameAddress || isGloballyProcessing || (recentlyProcessed && lastAddressIdProcessedRef.current === newAddressId)) {
+      // Si viene del header, forzar procesamiento (ignorar checks de concurrencia)
+      // Esto asegura que los cambios explícitos del usuario siempre se procesen
+      const isFromHeader = customEvent.detail?.fromHeader === true;
+
+      // Solo bloquear si NO viene del header
+      if (!isFromHeader && (isProcessingSameAddress || isGloballyProcessing || (recentlyProcessed && lastAddressIdProcessedRef.current === newAddressId))) {
         // Ya se está procesando este cambio o se procesó recientemente, ignorar
+        console.log('⏳ Evento de cambio de dirección ignorado (duplicado o reciente)', { newAddressId, isFromHeader });
         return;
       }
 
@@ -1442,8 +1457,22 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       // Si se proporcionó la nueva dirección, disparar consulta de candidate stores
       if (newAddress) {
         console.log('🔄 Nueva dirección agregada, consultando candidate stores...');
-        // Disparar el efecto que consulta candidate stores
+        
+        // Actualizar estado
         setAddress(newAddress);
+        
+        // IMPORTANTE: Disparar fetchCandidateStores para actualizar el caché
+        // y que Step4OrderSummary se entere
+        allowFetchOnAddressChangeRef.current = true;
+        
+        // Actualizar refs para forzar fetch
+        if (newAddress.id) {
+          lastAddressIdRef.current = newAddress.id;
+          invalidateCacheOnAddressChange(newAddress.id);
+        }
+        
+        // Llamar a fetch
+        fetchCandidateStores();
       }
     } catch (error) {
       console.error("Error refreshing addresses:", error);

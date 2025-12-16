@@ -30,6 +30,7 @@ import { safeGetLocalStorage } from "@/lib/localStorage";
 import { productEndpoints, deliveryEndpoints } from "@/lib/api";
 import useSecureStorage from "@/hooks/useSecureStorage";
 import { User } from "@/types/user";
+import RegisterGuestPasswordModal from "./components/RegisterGuestPasswordModal";
 
 declare global {
   interface Window {
@@ -150,6 +151,15 @@ export default function Step7({ onBack }: Step7Props) {
     "imagiq_user",
     null
   );
+  
+  // Estado para el modal de registro de contraseña
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [pendingOrder, setPendingOrder] = useState(false); // Para saber si debemos proceder con la orden después del registro
+  
+  // Debug: Monitorear cambios en showPasswordModal
+  React.useEffect(() => {
+    console.log("🔍 [STEP7] showPasswordModal cambió a:", showPasswordModal);
+  }, [showPasswordModal]);
   
   // CRÍTICO: Leer dirección desde localStorage normal, NO desde useSecureStorage
   // porque se guarda en localStorage.setItem("checkout-address") en Step3
@@ -694,6 +704,32 @@ export default function Step7({ onBack }: Step7Props) {
 
           console.log(`🔍 [Step7] canPickUp global: ${globalCanPickUp}, isPickupMethod: ${isPickupMethod}`);
 
+          // Actualizar caché global para que Step4OrderSummary lo muestre
+          try {
+            const { buildGlobalCanPickUpKey, setGlobalCanPickUpCache } = await import('@/app/carrito/utils/globalCanPickUpCache');
+            
+            // Obtener dirección actual para la clave del caché
+            let currentAddressId = null;
+            const savedAddress = localStorage.getItem("checkout-address");
+            if (savedAddress) {
+              const parsed = JSON.parse(savedAddress);
+              currentAddressId = parsed.id || null;
+            }
+
+            const cacheKey = buildGlobalCanPickUpKey({
+              userId,
+              products: productsToCheck,
+              addressId: currentAddressId,
+            });
+
+            // Guardar en caché y notificar
+            // casting a any porque responseData tiene una estructura compatible pero no idéntica a CandidateStoresResponse
+            setGlobalCanPickUpCache(cacheKey, globalCanPickUp, responseData as any, currentAddressId);
+            console.log("💾 [Step7] Caché global actualizado con respuesta de candidate-stores");
+          } catch (cacheError) {
+            console.error("❌ [Step7] Error actualizando caché global:", cacheError);
+          }
+
           // CRÍTICO: Ya tenemos canPickUp, ocultar skeleton INMEDIATAMENTE
           setIsLoadingCanPickUp(false);
           setIsLoadingShippingMethod(false);
@@ -795,36 +831,29 @@ export default function Step7({ onBack }: Step7Props) {
           }
           // ---------------------------------------------------------------------------
 
-          // PASO 2: Si canPickUp global es FALSE → Verificar si es Centro de Distribución
-          if (!globalCanPickUp) {
-            const esCentroDistribucion = warehouseCode === "001";
-            setIsCentroDistribucion(esCentroDistribucion);
-            setIsLoadingStoreValidation(false);
+          // PASO 2: Verificar si es Centro de Distribución
+          const esCentroDistribucion = warehouseCode === "001";
+          setIsCentroDistribucion(esCentroDistribucion);
+          setIsLoadingStoreValidation(false);
 
-            if (esCentroDistribucion) {
-              console.log("🏭 [Step7] Es Centro de Distribución (001) - Ejecutando validación de cobertura");
-              // Continuar con la validación de cobertura (PASO 3)
-              // No hacer return aquí, dejar que continúe al PASO 3
-            } else {
-              console.log("🏪 [Step7] NO es Centro de Distribución - Usar Coordinadora directamente");
-              const verification = {
-                envio_imagiq: false,
-                todos_productos_im_it: false,
-                en_zona_cobertura: true, // Coordinadora siempre tiene cobertura
-              };
-              setShippingVerification(verification);
-              // Guardar en localStorage como respaldo
-              localStorage.setItem("checkout-envio-imagiq", "false");
-              setIsCalculatingShipping(false);
-              return;
-            }
-          } else {
-            // Si canPickUp es true, no es Centro de Distribución
-            setIsCentroDistribucion(false);
-            setIsLoadingStoreValidation(false);
+          // Si NO es pickup y NO es Centro de Distribución, pre-configurar Coordinadora como fallback
+          // pero dejar que continúe al PASO 3 para verificar cobertura real
+          if (!globalCanPickUp && !esCentroDistribucion) {
+            console.log("🏪 [Step7] NO es Centro de Distribución - Configurando Coordinadora como base pero verificando cobertura");
+            // Configuración inicial (se sobrescribirá si el endpoint dice otra cosa)
+            const verification = {
+              envio_imagiq: false,
+              todos_productos_im_it: false,
+              en_zona_cobertura: true,
+            };
+            setShippingVerification(verification);
+            localStorage.setItem("checkout-envio-imagiq", "false");
+            // NO hacer return, continuar a la verificación
           }
 
-          // PASO 3: Si canPickUp global es TRUE → Verificar cobertura Imagiq
+          // PASO 3: SIEMPRE verificar cobertura Imagiq (incluso si canPickUp es false)
+          // Esto asegura que siempre tengamos la información completa de verificación
+          console.log("🔍 [Step7] Verificando cobertura Imagiq (canPickUp:", globalCanPickUp, ", esCentroDistribucion:", esCentroDistribucion, ")");
           const shippingAddress = localStorage.getItem("checkout-address");
           if (!shippingAddress) {
             const verification = {
@@ -1050,7 +1079,8 @@ export default function Step7({ onBack }: Step7Props) {
     };
   }, [router]);
 
-  const handleConfirmOrder = async () => {
+  // Función que realmente procesa la orden (llamada después del modal o directamente)
+  const processOrder = async () => {
     // Validar Trade-In antes de confirmar
     const validation = validateTradeInProducts(products);
     if (!validation.isValid) {
@@ -1467,6 +1497,78 @@ export default function Step7({ onBack }: Step7Props) {
     } catch (error) {
       console.error("Error processing payment:", error);
       setIsProcessing(false);
+    }
+  };
+
+  // Función que verifica si es usuario invitado y muestra el modal
+  const handleConfirmOrder = async () => {
+    try {
+      console.log("🔍 [STEP7] ========== handleConfirmOrder INICIADO ==========");
+      
+      // 1. Confiar PRINCIPALMENTE en loggedUser que viene de useSecureStorage (ya desencriptado)
+      let userRole: number | undefined;
+      
+      // Castear loggedUser a any para acceder a 'rol' (backend) o 'role' (frontend)
+      const user = loggedUser as any;
+      
+      if (user) {
+         userRole = user.rol ?? user.role;
+         console.log("🔍 [STEP7] Usuario detectado (loggedUser):", {
+             // keys: Object.keys(user),
+             id: user.id,
+             email: user.email,
+             rol: user.rol,
+             role: user.role,
+             finalRole: userRole
+         });
+      } else {
+         console.warn("⚠️ [STEP7] loggedUser es null o undefined");
+      }
+
+      console.log("🔍 [STEP7] Verificando usuario para modal:", {
+        rol: userRole,
+        esInvitado: userRole === 3,
+        showPasswordModal: showPasswordModal
+      });
+
+      // Si es usuario invitado (rol 3), mostrar modal de registro
+      if (userRole === 3) {
+        console.log("✅ [STEP7] ========== USUARIO INVITADO DETECTADO ==========");
+        console.log("✅ [STEP7] Activando modal de registro...");
+        setShowPasswordModal(true);
+        setPendingOrder(true);
+        console.log("✅ [STEP7] Estados actualizados:");
+        console.log("  - showPasswordModal: true");
+        console.log("  - pendingOrder: true");
+        console.log("✅ [STEP7] ================================================");
+        return;
+      }
+
+      // Si no es invitado, procesar la orden directamente
+      console.log("✅ [STEP7] Usuario regular (rol:", userRole, "), procesando orden directamente");
+      await processOrder();
+    } catch (error) {
+      console.error("❌ [STEP7] ERROR en handleConfirmOrder:", error);
+      // Si hay un error, intentar procesar la orden de todas formas
+      await processOrder();
+    }
+  };
+
+  // Callback cuando el usuario se registra exitosamente
+  const handleRegisterSuccess = () => {
+    setShowPasswordModal(false);
+    setPendingOrder(false);
+    // Procesar la orden después de registrarse
+    processOrder();
+  };
+
+  // Callback cuando el usuario cancela el modal
+  const handleModalClose = () => {
+    setShowPasswordModal(false);
+    if (pendingOrder) {
+      // Si había una orden pendiente, procesarla como invitado
+      setPendingOrder(false);
+      processOrder();
     }
   };
 
@@ -2119,7 +2221,7 @@ export default function Step7({ onBack }: Step7Props) {
                 shippingVerification={shippingVerification}
                 deliveryMethod={shippingData?.type}
                 error={error}
-                shouldCalculateCanPickUp={true}
+                shouldCalculateCanPickUp={false}
               />
             )}
             {/* Información del método de envío - Solo se muestra cuando NEXT_PUBLIC_SHOW_PRODUCT_CODES es true */}
@@ -2301,6 +2403,29 @@ export default function Step7({ onBack }: Step7Props) {
         </div>
       </div>
 
+      {/* Modal para registrar contraseña de usuario invitado */}
+      <RegisterGuestPasswordModal
+        isOpen={showPasswordModal}
+        onClose={handleModalClose}
+        onSuccess={handleRegisterSuccess}
+        userEmail={
+          loggedUser?.email || 
+          billingData?.email || 
+          recipientData?.email || 
+          (() => {
+            try {
+              const userInfo = localStorage.getItem("imagiq_user");
+              if (userInfo) {
+                const parsed = JSON.parse(userInfo);
+                return parsed?.email || "";
+              }
+            } catch {
+              return "";
+            }
+            return "";
+          })()
+        }
+      />
     </div>
   );
 }

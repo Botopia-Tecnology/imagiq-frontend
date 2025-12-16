@@ -185,24 +185,38 @@ export default function TrackingService({
           if (envioData.tienda_origen) {
             const isWarehouse = envioData.tienda_origen.codBodega === "001" || envioData.tienda_origen.codBodega === "CD";
 
-            tiendaData = {
-              nombre: envioData.tienda_origen.descripcion?.replace(/^Ses\s+/i, '').trim() || undefined,
-              descripcion: envioData.tienda_origen.descripcion?.replace(/^Ses\s+/i, '').trim() || undefined,
-              direccion: envioData.tienda_origen.direccion || "Tienda IMAGIQ",
-              ciudad: envioData.tienda_origen.ciudad || "Bogotá",
-              telefono: (envioData.tienda_origen.telefono != null && envioData.tienda_origen.telefono !== "")
-                ? String(envioData.tienda_origen.telefono).trim()
-                : undefined,
-              horario: (envioData.tienda_origen.horario != null && envioData.tienda_origen.horario !== "")
-                ? String(envioData.tienda_origen.horario).trim()
-                : undefined,
-              latitud: !isWarehouse && envioData.tienda_origen.latitud
-                ? String(envioData.tienda_origen.latitud).trim()
-                : undefined,
-              longitud: !isWarehouse && envioData.tienda_origen.longitud
-                ? String(envioData.tienda_origen.longitud).trim()
-                : undefined,
-            };
+            if (isWarehouse) {
+              // Si es centro de distribución, ocultar dirección exacta y coordenadas para no mostrar ruta
+              tiendaData = {
+                nombre: "Centro de Distribución",
+                descripcion: "Centro de Distribución",
+                direccion: "Centro de Distribución",
+                ciudad: envioData.tienda_origen.ciudad || "Bogotá",
+                telefono: undefined,
+                horario: undefined,
+                latitud: undefined,
+                longitud: undefined,
+              };
+            } else {
+              tiendaData = {
+                nombre: envioData.tienda_origen.descripcion?.replace(/^Ses\s+/i, '').trim() || undefined,
+                descripcion: envioData.tienda_origen.descripcion?.replace(/^Ses\s+/i, '').trim() || undefined,
+                direccion: envioData.tienda_origen.direccion || "Tienda IMAGIQ",
+                ciudad: envioData.tienda_origen.ciudad || "Bogotá",
+                telefono: (envioData.tienda_origen.telefono != null && envioData.tienda_origen.telefono !== "")
+                  ? String(envioData.tienda_origen.telefono).trim()
+                  : undefined,
+                horario: (envioData.tienda_origen.horario != null && envioData.tienda_origen.horario !== "")
+                  ? String(envioData.tienda_origen.horario).trim()
+                  : undefined,
+                latitud: envioData.tienda_origen.latitud
+                  ? String(envioData.tienda_origen.latitud).trim()
+                  : undefined,
+                longitud: envioData.tienda_origen.longitud
+                  ? String(envioData.tienda_origen.longitud).trim()
+                  : undefined,
+              };
+            }
           } else {
             tiendaData = null;
           }

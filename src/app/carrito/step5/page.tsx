@@ -31,7 +31,9 @@ export default function Step5Page() {
       })();
 
       // Si hay usuario invitado (rol 3) con dirección, permitir acceso
-      if (userToCheck && userToCheck.rol === 3) {
+      // Verificar tanto 'rol' (backend) como 'role' (frontend) para compatibilidad
+      const userRole = (userToCheck as any)?.rol ?? (userToCheck as any)?.role;
+      if (userToCheck && userRole === 3) {
         const savedAddress = localStorage.getItem("checkout-address");
         if (savedAddress) {
           try {

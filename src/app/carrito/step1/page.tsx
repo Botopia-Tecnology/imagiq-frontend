@@ -30,14 +30,17 @@ export default function Step1Page() {
   console.log("🚀 [STEP1 PAGE] Usuario logueado:", loggedUser);
 
   const handleNext = async () => {
+    // Obtener el rol del usuario (compatibilidad con backend que usa 'rol' y frontend que usa 'role')
+    const userRole = loggedUser?.role ?? loggedUser?.rol;
+    
     // Si es usuario regular (tiene email y no es invitado), ir directamente a step3
-    if (loggedUser?.email && loggedUser?.rol !== 3) {
+    if (loggedUser?.email && userRole !== 3) {
       router.push("/carrito/step3");
       return;
     }
 
     // Verificar si el usuario invitado tiene dirección
-    if (loggedUser && loggedUser.rol === 3) {
+    if (loggedUser && userRole === 3) {
       // Primero verificar localStorage (más rápido)
       const savedAddress = safeGetLocalStorage<Address | null>(
         "checkout-address",

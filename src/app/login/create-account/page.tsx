@@ -47,9 +47,59 @@ export default function CreateAccountPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [sendMethod, setSendMethod] = useState<'email' | 'whatsapp'>('whatsapp');
+  
+  // Estados para validación de duplicados
+  const [hasEmailError, setHasEmailError] = useState(false);
+  const [hasPhoneError, setHasPhoneError] = useState(false);
+  const [hasDocumentError, setHasDocumentError] = useState(false);
 
-  // useEffect para cargar datos si viene desde login
+  // useEffect para cargar datos si viene desde login O restaurar progreso
   useEffect(() => {
+    // Verificar si ya hay un usuario logueado
+    const token = localStorage.getItem("imagiq_token");
+    const userInfo = localStorage.getItem("imagiq_user");
+    
+    if (token && userInfo) {
+      // Usuario ya verificado, ir directo al paso 3
+      try {
+        const user = JSON.parse(userInfo);
+        setFormData({
+          nombre: user.nombre || "",
+          apellido: user.apellido || "",
+          email: user.email || "",
+          telefono: user.telefono || "",
+          codigo_pais: "57",
+          tipo_documento: user.tipo_documento || "CC",
+          numero_documento: user.numero_documento || "",
+          fecha_nacimiento: user.fecha_nacimiento || "",
+          contrasena: "",
+          confirmPassword: "",
+        });
+        setUserId(user.id || null);
+        setCurrentStep(3); // Ir directo al paso 3
+        return;
+      } catch (err) {
+        console.error("Error al cargar usuario logueado:", err);
+      }
+    }
+
+    // Si no hay usuario logueado, verificar si hay progreso guardado
+    const savedProgress = localStorage.getItem("create_account_progress");
+    if (savedProgress) {
+      try {
+        const progress = JSON.parse(savedProgress);
+        setCurrentStep(progress.currentStep || 1);
+        setFormData(progress.formData || formData);
+        setUserId(progress.userId || null);
+        setOtpSent(progress.otpSent || false);
+        setSendMethod(progress.sendMethod || 'whatsapp');
+        return;
+      } catch (err) {
+        console.error("Error al restaurar progreso:", err);
+      }
+    }
+
+    // Si no hay progreso guardado, verificar datos pendientes desde login
     const pendingData = sessionStorage.getItem("pending_registration_step2");
     if (pendingData) {
       try {
@@ -76,6 +126,22 @@ export default function CreateAccountPage() {
       }
     }
   }, []);
+
+  // useEffect para guardar progreso cuando cambie el estado
+  useEffect(() => {
+    // Solo guardar progreso si no estamos en el paso 1 inicial (sin datos)
+    if (currentStep > 1 || formData.email || formData.nombre) {
+      const progress = {
+        currentStep,
+        formData,
+        userId,
+        otpSent,
+        sendMethod,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem("create_account_progress", JSON.stringify(progress));
+    }
+  }, [currentStep, formData, userId, otpSent, sendMethod]);
 
   const validateStep1 = () => {
     if (!formData.nombre || !formData.apellido) {
@@ -153,9 +219,60 @@ export default function CreateAccountPage() {
     if (currentStep === 1) {
       if (!validateStep1()) return;
 
-      // Crear usuario sin verificar antes de pasar al step 2
+      // Verificar duplicados antes de continuar (solo si los endpoints existen)
       setIsLoading(true);
       try {
+        // Intentar verificar email (no bloquear si falla)
+        try {
+          const emailCheck = await apiPost<{ exists: boolean; message?: string }>("/api/auth/check-email", {
+            email: formData.email.toLowerCase(),
+          });
+
+          if (emailCheck.exists) {
+            setError("Este correo electrónico ya está registrado. Por favor, usa otro o inicia sesión.");
+            setHasEmailError(true);
+            setIsLoading(false);
+            return;
+          }
+        } catch (emailCheckError) {
+          console.log("⚠️ Endpoint de validación de email no disponible, continuando sin validar duplicados");
+        }
+
+        // Intentar verificar teléfono (no bloquear si falla)
+        try {
+          const phoneCheck = await apiPost<{ exists: boolean; message?: string }>("/api/auth/check-phone", {
+            telefono: formData.telefono,
+            codigo_pais: formData.codigo_pais,
+          });
+
+          if (phoneCheck.exists) {
+            setError("Este número de teléfono ya está registrado. Por favor, usa otro o inicia sesión.");
+            setHasPhoneError(true);
+            setIsLoading(false);
+            return;
+          }
+        } catch (phoneCheckError) {
+          console.log("⚠️ Endpoint de validación de teléfono no disponible, continuando sin validar duplicados");
+        }
+
+        // Intentar verificar documento (no bloquear si falla)
+        try {
+          const documentCheck = await apiPost<{ exists: boolean; message?: string }>("/api/auth/check-document", {
+            tipo_documento: formData.tipo_documento,
+            numero_documento: formData.numero_documento,
+          });
+
+          if (documentCheck.exists) {
+            setError("Este número de documento ya está registrado. Por favor, usa otro o inicia sesión.");
+            setHasDocumentError(true);
+            setIsLoading(false);
+            return;
+          }
+        } catch (documentCheckError) {
+          console.log("⚠️ Endpoint de validación de documento no disponible, continuando sin validar duplicados");
+        }
+
+        // Crear usuario sin verificar antes de pasar al step 2
         const result = await apiPost<{
           message?: string;
           userId?: string;
@@ -175,6 +292,9 @@ export default function CreateAccountPage() {
 
         // Éxito: guardar userId y continuar al paso 2
         setUserId(result.userId || null);
+        setHasEmailError(false);
+        setHasPhoneError(false);
+        setHasDocumentError(false);
         setCurrentStep(2);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Error al crear usuario";
@@ -240,14 +360,20 @@ export default function CreateAccountPage() {
       }
     } else if (currentStep === 3) {
       // Paso 3: dirección - solo avanzar o ir a home
+      // Limpiar progreso guardado al completar
+      localStorage.removeItem("create_account_progress");
       router.push("/");
     } else if (currentStep === 4) {
       // Paso 4: pago - ir a home
+      // Limpiar progreso guardado al completar
+      localStorage.removeItem("create_account_progress");
       router.push("/");
     }
   };
 
   const handleSkipStep = () => {
+    // Limpiar progreso guardado al saltar pasos opcionales
+    localStorage.removeItem("create_account_progress");
     // Los pasos 3 y 4 son opcionales, ir directo a home
     router.push("/");
   };
@@ -305,6 +431,10 @@ export default function CreateAccountPage() {
             formData={formData}
             onChange={(data) => setFormData({ ...formData, ...data })}
             disabled={isLoading}
+            onValidationChange={(hasErrors) => {
+              setHasEmailError(hasErrors);
+              setHasPhoneError(hasErrors);
+            }}
           />
         );
       case 2:
@@ -375,7 +505,11 @@ export default function CreateAccountPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push("/login")}
+                onClick={() => {
+                  // Limpiar progreso al ir a login
+                  localStorage.removeItem("create_account_progress");
+                  router.push("/login");
+                }}
                 className="w-full"
               >
                 Iniciar sesión
@@ -421,7 +555,7 @@ export default function CreateAccountPage() {
                   <Button
                     type="button"
                     onClick={handleNextStep}
-                    disabled={isLoading}
+                    disabled={isLoading || (currentStep === 1 && (hasEmailError || hasPhoneError || hasDocumentError))}
                     className="flex-1 bg-black text-white hover:bg-gray-800"
                   >
                     {isLoading
@@ -464,7 +598,11 @@ export default function CreateAccountPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push("/login")}
+                onClick={() => {
+                  // Limpiar progreso al ir a login
+                  localStorage.removeItem("create_account_progress");
+                  router.push("/login");
+                }}
                 className="w-full"
               >
                 Iniciar sesión

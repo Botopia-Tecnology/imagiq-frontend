@@ -115,11 +115,10 @@ function BannerContent({
 
   const content = (
     <div
-      className={`absolute max-w-2xl px-6 ${
-        isMobile
-          ? "md:hidden flex flex-col items-center text-center"
-          : "hidden md:block"
-      }`}
+      className={`absolute max-w-2xl px-6 ${isMobile
+        ? "md:hidden flex flex-col items-center text-center"
+        : "hidden md:block"
+        }`}
       style={final}
     >
       {title && (
@@ -201,43 +200,30 @@ function ContentBlocksOverlay({
   bannerLinkUrl?: string | null; // URL del banner como fallback para CTAs
 }>) {
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ padding: '2%' }}>
-      <div className="relative w-full h-full pointer-events-auto">
-        {blocks.map((block) => {
+    <>
+      {blocks.map((block) => {
         const position = isMobile ? block.position_mobile : block.position_desktop;
-        
+
         // Configuración del contenedor: usar mobile si existe, sino desktop
-        const textAlign = isMobile && block.textAlign_mobile 
-          ? block.textAlign_mobile 
-          : block.textAlign || 'left';
-        const configuredMaxWidth = isMobile && block.maxWidth_mobile 
-          ? block.maxWidth_mobile 
-          : block.maxWidth || '600px';
-        const gap = isMobile && block.gap_mobile 
-          ? block.gap_mobile 
+        const textAlign = isMobile && block.textAlign_mobile
+          ? block.textAlign_mobile
+          : block.textAlign || 'center';
+        const gap = isMobile && block.gap_mobile
+          ? block.gap_mobile
           : block.gap || '12px';
 
         // Si forceShow está activo, no usar clases responsive
-        const visibilityClass = forceShow 
-          ? 'absolute' 
-          : `absolute ${isMobile ? 'md:hidden' : 'hidden md:block'}`;
+        const visibilityClass = forceShow
+          ? 'absolute z-10'
+          : `absolute z-10 ${isMobile ? 'md:hidden' : 'hidden md:block'}`;
 
-        // CÁLCULO INTELIGENTE: Limitar maxWidth basado en la posición para evitar overflow
-        // El bloque usa transform: translate(-50%, -50%), así que se expande en ambas direcciones
-        const safetyMargin = 4; // 4% de margen de seguridad
-        
-        // Calcular espacio disponible hacia los lados (el contenido se centra con translate -50%)
-        const spaceLeft = position.x - safetyMargin; // Espacio a la izquierda
-        const spaceRight = 100 - position.x - safetyMargin; // Espacio a la derecha
-        const availableHorizontalSpace = Math.min(spaceLeft, spaceRight) * 2; // Multiplicar por 2 porque se expande en ambas direcciones
-        
-        // Convertir configuredMaxWidth a un porcentaje si está en px
-        const maxWidthInVw = configuredMaxWidth.includes('px') 
-          ? `min(${configuredMaxWidth}, ${availableHorizontalSpace}vw)` 
-          : `min(${configuredMaxWidth}, ${availableHorizontalSpace}%)`;
-        
-        // Aplicar límite inteligente
-        const maxWidth = maxWidthInVw;
+        // Ajustar transform basado en textAlign (el dashboard guarda según la justificación)
+        let transformX = '-50%'; // Por defecto: centrado
+        if (textAlign === 'left') {
+          transformX = '0%'; // Izquierda: el punto está en el borde izquierdo
+        } else if (textAlign === 'right') {
+          transformX = '-100%'; // Derecha: el punto está en el borde derecho
+        }
 
         // Estilos del título: usar mobile si existe, sino desktop
         const titleStyles = block.title && {
@@ -250,12 +236,6 @@ function ContentBlocksOverlay({
           textShadow: (isMobile && block.title_mobile?.textShadow) || block.title.textShadow || '2px 2px 4px rgba(0,0,0,0.5)',
         };
 
-        // Calcular espacio disponible vertical (top/bottom)
-        const spaceTop = position.y - safetyMargin;
-        const spaceBottom = 100 - position.y - safetyMargin;
-        const availableVerticalSpace = Math.min(spaceTop, spaceBottom) * 2;
-        const maxHeight = `${availableVerticalSpace}vh`;
-
         return (
           <div
             key={block.id}
@@ -263,24 +243,12 @@ function ContentBlocksOverlay({
             style={{
               left: `${position.x}%`,
               top: `${position.y}%`,
-              transform: 'translate(-50%, -50%)',
-              maxWidth,
-              maxHeight,
-              position: 'relative', // Necesario para stretched link
-              overflow: 'hidden', // Importante: cortar cualquier contenido que se salga
-              boxSizing: 'border-box',
+              transform: `translate(${transformX}, -50%)`,
             }}
           >
             <div
               className="flex flex-col"
-              style={{
-                gap,
-                // Aplicar word-wrap para evitar desbordamiento de texto
-                wordWrap: 'break-word',
-                overflowWrap: 'break-word',
-                hyphens: 'auto',
-                maxWidth: '100%',
-              }}
+              style={{ gap }}
             >
               {/* Título */}
               {block.title && (
@@ -378,8 +346,7 @@ function ContentBlocksOverlay({
           </div>
         );
       })}
-      </div>
-    </div>
+    </>
   );
 }
 
@@ -398,11 +365,11 @@ export default function DynamicBannerClean({
 }: Readonly<DynamicBannerProps>) {
   // Si hay mockBanner, usarlo en lugar del API
   const { banners: apiBanners, loading } = useDynamicBanner(placement || '');
-  const banners = React.useMemo(() => 
+  const banners = React.useMemo(() =>
     mockBanner ? [mockBanner] : apiBanners,
     [mockBanner, apiBanners]
   );
-  
+
   const controller = useCarouselController({
     itemsCount: banners.length,
     displayDuration,
@@ -491,13 +458,13 @@ export default function DynamicBannerClean({
         desktopPosition,
         desktopRef.current,
         (currentBanner.desktop_video_url || currentBanner.desktop_image_url) ??
-          undefined
+        undefined
       );
       const m = await compute(
         mobilePosition,
         mobileRef.current,
         (currentBanner.mobile_video_url || currentBanner.mobile_image_url) ??
-          undefined
+        undefined
       );
 
       if (!mounted) return;
@@ -560,7 +527,7 @@ export default function DynamicBannerClean({
   const hasCTAsInBlocks = contentBlocks.some(block => block.cta);
 
   const content = (
-    <div className={`relative w-full overflow-hidden ${className}`}>
+    <div className={`relative w-full overflow-hidden max-w-[1440px] mx-auto ${className}`}>
       <div className="relative w-full min-h-[700px] md:min-h-[500px] lg:min-h-[800px] rounded-lg overflow-hidden">
         {showOverlay && <div className="absolute inset-0 bg-black/30 z-10" />}
 
@@ -575,8 +542,8 @@ export default function DynamicBannerClean({
           let contentBlocks: ContentBlock[] = [];
           if (banner.content_blocks) {
             try {
-              contentBlocks = typeof banner.content_blocks === 'string' 
-                ? JSON.parse(banner.content_blocks) 
+              contentBlocks = typeof banner.content_blocks === 'string'
+                ? JSON.parse(banner.content_blocks)
                 : banner.content_blocks;
             } catch (e) {
               console.error('Error parsing content_blocks:', e);
@@ -601,7 +568,7 @@ export default function DynamicBannerClean({
                 playsInline
                 preload="metadata"
                 poster={optimizedPoster}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover"
                 onEnded={isActive ? controller.handleVideoEnd : undefined}
                 key={`desktop-video-${banner.id}-${index}`}
               >
@@ -613,9 +580,10 @@ export default function DynamicBannerClean({
             const optimizedImageUrl = getCloudinaryUrl(banner.desktop_image_url, 'hero-banner');
 
             bannerDesktopMedia = (
-              <div
-                className="w-full h-full bg-contain bg-center bg-no-repeat"
-                style={{ backgroundImage: `url(${optimizedImageUrl})` }}
+              <img
+                src={optimizedImageUrl}
+                alt={banner.name || 'Banner'}
+                className="w-full h-full object-cover"
                 key={`desktop-image-${banner.id}-${index}`}
               />
             );
@@ -636,7 +604,7 @@ export default function DynamicBannerClean({
                 playsInline
                 preload="metadata"
                 poster={optimizedMobilePoster}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover"
                 onEnded={isActive ? controller.handleVideoEnd : undefined}
                 key={`mobile-video-${banner.id}-${index}`}
               >
@@ -648,9 +616,10 @@ export default function DynamicBannerClean({
             const optimizedMobileImageUrl = getCloudinaryUrl(banner.mobile_image_url, 'mobile-banner');
 
             bannerMobileMedia = (
-              <div
-                className="w-full h-full bg-contain bg-center bg-no-repeat"
-                style={{ backgroundImage: `url(${optimizedMobileImageUrl})` }}
+              <img
+                src={optimizedMobileImageUrl}
+                alt={banner.name || 'Banner'}
+                className="w-full h-full object-cover"
                 key={`mobile-image-${banner.id}-${index}`}
               />
             );
@@ -672,7 +641,7 @@ export default function DynamicBannerClean({
               {!forceMobileView && (
                 <div
                   ref={isActive ? desktopRef : null}
-                  className="hidden md:block absolute inset-0"
+                  className="banner-media-container hidden md:block absolute inset-0"
                 >
                   {bannerDesktopMedia}
                 </div>
@@ -681,7 +650,7 @@ export default function DynamicBannerClean({
               {/* Vista Mobile - siempre visible si forceMobileView está activo */}
               <div
                 ref={isActive ? mobileRef : null}
-                className={forceMobileView ? "absolute inset-0" : "block md:hidden absolute inset-0"}
+                className={`banner-media-container ${forceMobileView ? "absolute inset-0" : "block md:hidden absolute inset-0"}`}
               >
                 {bannerMobileMedia}
               </div>
@@ -741,11 +710,10 @@ export default function DynamicBannerClean({
               <button
                 key={index}
                 onClick={() => controller.goToIndex(index)}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  index === controller.currentIndex
-                    ? "bg-white w-8"
-                    : "bg-white/50 hover:bg-white/75"
-                }`}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${index === controller.currentIndex
+                  ? "bg-white w-8"
+                  : "bg-white/50 hover:bg-white/75"
+                  }`}
                 aria-label={`Ir al banner ${index + 1}`}
               />
             ))}

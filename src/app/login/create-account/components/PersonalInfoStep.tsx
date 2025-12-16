@@ -2,7 +2,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { apiPost } from "@/lib/api-client";
 
 interface PersonalInfoData {
   nombre: string;
@@ -21,11 +22,166 @@ interface PersonalInfoStepProps {
   formData: PersonalInfoData;
   onChange: (data: Partial<PersonalInfoData>) => void;
   disabled?: boolean;
+  onValidationChange?: (hasErrors: boolean) => void;
 }
 
-export function PersonalInfoStep({ formData, onChange, disabled }: PersonalInfoStepProps) {
+export function PersonalInfoStep({ formData, onChange, disabled, onValidationChange }: PersonalInfoStepProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Estados para validación de duplicados
+  const [emailError, setEmailError] = useState<string>("");
+  const [phoneError, setPhoneError] = useState<string>("");
+  const [documentError, setDocumentError] = useState<string>("");
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [isCheckingPhone, setIsCheckingPhone] = useState(false);
+  const [isCheckingDocument, setIsCheckingDocument] = useState(false);
+
+  // Notificar al padre cuando cambien los errores de validación
+  useEffect(() => {
+    // Solo notificar errores si la validación en tiempo real está habilitada
+    const hasErrors = ENABLE_REALTIME_VALIDATION && !!(emailError || phoneError || documentError || isCheckingEmail || isCheckingPhone || isCheckingDocument);
+    if (onValidationChange) {
+      onValidationChange(hasErrors);
+    }
+  }, [emailError, phoneError, documentError, isCheckingEmail, isCheckingPhone, isCheckingDocument, onValidationChange]);
+
+  // Función para verificar si el email ya está registrado
+  const checkEmailAvailability = useCallback(async (email: string) => {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError("");
+      return;
+    }
+
+    setIsCheckingEmail(true);
+    setEmailError("");
+
+    try {
+      const response = await apiPost<{ exists: boolean; message?: string }>("/api/auth/check-email", {
+        email: email.toLowerCase(),
+      });
+
+      if (response.exists) {
+        setEmailError("Este correo electrónico ya está registrado");
+      } else {
+        setEmailError("");
+      }
+    } catch (error) {
+      console.log("⚠️ Endpoint de validación de email no disponible (esperado en desarrollo):", error);
+      // Si el endpoint no existe (404), no bloquear - permitir continuar
+      setEmailError("");
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  }, []);
+
+  // Función para verificar si el teléfono ya está registrado
+  const checkPhoneAvailability = useCallback(async (telefono: string, codigoPais: string) => {
+    if (!telefono || telefono.length < 10) {
+      setPhoneError("");
+      return;
+    }
+
+    setIsCheckingPhone(true);
+    setPhoneError("");
+
+    try {
+      const response = await apiPost<{ exists: boolean; message?: string }>("/api/auth/check-phone", {
+        telefono: telefono,
+        codigo_pais: codigoPais,
+      });
+
+      if (response.exists) {
+        setPhoneError("Este número de teléfono ya está registrado");
+      } else {
+        setPhoneError("");
+      }
+    } catch (error) {
+      console.log("⚠️ Endpoint de validación de teléfono no disponible (esperado en desarrollo):", error);
+      // Si el endpoint no existe (404), no bloquear - permitir continuar
+      setPhoneError("");
+    } finally {
+      setIsCheckingPhone(false);
+    }
+  }, []);
+
+  // Función para verificar si el documento ya está registrado
+  const checkDocumentAvailability = useCallback(async (tipoDocumento: string, numeroDocumento: string) => {
+    if (!numeroDocumento || numeroDocumento.length < 6) {
+      setDocumentError("");
+      return;
+    }
+
+    setIsCheckingDocument(true);
+    setDocumentError("");
+
+    try {
+      const response = await apiPost<{ exists: boolean; message?: string }>("/api/auth/check-document", {
+        tipo_documento: tipoDocumento,
+        numero_documento: numeroDocumento,
+      });
+
+      if (response.exists) {
+        setDocumentError("Este número de documento ya está registrado");
+      } else {
+        setDocumentError("");
+      }
+    } catch (error) {
+      console.log("⚠️ Endpoint de validación de documento no disponible (esperado en desarrollo):", error);
+      // Si el endpoint no existe (404), no bloquear - permitir continuar
+      setDocumentError("");
+    } finally {
+      setIsCheckingDocument(false);
+    }
+  }, []);
+
+  // ========================================
+  // 🔧 CONFIGURACIÓN DE VALIDACIÓN EN TIEMPO REAL
+  // ========================================
+  // Los endpoints ya están funcionando (se usan en el paso 2)
+  // - POST /api/auth/check-email
+  // - POST /api/auth/check-phone
+  // - POST /api/auth/check-document
+  const ENABLE_REALTIME_VALIDATION = true;
+
+  // useEffect con debounce para validar email
+  useEffect(() => {
+    if (!ENABLE_REALTIME_VALIDATION) return;
+    
+    const timeoutId = setTimeout(() => {
+      if (formData.email) {
+        checkEmailAvailability(formData.email);
+      }
+    }, 800); // Esperar 800ms después de que el usuario deje de escribir
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.email, checkEmailAvailability]);
+
+  // useEffect con debounce para validar teléfono
+  useEffect(() => {
+    if (!ENABLE_REALTIME_VALIDATION) return;
+    
+    const timeoutId = setTimeout(() => {
+      if (formData.telefono) {
+        checkPhoneAvailability(formData.telefono, formData.codigo_pais);
+      }
+    }, 800); // Esperar 800ms después de que el usuario deje de escribir
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.telefono, formData.codigo_pais, checkPhoneAvailability]);
+
+  // useEffect con debounce para validar documento
+  useEffect(() => {
+    if (!ENABLE_REALTIME_VALIDATION) return;
+    
+    const timeoutId = setTimeout(() => {
+      if (formData.numero_documento) {
+        checkDocumentAvailability(formData.tipo_documento, formData.numero_documento);
+      }
+    }, 800); // Esperar 800ms después de que el usuario deje de escribir
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.numero_documento, formData.tipo_documento, checkDocumentAvailability]);
 
   // Validar requisitos de seguridad de la contraseña
   const passwordRequirements = {
@@ -113,17 +269,37 @@ export function PersonalInfoStep({ formData, onChange, disabled }: PersonalInfoS
 
       <div className="space-y-2">
         <Label htmlFor="email">Correo electrónico *</Label>
-        <Input
-          id="email"
-          type="email"
-          inputMode="email"
-          placeholder="tu@email.com"
-          value={formData.email}
-          onChange={(e) => onChange({ email: e.target.value })}
-          disabled={disabled}
-          autoComplete="email"
-          autoCapitalize="none"
-        />
+        <div className="relative">
+          <Input
+            id="email"
+            type="email"
+            inputMode="email"
+            placeholder="tu@email.com"
+            value={formData.email}
+            onChange={(e) => onChange({ email: e.target.value })}
+            disabled={disabled}
+            autoComplete="email"
+            autoCapitalize="none"
+            className={emailError ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+          />
+          {ENABLE_REALTIME_VALIDATION && isCheckingEmail && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-black"></div>
+            </div>
+          )}
+        </div>
+        {ENABLE_REALTIME_VALIDATION && emailError && (
+          <p className="text-xs text-red-600 flex items-center gap-1">
+            <span className="font-bold">✗</span>
+            {emailError}
+          </p>
+        )}
+        {ENABLE_REALTIME_VALIDATION && !emailError && formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && !isCheckingEmail && (
+          <p className="text-xs text-green-600 flex items-center gap-1">
+            <span className="font-bold">✓</span>
+            Correo disponible
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -132,7 +308,12 @@ export function PersonalInfoStep({ formData, onChange, disabled }: PersonalInfoS
           <div className="flex gap-2">
             <select
               value={`+${formData.codigo_pais}`}
-              onChange={(e) => onChange({ codigo_pais: e.target.value.replace('+', '') })}
+              onChange={(e) => {
+                const newCodigoPais = e.target.value.replace('+', '');
+                onChange({ codigo_pais: newCodigoPais });
+                // Limpiar errores al cambiar código de país
+                setPhoneError("");
+              }}
               disabled={disabled}
               style={{ backgroundColor: '#ffffff' }}
               className="w-[110px] h-9 rounded-md border border-gray-300 px-3 py-1 text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
@@ -143,18 +324,37 @@ export function PersonalInfoStep({ formData, onChange, disabled }: PersonalInfoS
                 </option>
               ))}
             </select>
-            <Input
-              id="telefono"
-              type="tel"
-              inputMode="tel"
-              placeholder="3001234567"
-              value={formData.telefono}
-              onChange={(e) => onChange({ telefono: e.target.value })}
-              disabled={disabled}
-              autoComplete="tel"
-              className="flex-1"
-            />
+            <div className="flex-1 relative">
+              <Input
+                id="telefono"
+                type="tel"
+                inputMode="tel"
+                placeholder="3001234567"
+                value={formData.telefono}
+                onChange={(e) => onChange({ telefono: e.target.value })}
+                disabled={disabled}
+                autoComplete="tel"
+                className={phoneError ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+              />
+              {ENABLE_REALTIME_VALIDATION && isCheckingPhone && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-black"></div>
+                </div>
+              )}
+            </div>
           </div>
+          {ENABLE_REALTIME_VALIDATION && phoneError && (
+            <p className="text-xs text-red-600 flex items-center gap-1">
+              <span className="font-bold">✗</span>
+              {phoneError}
+            </p>
+          )}
+          {ENABLE_REALTIME_VALIDATION && !phoneError && formData.telefono && formData.telefono.length >= 10 && !isCheckingPhone && (
+            <p className="text-xs text-green-600 flex items-center gap-1">
+              <span className="font-bold">✓</span>
+              Teléfono disponible
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -225,16 +425,47 @@ export function PersonalInfoStep({ formData, onChange, disabled }: PersonalInfoS
         </div>
         <div className="space-y-2">
           <Label htmlFor="numero_documento">Número *</Label>
-          <Input
-            id="numero_documento"
-            type="text"
-            inputMode="numeric"
-            placeholder="1234567890"
-            value={formData.numero_documento}
-            onChange={(e) => onChange({ numero_documento: e.target.value })}
-            disabled={disabled}
-            autoComplete="off"
-          />
+          <div className="relative">
+            <Input
+              id="numero_documento"
+              type="text"
+              inputMode="numeric"
+              placeholder="1234567890"
+              value={formData.numero_documento}
+              onChange={(e) => onChange({ numero_documento: e.target.value })}
+              disabled={disabled}
+              autoComplete="off"
+              className={documentError ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+            />
+            {ENABLE_REALTIME_VALIDATION && isCheckingDocument && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+              </div>
+            )}
+            {ENABLE_REALTIME_VALIDATION && !isCheckingDocument && !documentError && formData.numero_documento && formData.numero_documento.length >= 6 && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+                <svg className="h-5 w-5" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                  <path d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+            )}
+          </div>
+          {ENABLE_REALTIME_VALIDATION && documentError && (
+            <p className="text-sm text-red-500 flex items-center gap-1">
+              <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              {documentError}
+            </p>
+          )}
+          {ENABLE_REALTIME_VALIDATION && !documentError && !isCheckingDocument && formData.numero_documento && formData.numero_documento.length >= 6 && (
+            <p className="text-sm text-green-500 flex items-center gap-1">
+              <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M5 13l4 4L19 7"></path>
+              </svg>
+              Documento disponible
+            </p>
+          )}
         </div>
       </div>
 

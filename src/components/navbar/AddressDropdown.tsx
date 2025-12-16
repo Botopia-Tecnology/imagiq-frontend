@@ -79,13 +79,36 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   // Verificar si estamos en el cliente
   useEffect(() => {
     setIsMounted(true);
+    
+    // CRÍTICO: Cargar dirección de invitado INMEDIATAMENTE al montar (antes de verificar autenticación)
+    // Esto asegura que la dirección se muestre después de un refresh
+    try {
+      let savedAddress = globalThis.window?.localStorage.getItem('checkout-address');
+      if (!savedAddress) {
+        savedAddress = globalThis.window?.localStorage.getItem('imagiq_default_address');
+      }
+      
+      if (savedAddress) {
+        const direccion = JSON.parse(savedAddress);
+        const address = direccionToAddress(direccion) as Address;
+        setGuestAddress(address);
+        console.log('✅ [AddressDropdown] Dirección de invitado cargada al montar:', address);
+      }
+    } catch (error) {
+      console.error('Error reading guest address from localStorage on mount:', error);
+    }
   }, []);
 
-  // Para usuarios invitados, leer dirección de localStorage
+  // Para usuarios invitados, leer dirección de localStorage cuando cambia autenticación
   useEffect(() => {
     if (!isAuthenticated || !user?.id) {
       try {
-        const savedAddress = globalThis.window?.localStorage.getItem('checkout-address');
+        // Buscar primero en checkout-address, si no existe buscar en imagiq_default_address
+        let savedAddress = globalThis.window?.localStorage.getItem('checkout-address');
+        if (!savedAddress) {
+          savedAddress = globalThis.window?.localStorage.getItem('imagiq_default_address');
+        }
+        
         if (savedAddress) {
           const direccion = JSON.parse(savedAddress);
           // Convertir Direccion a Address usando la función helper
@@ -99,6 +122,7 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
         setGuestAddress(null);
       }
     } else {
+      // Si el usuario se autentica, limpiar dirección de invitado
       setGuestAddress(null);
     }
   }, [isAuthenticated, user?.id]);
@@ -110,11 +134,17 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
         const key = (e as StorageEvent).key;
         if (key === 'checkout-address' || key === 'imagiq_default_address' || !key) {
           try {
-            const savedAddress = globalThis.window?.localStorage.getItem('checkout-address');
+            // Buscar primero en checkout-address, si no existe buscar en imagiq_default_address
+            let savedAddress = globalThis.window?.localStorage.getItem('checkout-address');
+            if (!savedAddress) {
+              savedAddress = globalThis.window?.localStorage.getItem('imagiq_default_address');
+            }
+            
             if (savedAddress) {
               const direccion = JSON.parse(savedAddress);
               const address = direccionToAddress(direccion) as Address;
               setGuestAddress(address);
+              console.log('✅ [AddressDropdown] Dirección de invitado actualizada desde storage:', address);
             } else {
               setGuestAddress(null);
             }

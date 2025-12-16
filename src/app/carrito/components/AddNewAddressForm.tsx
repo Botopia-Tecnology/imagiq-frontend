@@ -40,6 +40,7 @@ interface AddNewAddressFormProps {
     barrio?: string;
   } | null; // Datos de geolocalización automática
   isRequestingLocation?: boolean; // Si está en proceso de obtener la ubicación
+  enableAutoSelect?: boolean; // Habilitar selección automática de la primera predicción
 }
 
 export default function AddNewAddressForm({
@@ -51,6 +52,7 @@ export default function AddNewAddressForm({
   disabled = false,
   geoLocationData,
   isRequestingLocation = false,
+  enableAutoSelect = false,
 }: AddNewAddressFormProps) {
   const { user, login } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
@@ -1334,6 +1336,7 @@ export default function AddNewAddressForm({
               onPlaceSelect={handleAddressSelect}
               value={suggestedAddress}
               disabled={disabled || !formData.nombreCalle || !formData.numeroPrincipal || !formData.numeroSecundario || !formData.numeroComplementario || !formData.departamento || !formData.ciudad}
+              enableAutoSelect={enableAutoSelect}
             />
           </div>
           {errors.address && (
@@ -1469,7 +1472,9 @@ export default function AddNewAddressForm({
       {/* Botones de navegación y submit - Solo en paso 2 */}
       {currentStep === 2 && (
         <div className="flex gap-3 pt-2">
-          {!withContainer ? (
+          {/* Si hay onSubmitRef, significa que el botón de guardar está fuera del formulario (Step 2) */}
+          {/* Si NO hay onSubmitRef, debemos mostrar el botón de guardar aquí dentro (Modales) */}
+          {(!withContainer && onSubmitRef) ? (
             // En Step2: Solo mostrar "Atrás" que ocupe todo el ancho
             <button
               type="button"
@@ -1583,6 +1588,7 @@ export default function AddNewAddressForm({
               addressType="billing"
               placeholder="Busca tu dirección de facturación (ej: Calle 80 # 15-25, Bogotá)"
               onPlaceSelect={handleBillingAddressSelect}
+              enableAutoSelect={enableAutoSelect}
             />
             {errors.billingAddress && (
               <p className="text-red-500 text-xs mt-1">

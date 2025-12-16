@@ -358,7 +358,7 @@ export default function AddNewAddressForm({
     if (!formData.departamento.trim()) missing.push("Departamento");
     if (!formData.ciudad.trim()) missing.push("Ciudad");
     if (!formData.nombreCalle.trim()) missing.push("Tipo de Vía");
-    if (!formData.numeroPrincipal.trim()) missing.push("# Principal");
+    if (!formData.numeroPrincipal.trim()) missing.push("Principal");
     if (!formData.numeroSecundario.trim()) missing.push("# Secund.");
     if (!formData.numeroComplementario.trim()) missing.push("# Compl.");
     if (!formData.setsReferencia.trim()) missing.push("Sets de referencia");
@@ -1140,10 +1140,12 @@ export default function AddNewAddressForm({
           </div>
         </div>
 
-        {/* Grid: Tipo de Vía y números de dirección en una sola línea */}
-        <div className={!withContainer ? "grid grid-cols-[1.75fr_1fr_0.55fr_0.65fr] gap-2" : "grid grid-cols-[2fr_1fr_0.6fr_0.6fr] gap-2"}>
+        {/* Grid: Tipo de Vía y números de dirección - 2 filas en móvil, 1 fila en desktop */}
+        <div className={!withContainer 
+          ? "grid grid-cols-2 md:grid-cols-[1.5fr_1.2fr_0.75fr_0.75fr] gap-2" 
+          : "grid grid-cols-2 md:grid-cols-[1.8fr_1.2fr_0.8fr_0.8fr] gap-2"}>
           {/* Tipo de Vía */}
-          <div>
+          <div className="w-full md:w-auto">
             <label
               htmlFor="nombreCalle"
               className="block text-sm font-bold text-gray-900 mb-1"
@@ -1176,12 +1178,12 @@ export default function AddNewAddressForm({
           </div>
 
           {/* Número Principal */}
-          <div>
+          <div className="w-full md:w-auto">
             <label
               htmlFor="numeroPrincipal"
               className="block text-sm font-bold text-gray-900 mb-1"
             >
-              # Principal <span className="text-red-500">*</span>
+              Principal <span className="text-red-500">*</span>
             </label>
             <input
               id="numeroPrincipal"
@@ -1204,15 +1206,15 @@ export default function AddNewAddressForm({
           </div>
 
           {/* Número Secundario */}
-          <div>
+          <div className="w-full md:w-auto">
             <label
               htmlFor="numeroSecundario"
               className="block text-sm font-bold text-gray-900 mb-1"
             >
               # Secund.
             </label>
-            <div className="flex items-center gap-0.5">
-              <span className="text-gray-600 font-medium text-xs">#</span>
+            <div className="flex items-center gap-1">
+              <span className="text-gray-600 font-medium text-sm flex-shrink-0">#</span>
               <input
                 id="numeroSecundario"
                 type="text"
@@ -1220,7 +1222,7 @@ export default function AddNewAddressForm({
                 onChange={(e) => handleInputChange("numeroSecundario", e.target.value)}
                 placeholder="15"
                 disabled={disabled}
-                className={`flex-1 px-2 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                className={`w-full px-2 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
                   disabled
                     ? "bg-gray-100 cursor-not-allowed opacity-60"
                     : getFieldBackgroundClass(formData.numeroSecundario)
@@ -1232,15 +1234,15 @@ export default function AddNewAddressForm({
           </div>
 
           {/* Número Complementario */}
-          <div>
+          <div className="w-full md:w-auto">
             <label
               htmlFor="numeroComplementario"
               className="block text-sm font-bold text-gray-900 mb-1"
             >
               # Compl.
             </label>
-            <div className="flex items-center gap-0.5">
-              <span className="text-gray-600 font-medium text-xs">-</span>
+            <div className="flex items-center gap-1">
+              <span className="text-gray-600 font-medium text-sm flex-shrink-0">-</span>
               <input
                 id="numeroComplementario"
                 type="text"
@@ -1248,7 +1250,7 @@ export default function AddNewAddressForm({
                 onChange={(e) => handleInputChange("numeroComplementario", e.target.value)}
                 placeholder="25"
                 disabled={disabled}
-                className={`flex-1 px-2 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                className={`w-full px-2 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
                   disabled
                     ? "bg-gray-100 cursor-not-allowed opacity-60"
                     : getFieldBackgroundClass(formData.numeroComplementario)

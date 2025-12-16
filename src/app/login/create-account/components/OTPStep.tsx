@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, MessageCircle, Edit3 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { apiPost } from "@/lib/api-client";
 
 interface OTPStepProps {
   email: string;
@@ -34,6 +35,8 @@ export function OTPStep({
   const [editMode, setEditMode] = useState<'email' | 'phone' | null>(null);
   const [tempEmail, setTempEmail] = useState(email);
   const [tempPhone, setTempPhone] = useState(telefono);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationError, setValidationError] = useState<string>("");
 
   // Sincronizar valores temporales cuando cambien las props
   useEffect(() => {
@@ -44,19 +47,100 @@ export function OTPStep({
     setTempPhone(telefono);
   }, [telefono]);
 
-  const handleSaveEdit = () => {
-    if (editMode === 'email') {
-      onChangeEmail(tempEmail);
-    } else if (editMode === 'phone') {
-      onChangePhone(tempPhone);
+  // Limpiar error cuando cambie el modo de edición
+  useEffect(() => {
+    setValidationError("");
+  }, [editMode]);
+
+  const handleSaveEdit = async () => {
+    setIsValidating(true);
+    setValidationError("");
+
+    try {
+      if (editMode === 'email') {
+        // Validar que el email sea diferente al actual
+        if (tempEmail.toLowerCase() === email.toLowerCase()) {
+          setValidationError("El email es el mismo que el actual");
+          setIsValidating(false);
+          return;
+        }
+
+        // Validar formato de email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(tempEmail)) {
+          setValidationError("Formato de email inválido");
+          setIsValidating(false);
+          return;
+        }
+
+        // Verificar si el email ya está registrado
+        try {
+          const response = await apiPost<{ exists: boolean; message?: string }>("/api/auth/check-email", {
+            email: tempEmail.toLowerCase(),
+          });
+
+          if (response.exists) {
+            setValidationError("Este correo electrónico ya está registrado. Por favor, usa otro o inicia sesión.");
+            setIsValidating(false);
+            return;
+          }
+        } catch (error) {
+          console.log("⚠️ No se pudo validar el email, permitiendo cambio:", error);
+        }
+
+        // Si pasa las validaciones, guardar el cambio
+        onChangeEmail(tempEmail);
+        setEditMode(null);
+        setValidationError("");
+      } else if (editMode === 'phone') {
+        // Validar que el teléfono sea diferente al actual
+        if (tempPhone === telefono) {
+          setValidationError("El teléfono es el mismo que el actual");
+          setIsValidating(false);
+          return;
+        }
+
+        // Validar longitud del teléfono
+        if (tempPhone.length !== 10) {
+          setValidationError("El teléfono debe tener 10 dígitos");
+          setIsValidating(false);
+          return;
+        }
+
+        // Verificar si el teléfono ya está registrado
+        try {
+          const response = await apiPost<{ exists: boolean; message?: string }>("/api/auth/check-phone", {
+            telefono: tempPhone,
+            codigo_pais: "57", // Colombia por defecto
+          });
+
+          if (response.exists) {
+            setValidationError("Este número de teléfono ya está registrado. Por favor, usa otro o inicia sesión.");
+            setIsValidating(false);
+            return;
+          }
+        } catch (error) {
+          console.log("⚠️ No se pudo validar el teléfono, permitiendo cambio:", error);
+        }
+
+        // Si pasa las validaciones, guardar el cambio
+        onChangePhone(tempPhone);
+        setEditMode(null);
+        setValidationError("");
+      }
+    } catch (error) {
+      console.error("Error al validar cambio:", error);
+      setValidationError("Error al validar. Intenta de nuevo.");
+    } finally {
+      setIsValidating(false);
     }
-    setEditMode(null);
   };
 
   const handleCancelEdit = () => {
     setTempEmail(email);
     setTempPhone(telefono);
     setEditMode(null);
+    setValidationError("");
   };
 
   return (
@@ -74,17 +158,26 @@ export function OTPStep({
                 id="edit-email"
                 type="email"
                 value={tempEmail}
-                onChange={(e) => setTempEmail(e.target.value)}
-                disabled={disabled}
+                onChange={(e) => {
+                  setTempEmail(e.target.value);
+                  setValidationError(""); // Limpiar error al escribir
+                }}
+                disabled={disabled || isValidating}
                 className="text-sm"
               />
+              {validationError && (
+                <p className="text-xs text-red-600 flex items-center gap-1">
+                  <span className="font-bold">✗</span>
+                  {validationError}
+                </p>
+              )}
               <div className="flex gap-2">
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
                   onClick={handleCancelEdit}
-                  disabled={disabled}
+                  disabled={disabled || isValidating}
                   className="flex-1"
                 >
                   Cancelar
@@ -93,10 +186,10 @@ export function OTPStep({
                   type="button"
                   size="sm"
                   onClick={handleSaveEdit}
-                  disabled={disabled || !tempEmail}
+                  disabled={disabled || !tempEmail || isValidating}
                   className="flex-1 bg-black text-white hover:bg-gray-800"
                 >
-                  Guardar
+                  {isValidating ? "Validando..." : "Guardar"}
                 </Button>
               </div>
             </div>
@@ -129,18 +222,27 @@ export function OTPStep({
                 type="tel"
                 placeholder="3001234567"
                 value={tempPhone}
-                onChange={(e) => setTempPhone(e.target.value.replace(/\D/g, ""))}
-                disabled={disabled}
+                onChange={(e) => {
+                  setTempPhone(e.target.value.replace(/\D/g, ""));
+                  setValidationError(""); // Limpiar error al escribir
+                }}
+                disabled={disabled || isValidating}
                 maxLength={10}
                 className="text-sm"
               />
+              {validationError && (
+                <p className="text-xs text-red-600 flex items-center gap-1">
+                  <span className="font-bold">✗</span>
+                  {validationError}
+                </p>
+              )}
               <div className="flex gap-2">
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
                   onClick={handleCancelEdit}
-                  disabled={disabled}
+                  disabled={disabled || isValidating}
                   className="flex-1"
                 >
                   Cancelar
@@ -149,10 +251,10 @@ export function OTPStep({
                   type="button"
                   size="sm"
                   onClick={handleSaveEdit}
-                  disabled={disabled || !tempPhone || tempPhone.length !== 10}
+                  disabled={disabled || !tempPhone || tempPhone.length !== 10 || isValidating}
                   className="flex-1 bg-black text-white hover:bg-gray-800"
                 >
-                  Guardar
+                  {isValidating ? "Validando..." : "Guardar"}
                 </Button>
               </div>
             </div>

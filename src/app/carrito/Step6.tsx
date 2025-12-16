@@ -211,31 +211,71 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       } catch (error) {
         console.error("Error parsing billing data:", error);
       }
-    } else if (user) {
-      // Si no hay datos guardados, auto-completar con datos del usuario
-      setBillingData({
-        type: "natural",
-        nombre: `${user.nombre} ${user.apellido}`.trim(),
-        documento: user.numero_documento || "",
-        tipoDocumento: "C.C.", // Valor por defecto
-        email: user.email || "",
-        telefono: user.telefono || "",
-        direccion: null,
-      });
+    } else {
+      // Intentar obtener usuario desde localStorage si user del contexto es null (caso invitado)
+      const userToCheck = user || (() => {
+        try {
+          const userInfo = localStorage.getItem("imagiq_user");
+          return userInfo ? JSON.parse(userInfo) : null;
+        } catch {
+          return null;
+        }
+      })();
+
+      if (userToCheck) {
+        // Si no hay datos guardados, auto-completar con datos del usuario (o invitado)
+        setBillingData({
+          type: "natural",
+          nombre: `${userToCheck.nombre || ""} ${userToCheck.apellido || ""}`.trim(),
+          documento: userToCheck.numero_documento || "",
+          tipoDocumento: userToCheck.tipo_documento || "C.C.",
+          email: userToCheck.email || "",
+          telefono: userToCheck.telefono || userToCheck.celular || "",
+          direccion: null,
+        });
+      }
     }
   }, [user]);
 
   // Cargar dirección de envío si el usuario marca el checkbox
   useEffect(() => {
     if (useShippingData) {
-      const shippingAddress = localStorage.getItem("checkout-address");
+      let shippingAddress = localStorage.getItem("checkout-address");
+      // Fallback: si no hay checkout-address, intentar con imagiq_default_address (para invitados)
+      if (!shippingAddress) {
+        shippingAddress = localStorage.getItem("imagiq_default_address");
+      }
+
       if (shippingAddress) {
         try {
           const parsed = JSON.parse(shippingAddress);
-          setBillingData((prev) => ({
-            ...prev,
-            direccion: parsed,
-          }));
+          
+          setBillingData((prev) => {
+            // Intentar obtener datos del usuario para autocompletar campos vacíos
+            let userData = null;
+            try {
+              const userStr = localStorage.getItem("imagiq_user");
+              if (userStr) userData = JSON.parse(userStr);
+            } catch (e) { console.error(e); }
+
+            return {
+              ...prev,
+              direccion: parsed,
+              // Autocompletar solo si están vacíos
+              nombre: prev.nombre || (userData ? `${userData.nombre || ""} ${userData.apellido || ""}`.trim() : prev.nombre),
+              documento: prev.documento || (userData?.numero_documento || prev.documento),
+              tipoDocumento: prev.tipoDocumento || (userData?.tipo_documento || prev.tipoDocumento),
+              email: prev.email || (userData?.email || parsed.email || prev.email), // Usar email de dirección como fallback
+              telefono: prev.telefono || (userData?.telefono || userData?.celular || prev.telefono),
+            };
+          });
+          
+          // Limpiar error de dirección si existe
+          setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors.direccion;
+            return newErrors;
+          });
         } catch (error) {
           console.error("Error parsing shipping address:", error);
         }
@@ -393,7 +433,11 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       // Preparar datos a guardar; si se usa la dirección de envío, asegurar que guardamos su `id`
       let billingToSave: BillingData = { ...billingData };
       if (useShippingData) {
-        const shippingAddressStr = localStorage.getItem("checkout-address");
+        let shippingAddressStr = localStorage.getItem("checkout-address");
+        if (!shippingAddressStr) {
+          shippingAddressStr = localStorage.getItem("imagiq_default_address");
+        }
+        
         if (shippingAddressStr) {
           try {
             const parsed = JSON.parse(shippingAddressStr);

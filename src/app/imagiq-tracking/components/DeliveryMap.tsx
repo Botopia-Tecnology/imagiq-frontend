@@ -46,7 +46,7 @@ export function DeliveryMap({
             origenLng={longitudOrigen}
             destinoLat={latitudDestino}
             destinoLng={longitudDestino}
-            direccionOrigen={fullOrigenAddress}
+            direccionOrigen={(latitudOrigen && longitudOrigen) ? fullOrigenAddress : undefined}
             direccionDestino={fullDestinoAddress}
           />
         </div>

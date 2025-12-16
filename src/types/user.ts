@@ -62,6 +62,7 @@ export interface User {
   nombre: string;
   apellido: string;
   role?: 1 | 2 | 3 | 4;
+  rol?: 1 | 2 | 3 | 4; // Compatibilidad con backend (formato español)
   telefono: string;
   numero_documento: string;
   defaultAddress?: DefaultAddress | null;

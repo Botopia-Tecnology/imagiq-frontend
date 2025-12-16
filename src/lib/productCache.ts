@@ -42,6 +42,7 @@ interface CacheConfig {
 class ProductCache {
   private cache: Map<string, CacheEntry> = new Map();
   private singleProductCache: Map<string, SingleProductCacheEntry> = new Map();
+  private prefetchedKeys: Set<string> = new Set(); // Set para verificación rápida O(1)
   private config: CacheConfig;
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -87,15 +88,42 @@ class ProductCache {
   }
 
   /**
+   * Verifica si una clave está marcada como precargada (verificación rápida O(1))
+   */
+  isPrefetched(key: string): boolean {
+    return this.prefetchedKeys.has(key);
+  }
+
+  /**
+   * Marca una clave como precargada
+   */
+  markAsPrefetched(key: string): void {
+    this.prefetchedKeys.add(key);
+  }
+
+  /**
    * Obtiene una entrada del caché si existe y no está expirada
    * También busca variaciones ignorando sortBy/sortOrder para mayor flexibilidad
    */
   get(params: ProductFilterParams): ApiResponse<ProductApiResponse> | null {
-    // Primero intentar búsqueda exacta
+    // Primero verificar rápidamente si está en el Set de precargadas
     const exactKey = this.generateCacheKey(params);
+    if (this.prefetchedKeys.has(exactKey)) {
+      // Si está marcada como precargada, buscar en el caché
+      const exactEntry = this.cache.get(exactKey);
+      if (exactEntry && !this.isExpired(exactEntry)) {
+        return exactEntry.data;
+      }
+      // Si está expirada, remover del Set
+      this.prefetchedKeys.delete(exactKey);
+    }
+
+    // Intentar búsqueda exacta
     const exactEntry = this.cache.get(exactKey);
     
     if (exactEntry && !this.isExpired(exactEntry)) {
+      // Marcar como precargada si no estaba
+      this.prefetchedKeys.add(exactKey);
       return exactEntry.data;
     }
     
@@ -147,6 +175,8 @@ class ProductCache {
         matchParams.lazyOffset === searchParams.lazyOffset;
       
       if (criticalMatch) {
+        // Marcar como precargada si no estaba (usar la clave encontrada)
+        this.prefetchedKeys.add(key);
         return entry.data;
       }
     }
@@ -191,6 +221,7 @@ class ProductCache {
       const oldestKey = this.findOldestEntry();
       if (oldestKey) {
         this.cache.delete(oldestKey);
+        this.prefetchedKeys.delete(oldestKey);
       }
     }
 
@@ -202,6 +233,8 @@ class ProductCache {
     };
 
     this.cache.set(key, entry);
+    // Marcar automáticamente como precargada
+    this.prefetchedKeys.add(key);
   }
 
   /**
@@ -226,6 +259,7 @@ class ProductCache {
    */
   invalidate(params: ProductFilterParams): boolean {
     const key = this.generateCacheKey(params);
+    this.prefetchedKeys.delete(key);
     return this.cache.delete(key);
   }
 
@@ -245,6 +279,7 @@ class ProductCache {
 
     keysToDelete.forEach(key => {
       if (this.cache.delete(key)) {
+        this.prefetchedKeys.delete(key);
         deletedCount++;
       }
     });
@@ -267,6 +302,7 @@ class ProductCache {
 
     keysToDelete.forEach(key => {
       if (this.cache.delete(key)) {
+        this.prefetchedKeys.delete(key);
         deletedCount++;
       }
     });
@@ -294,6 +330,7 @@ class ProductCache {
   clear(): void {
     this.cache.clear();
     this.singleProductCache.clear();
+    this.prefetchedKeys.clear();
   }
 
   /**

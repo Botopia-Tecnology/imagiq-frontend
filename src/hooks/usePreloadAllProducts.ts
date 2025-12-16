@@ -9,8 +9,10 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useVisibleCategories } from './useVisibleCategories';
 import { usePreloadCategoryMenus } from './usePreloadCategoryMenus';
-import { getSubmenusFromCache, type Submenu, productEndpoints } from '@/lib/api';
+import { getSubmenusFromCache, type Submenu } from '@/lib/api';
 import { productCache } from '@/lib/productCache';
+import { executeBatchPrefetch } from '@/lib/batchPrefetch';
+import { usePrefetchCoordinator } from './usePrefetchCoordinator';
 import { isStaticCategoryUuid } from '@/constants/staticCategories';
 import type { VisibleCategory, ProductFilterParams } from '@/lib/api';
 
@@ -27,6 +29,7 @@ const MENU_CHECK_INTERVAL = 100; // Verificar cada 100ms
 export function usePreloadAllProducts() {
   const { visibleCategories, loading: categoriesLoading } = useVisibleCategories();
   const { preloadedMenus, isLoaded: menusLoaded } = usePreloadCategoryMenus();
+  const { shouldPrefetch } = usePrefetchCoordinator();
   const hasPreloadedRef = useRef(false);
 
   /**
@@ -135,7 +138,7 @@ export function usePreloadAllProducts() {
 
       // 1. Combinación de categoría base (sin menú ni submenú)
       const categoryParams = buildPrefetchParams(categoryCode);
-      if (!productCache.get(categoryParams)) {
+      if (shouldPrefetch(categoryParams)) {
         allCombinations.push({
           params: categoryParams,
           key: `${categoryCode}|${''}|${''}`,
@@ -148,7 +151,7 @@ export function usePreloadAllProducts() {
 
         // Combinación de categoría + menú
         const menuParams = buildPrefetchParams(categoryCode, menu.uuid);
-        if (!productCache.get(menuParams)) {
+        if (shouldPrefetch(menuParams)) {
           allCombinations.push({
             params: menuParams,
             key: `${categoryCode}|${menu.uuid}|${''}`,
@@ -160,7 +163,7 @@ export function usePreloadAllProducts() {
         for (const submenu of submenus) {
           if (!submenu.uuid) continue;
           const submenuParams = buildPrefetchParams(categoryCode, menu.uuid, submenu.uuid);
-          if (!productCache.get(submenuParams)) {
+          if (shouldPrefetch(submenuParams)) {
             allCombinations.push({
               params: submenuParams,
               key: `${categoryCode}|${menu.uuid}|${submenu.uuid}`,
@@ -176,38 +179,10 @@ export function usePreloadAllProducts() {
       return;
     }
 
-    // Paso 4: Hacer una sola petición batch con todas las combinaciones
-    try {
-      const batchRequests = allCombinations.map(combo => combo.params);
-      const batchResponse = await productEndpoints.getBatch(batchRequests);
-
-      if (batchResponse.success && batchResponse.data) {
-        // Paso 5: Procesar respuestas y guardar en caché individualmente
-        batchResponse.data.results.forEach((result) => {
-          if (result.success && result.data) {
-            const combo = allCombinations[result.index];
-            if (combo) {
-              // Guardar en caché
-              productCache.set(combo.params, {
-                data: result.data,
-                success: true,
-              });
-            }
-          } else {
-            // Silenciar errores individuales - no afectar la UX
-            console.debug(`[PreloadAllProducts] Error en combinación ${result.index}:`, result.error);
-          }
-        });
-
-        console.debug(`[PreloadAllProducts] Batch completado: ${allCombinations.length} combinaciones procesadas`);
-      } else {
-        console.debug('[PreloadAllProducts] Error en batch request:', batchResponse.message);
-      }
-    } catch (error) {
-      // Silenciar errores - no afectar la UX
-      console.debug('[PreloadAllProducts] Error en batch request:', error);
-    }
-  }, [preloadedMenus, getSubmenusFromCacheMap, waitForAllMenus, menusLoaded, buildPrefetchParams]);
+    // Paso 4: Hacer una sola petición batch con todas las combinaciones usando helper centralizado
+    const batchQueries = allCombinations.map(combo => combo.params);
+    await executeBatchPrefetch(batchQueries, 'usePreloadAllProducts');
+  }, [preloadedMenus, getSubmenusFromCacheMap, waitForAllMenus, menusLoaded, buildPrefetchParams, shouldPrefetch]);
 
   useEffect(() => {
     // Solo ejecutar una vez

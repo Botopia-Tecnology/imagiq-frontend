@@ -9,8 +9,8 @@ import { useMemo, useCallback, useEffect, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useSubmenus } from "@/hooks/useSubmenus";
 import type { Menu, ProductFilterParams } from "@/lib/api";
-import { productEndpoints } from "@/lib/api";
-import { productCache } from "@/lib/productCache";
+import { executeBatchPrefetch } from "@/lib/batchPrefetch";
+import { usePrefetchCoordinator } from "@/hooks/usePrefetchCoordinator";
 import SeriesSlider from "./SeriesSlider";
 import type { SeriesItem } from "../config/series-configs";
 import { submenuNameToFriendly } from "../utils/submenuUtils";
@@ -37,9 +37,7 @@ export default function SubmenuCarousel({
   const searchParams = useSearchParams();
   const { submenus, loading, error } = useSubmenus(menu.uuid);
   const { prefetchWithDebounce, cancelPrefetch, prefetchProducts } = usePrefetchProducts();
-  
-  // Ref para rastrear qué submenús ya se están precargando automáticamente
-  const autoPrefetchingRef = useRef<Set<string>>(new Set());
+  const { shouldPrefetch } = usePrefetchCoordinator();
   
   // Ref para rastrear qué submenús ya fueron precargados automáticamente
   const autoPrefetchedRef = useRef<Set<string>>(new Set());
@@ -114,7 +112,6 @@ export default function SubmenuCarousel({
     }
     
     // Resetear estados de precarga cuando cambian los parámetros
-    autoPrefetchingRef.current.clear();
     autoPrefetchedRef.current.clear();
 
     // Esperar 1 segundo después de que los submenús se carguen para iniciar precarga automática
@@ -136,69 +133,33 @@ export default function SubmenuCarousel({
         submenuUuid: submenuUuid,
       });
 
-      // Filtrar submenús que ya están en caché o se están precargando
-      const submenusToPrefetch = activeSubmenus.filter((submenu) => {
-        if (!submenu.uuid) return false;
-        if (autoPrefetchedRef.current.has(submenu.uuid) || autoPrefetchingRef.current.has(submenu.uuid)) {
-          return false;
-        }
-        // Verificar si ya está en caché
+      // Filtrar submenús que deben precargarse usando coordinador
+      const submenusToPrefetch: Array<{ submenu: typeof activeSubmenus[0]; params: ProductFilterParams }> = [];
+      
+      for (const submenu of activeSubmenus) {
+        if (!submenu.uuid) continue;
+        if (autoPrefetchedRef.current.has(submenu.uuid)) continue;
+        
         const params = buildParams(submenu.uuid);
-        return !productCache.get(params);
-      });
+        if (shouldPrefetch(params)) {
+          submenusToPrefetch.push({ submenu, params });
+        }
+      }
 
       if (submenusToPrefetch.length === 0) {
         return;
       }
 
-      // Marcar todos como en proceso
-      submenusToPrefetch.forEach((submenu) => {
+      // Ejecutar batch prefetch usando helper centralizado
+      const batchQueries = submenusToPrefetch.map(item => item.params);
+      await executeBatchPrefetch(batchQueries, 'SubmenuCarousel');
+
+      // Marcar como precargados
+      submenusToPrefetch.forEach(({ submenu }) => {
         if (submenu.uuid) {
-          autoPrefetchingRef.current.add(submenu.uuid);
+          autoPrefetchedRef.current.add(submenu.uuid);
         }
       });
-
-      try {
-        // Hacer una sola petición batch con todos los submenús
-        const batchRequests = submenusToPrefetch
-          .filter(submenu => submenu.uuid)
-          .map(submenu => buildParams(submenu.uuid!));
-        
-        const batchResponse = await productEndpoints.getBatch(batchRequests);
-
-        if (batchResponse.success && batchResponse.data) {
-          // Procesar respuestas y guardar en caché
-          batchResponse.data.results.forEach((result) => {
-            if (result.success && result.data) {
-              const submenu = submenusToPrefetch[result.index];
-              if (submenu?.uuid) {
-                const params = buildParams(submenu.uuid);
-                productCache.set(params, {
-                  data: result.data,
-                  success: true,
-                });
-                autoPrefetchedRef.current.add(submenu.uuid);
-                autoPrefetchingRef.current.delete(submenu.uuid);
-              }
-            } else {
-              // Silenciar errores individuales
-              const submenu = submenusToPrefetch[result.index];
-              if (submenu?.uuid) {
-                autoPrefetchingRef.current.delete(submenu.uuid);
-              }
-            }
-          });
-        }
-      } catch (error) {
-        // Silenciar errores - no afectar la UX
-        console.debug('[SubmenuCarousel] Error en batch prefetch:', error);
-        // Limpiar estados de prefetch en caso de error
-        submenusToPrefetch.forEach((submenu) => {
-          if (submenu.uuid) {
-            autoPrefetchingRef.current.delete(submenu.uuid);
-          }
-        });
-      }
     }, 1000); // Iniciar después de 1 segundo
 
     return () => {
@@ -206,7 +167,7 @@ export default function SubmenuCarousel({
         clearTimeout(autoPrefetchStartTimerRef.current);
       }
     };
-  }, [categoryCode, menuUuid, submenus, loading, error]);
+  }, [categoryCode, menuUuid, submenus, loading, error, shouldPrefetch]);
 
   // Prefetch productos cuando el usuario hace hover sobre un submenú
   // Al hacer hover, se PRIORIZA ese submenú específico (se acelera el prefetch)

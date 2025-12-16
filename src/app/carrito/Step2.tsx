@@ -536,6 +536,14 @@ export default function Step2({
       return;
     }
 
+    // PRIORIDAD: Si el usuario invitado ya tiene dirección, continuar directamente a Step3
+    // Esto permite que usuarios invitados con dirección ya guardada avancen sin pasar por formularios
+    if (isRegisteredAsGuest && hasAddedAddress && typeof onContinue === "function") {
+      console.log("✅ [STEP2] Usuario invitado con dirección, avanzando a Step3");
+      onContinue();
+      return;
+    }
+
     // Si está en paso de formulario de invitado, hacer el registro
     if (guestStep === 'form' && !isRegisteredAsGuest) {
       if (!isGuestFormValid) {
@@ -574,11 +582,6 @@ export default function Step2({
     if (isRegisteredAsGuest && !hasAddedAddress) {
       toast.error("Por favor agrega una dirección de envío para continuar");
       return;
-    }
-
-    // Si ya tiene dirección, continuar al siguiente paso
-    if (isRegisteredAsGuest && hasAddedAddress && typeof onContinue === "function") {
-      onContinue();
     }
   };
   // IMPORTANTE: Cargar datos del usuario invitado desde localStorage al montar
@@ -1580,6 +1583,7 @@ export default function Step2({
                 (!isRegisteredAsGuest && !isGuestFormValid) ||
                 (isRegisteredAsGuest && !hasAddedAddress && !isAddressFormValid) ||
                 (guestStep === 'otp' && otpSent && otpCode.length !== 6) ||
+                (guestStep !== 'verified' && guestStep !== 'form') ||
                 !tradeInValidation.isValid
               }
               isProcessing={loading || isSavingAddress}
@@ -1671,7 +1675,8 @@ export default function Step2({
               loading ||
               isSavingAddress ||
               (!isRegisteredAsGuest && !isGuestFormValid) ||
-              (isRegisteredAsGuest && !hasAddedAddress) ||
+              (isRegisteredAsGuest && !hasAddedAddress && !isAddressFormValid) ||
+              (guestStep !== 'verified' && guestStep !== 'form' && isRegisteredAsGuest) ||
               !tradeInValidation.isValid
             }
           >

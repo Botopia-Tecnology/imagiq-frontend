@@ -340,6 +340,68 @@ export class ProfileService {
       throw new Error(errorMessage);
     }
   }
+
+  /**
+   * NEW: Tokeniza una tarjeta con AMBOS procesadores (ePayco + Mercado Pago)
+   * Llama al endpoint /api/payments/cards/tokenize-dual
+   *
+   * @param data Card data including Mercado Pago frontend token
+   * @returns Tokenization result with dual processor information
+   *
+   * @important This method does NOT break existing tokenization
+   * The original tokenizeCard() method continues to work normally
+   */
+  public async tokenizeCardDual(data: {
+    userId: string;
+    cardNumber: string;
+    cardHolder: string;
+    expiryMonth: string;
+    expiryYear: string;
+    cvv: string;
+    customerEmail: string;
+    customerDocNumber: string;
+    customerPhone?: string;
+    mercadoPagoFrontendToken?: string | null;
+  }): Promise<any> {
+    try {
+      console.log("📤 [DUAL] Tokenizando tarjeta con ambos procesadores para usuario:", data.userId);
+
+      // Mapear a formato del backend
+      const payload = {
+        userId: data.userId,
+        cardNumber: data.cardNumber,
+        cardHolderName: data.cardHolder,
+        cardExpMonth: data.expiryMonth,
+        cardExpYear: data.expiryYear,
+        cardCvc: data.cvv,
+        customerEmail: data.customerEmail,
+        customerDocNumber: data.customerDocNumber,
+        customerPhone: data.customerPhone,
+        mercadoPagoFrontendToken: data.mercadoPagoFrontendToken,
+      };
+
+      const result = await apiPost<any>(
+        "/api/payments/cards/tokenize-dual",
+        payload
+      );
+
+      console.log("✅ [DUAL] Tokenización dual completada:", {
+        success: result.success,
+        epayco: result.dualTokenization?.epayco,
+        mercadopago: result.dualTokenization?.mercadopago,
+        partial: result.partialSuccess,
+      });
+
+      return result;
+    } catch (error: unknown) {
+      console.error("❌ [DUAL] Error en tokenización dual:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Error desconocido en tokenización dual";
+      throw new Error(errorMessage);
+    }
+  }
 }
 
 // Exportar instancia única

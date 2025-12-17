@@ -6,6 +6,8 @@ import cardValidator from "card-validator";
 import { Camera, X, Loader2, CreditCard as CreditCardIcon, CheckCircle, AlertCircle } from "lucide-react";
 import AnimatedCard from "../ui/AnimatedCard";
 import { profileService } from "@/services/profile.service";
+import { useMercadoPago } from "@/hooks/useMercadoPago";
+import { useAuthContext } from "@/features/auth/context";
 
 interface AddCardFormProps {
   userId: string;
@@ -33,6 +35,13 @@ const AddCardForm: React.FC<AddCardFormProps> = ({
   const [isCardFlipped, setIsCardFlipped] = useState(false);
 
   const webcamRef = useRef<Webcam>(null);
+
+  // Initialize Mercado Pago SDK
+  const mercadoPagoPublicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY || '';
+  const { mp, isLoaded: mpLoaded, error: mpError, createCardToken } = useMercadoPago(mercadoPagoPublicKey);
+
+  // Get user data from auth context
+  const authContext = useAuthContext();
 
   // Validación en tiempo real
   const validateCardNumber = (number: string) => {
@@ -158,7 +167,7 @@ const AddCardForm: React.FC<AddCardFormProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  // Enviar formulario
+  // Enviar formulario con dual tokenization
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -169,14 +178,54 @@ const AddCardForm: React.FC<AddCardFormProps> = ({
     setSubmitStatus("idle");
 
     try {
-      await profileService.tokenizeCard({
+      // Step 1: Get user data from auth context
+      const user = authContext.user;
+      if (!user) {
+        throw new Error("Usuario no autenticado");
+      }
+
+      // Step 2: Tokenize with Mercado Pago SDK (frontend)
+      let mercadoPagoToken: string | null = null;
+
+      if (mpLoaded && mp) {
+        try {
+          console.log('🔄 [AddCardForm] Tokenizando con Mercado Pago SDK...');
+          const mpTokenResult = await createCardToken({
+            cardNumber: cardNumber.replace(/\s/g, ""),
+            cardholderName: cardHolder,
+            cardExpirationMonth: expiryMonth,
+            cardExpirationYear: expiryYear,
+            securityCode: cvv,
+            identificationType: user.numero_documento?.length > 10 ? 'CC' : 'CC', // Tipo de documento colombiano
+            identificationNumber: user.numero_documento || '',
+          });
+
+          mercadoPagoToken = mpTokenResult.id;
+          console.log('✅ [AddCardForm] Token de Mercado Pago generado:', mercadoPagoToken);
+        } catch (mpErr) {
+          console.warn('⚠️ [AddCardForm] Error al tokenizar con Mercado Pago:', mpErr);
+          // Continue without Mercado Pago token - backend will handle partial tokenization
+        }
+      } else if (mpError) {
+        console.warn('⚠️ [AddCardForm] Mercado Pago SDK no disponible:', mpError);
+      }
+
+      // Step 3: Send to backend for dual tokenization
+      console.log('🔄 [AddCardForm] Enviando al backend para dual tokenization...');
+      await profileService.tokenizeCardDual({
         userId,
         cardNumber: cardNumber.replace(/\s/g, ""),
         cardHolder,
         expiryMonth,
         expiryYear,
         cvv,
+        customerEmail: user.email,
+        customerDocNumber: user.numero_documento || '',
+        customerPhone: user.telefono,
+        mercadoPagoFrontendToken: mercadoPagoToken,
       });
+
+      console.log('✅ [AddCardForm] Tarjeta tokenizada exitosamente');
 
       // Mostrar mensaje de éxito
       setSubmitStatus("success");
@@ -197,7 +246,7 @@ const AddCardForm: React.FC<AddCardFormProps> = ({
       }, 1500);
 
     } catch (error) {
-      console.error("❌ Error tokenizando tarjeta:", error);
+      console.error("❌ [AddCardForm] Error tokenizando tarjeta:", error);
       setSubmitStatus("error");
 
       // Parsear errores específicos del backend
@@ -208,15 +257,15 @@ const AddCardForm: React.FC<AddCardFormProps> = ({
           // Intentar parsear el mensaje de error como JSON
           const errorData = JSON.parse(error.message);
 
-          // Manejar errores específicos de ePayco
+          // Manejar errores específicos
           if (errorData.errorCode || errorData.codError) {
             const errorCode = errorData.errorCode || errorData.codError;
-            const epaycoMessage = errorData.errorMessage || errorData.message;
+            const backendMessage = errorData.errorMessage || errorData.message;
 
             switch (errorCode) {
               case "AE100":
-                // Determinar el mensaje específico según el error de ePayco
-                if (epaycoMessage?.toLowerCase().includes("expired")) {
+                // Determinar el mensaje específico según el error
+                if (backendMessage?.toLowerCase().includes("expired")) {
                   errorMessage = "La tarjeta está vencida. Por favor, usa otra tarjeta.";
                 } else {
                   errorMessage = "La tarjeta fue rechazada. Por favor, contacta a tu banco.";
@@ -226,7 +275,7 @@ const AddCardForm: React.FC<AddCardFormProps> = ({
                 errorMessage = "Esta tarjeta ya está registrada en tu cuenta.";
                 break;
               default:
-                errorMessage = epaycoMessage || errorData.message || errorMessage;
+                errorMessage = backendMessage || errorData.message || errorMessage;
             }
           } else if (errorData.message) {
             errorMessage = errorData.message;

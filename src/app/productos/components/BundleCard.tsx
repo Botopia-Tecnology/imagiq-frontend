@@ -782,6 +782,14 @@ export default function BundleCard({
               {displayName}
             </button>
           </h3>
+          {/* SKU - Siempre visible */}
+          {selectedOption?.product_sku && (
+            <div className="mt-1">
+              <p className="text-xs text-gray-500 font-medium">
+                SKU Opción: {selectedOption.product_sku}
+              </p>
+            </div>
+          )}
           {/* Códigos del bundle - Solo si la variable de entorno lo permite */}
           {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" &&
             process.env.NEXT_PUBLIC_MAINTENANCE_MODE !== "true" && (
@@ -794,11 +802,6 @@ export default function BundleCard({
                 {codCampana && (
                   <p className="text-xs text-gray-500 font-medium">
                     Código Campaña: {codCampana}
-                  </p>
-                )}
-                {selectedOption?.product_sku && (
-                  <p className="text-xs text-gray-500 font-medium">
-                    SKU Opción: {selectedOption.product_sku}
                   </p>
                 )}
                 {skus_bundle && skus_bundle.length > 0 && (

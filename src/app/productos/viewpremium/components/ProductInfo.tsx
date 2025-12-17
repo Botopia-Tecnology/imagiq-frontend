@@ -124,11 +124,13 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
         <div className="mb-8">
           {/* Información de SKU, Código y Stock */}
           <div className="mb-4 space-y-1">
-            {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && productSelection.selectedSku && (
+            {/* SKU - Siempre visible */}
+            {productSelection.selectedSku && (
               <p className="text-sm text-gray-600">
                 SKU: {productSelection.selectedSku}
               </p>
             )}
+            {/* Código y Stock - Solo si la variable de entorno lo permite */}
             {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && productSelection.selectedCodigoMarket && (
               <p className="text-sm text-gray-600">
                 Código: {productSelection.selectedCodigoMarket}

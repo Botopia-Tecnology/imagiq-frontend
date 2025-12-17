@@ -32,11 +32,20 @@ export default function MultimediaBannerSlide({
 
   const imageUrl = isMobile ? banner.mobile_image_url : banner.desktop_image_url;
   const videoUrl = isMobile ? banner.mobile_video_url : banner.desktop_video_url;
-  
+
   // Parsear content_blocks del JSON
-  const contentBlocks: ContentBlock[] = banner.content_blocks 
-    ? JSON.parse(banner.content_blocks) 
-    : [];
+  // Parsear content_blocks del JSON si es string, o usar directamente si es array (preview)
+  let contentBlocks: ContentBlock[] = [];
+  try {
+    if (typeof banner.content_blocks === 'string') {
+      contentBlocks = JSON.parse(banner.content_blocks);
+    } else if (Array.isArray(banner.content_blocks)) {
+      contentBlocks = banner.content_blocks;
+    }
+  } catch (e) {
+    console.error("Error parsing content_blocks for banner:", banner, e);
+    contentBlocks = [];
+  }
 
   useEffect(() => {
     const video = videoRef.current;
@@ -101,8 +110,8 @@ export default function MultimediaBannerSlide({
       {mediaContent}
 
       {/* Overlay de content_blocks */}
-      <ContentBlocksOverlay 
-        blocks={contentBlocks} 
+      <ContentBlocksOverlay
+        blocks={contentBlocks}
         isMobile={isMobile}
         bannerLinkUrl={banner.link_url}
       />
@@ -126,154 +135,154 @@ function ContentBlocksOverlay({
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       <div className="relative w-full h-full pointer-events-auto">
         {blocks.map((block) => {
-        const position = isMobile ? block.position_mobile : block.position_desktop;
-        
-        // Configuración del contenedor: usar mobile si existe, sino desktop
-        const textAlign = isMobile && block.textAlign_mobile 
-          ? block.textAlign_mobile 
-          : block.textAlign || 'left';
-        const configuredMaxWidth = isMobile && block.maxWidth_mobile 
-          ? block.maxWidth_mobile 
-          : block.maxWidth || '600px';
-        const gap = isMobile && block.gap_mobile 
-          ? block.gap_mobile 
-          : block.gap || '12px';
+          const position = isMobile ? block.position_mobile : block.position_desktop;
 
-        // Estilos del título
-        const titleStyles = block.title && {
-          fontSize: (isMobile && block.title_mobile?.fontSize) || block.title.fontSize || '2rem',
-          fontWeight: (isMobile && block.title_mobile?.fontWeight) || block.title.fontWeight || '700',
-          color: (isMobile && block.title_mobile?.color) || block.title.color || '#ffffff',
-          lineHeight: (isMobile && block.title_mobile?.lineHeight) || block.title.lineHeight || '1.2',
-          textTransform: (isMobile && block.title_mobile?.textTransform) || block.title.textTransform || 'none',
-          letterSpacing: (isMobile && block.title_mobile?.letterSpacing) || block.title.letterSpacing || 'normal',
-          textShadow: (isMobile && block.title_mobile?.textShadow) || block.title.textShadow || '2px 2px 4px rgba(0,0,0,0.5)',
-        };
+          // Configuración del contenedor: usar mobile si existe, sino desktop
+          const textAlign = isMobile && block.textAlign_mobile
+            ? block.textAlign_mobile
+            : block.textAlign || 'left';
+          const configuredMaxWidth = isMobile && block.maxWidth_mobile
+            ? block.maxWidth_mobile
+            : block.maxWidth || '100%';
+          const gap = isMobile && block.gap_mobile
+            ? block.gap_mobile
+            : block.gap || '12px';
 
-        // Ajustar transform basado en textAlign para que coincida con dashboard
-        let transformX = '-50%'; // Por defecto: centrado
-        if (textAlign === 'left') {
-          transformX = '0%'; // Izquierda: el punto está en el borde izquierdo
-        } else if (textAlign === 'right') {
-          transformX = '-100%'; // Derecha: el punto está en el borde derecho
-        }
+          // Estilos del título
+          const titleStyles = block.title && {
+            fontSize: (isMobile && block.title_mobile?.fontSize) || block.title.fontSize || '2rem',
+            fontWeight: (isMobile && block.title_mobile?.fontWeight) || block.title.fontWeight || '700',
+            color: (isMobile && block.title_mobile?.color) || block.title.color || '#ffffff',
+            lineHeight: (isMobile && block.title_mobile?.lineHeight) || block.title.lineHeight || '1.2',
+            textTransform: (isMobile && block.title_mobile?.textTransform) || block.title.textTransform || 'none',
+            letterSpacing: (isMobile && block.title_mobile?.letterSpacing) || block.title.letterSpacing || 'normal',
+            textShadow: (isMobile && block.title_mobile?.textShadow) || block.title.textShadow || '2px 2px 4px rgba(0,0,0,0.5)',
+          };
 
-        return (
-          <div
-            key={block.id}
-            className="absolute"
-            style={{
-              left: `${position.x}%`,
-              top: `${position.y}%`,
-              transform: `translate(${transformX}, -50%)`,
-              maxWidth: configuredMaxWidth, // Usar el maxWidth configurado sin límites adicionales
-            }}
-          >
+          // Ajustar transform basado en textAlign para que coincida con dashboard
+          let transformX = '-50%'; // Por defecto: centrado
+          if (textAlign === 'left') {
+            transformX = '0%'; // Izquierda: el punto está en el borde izquierdo
+          } else if (textAlign === 'right') {
+            transformX = '-100%'; // Derecha: el punto está en el borde derecho
+          }
+
+          return (
             <div
-              className="flex flex-col"
+              key={block.id}
+              className="absolute"
               style={{
-                gap,
-                wordWrap: 'break-word',
-                overflowWrap: 'break-word',
-                hyphens: 'auto',
-                maxWidth: '100%',
+                left: `${position.x}%`,
+                top: `${position.y}%`,
+                transform: `translate(${transformX}, -50%)`,
+                maxWidth: configuredMaxWidth, // Usar el maxWidth configurado sin límites adicionales
               }}
             >
-              {/* Título */}
-              {block.title && (
-                <h2
-                  style={{
-                    ...titleStyles,
-                    margin: 0,
-                    whiteSpace: 'pre-line',
-                    textAlign,
-                  }}
-                >
-                  {block.title.text}
-                </h2>
-              )}
-
-              {/* Subtítulo */}
-              {block.subtitle && (() => {
-                const subtitleStyles = {
-                  fontSize: (isMobile && block.subtitle_mobile?.fontSize) || block.subtitle.fontSize || '1.5rem',
-                  fontWeight: (isMobile && block.subtitle_mobile?.fontWeight) || block.subtitle.fontWeight || '600',
-                  color: (isMobile && block.subtitle_mobile?.color) || block.subtitle.color || '#ffffff',
-                  lineHeight: (isMobile && block.subtitle_mobile?.lineHeight) || block.subtitle.lineHeight || '1.3',
-                  textTransform: (isMobile && block.subtitle_mobile?.textTransform) || block.subtitle.textTransform || 'none',
-                };
-                return (
-                  <h3
+              <div
+                className="flex flex-col"
+                style={{
+                  gap,
+                  wordWrap: 'break-word',
+                  overflowWrap: 'break-word',
+                  hyphens: 'auto',
+                  maxWidth: '100%',
+                }}
+              >
+                {/* Título */}
+                {block.title && (
+                  <h2
                     style={{
-                      ...subtitleStyles,
+                      ...titleStyles,
                       margin: 0,
                       whiteSpace: 'pre-line',
                       textAlign,
                     }}
                   >
-                    {block.subtitle.text}
-                  </h3>
-                );
-              })()}
+                    {block.title.text}
+                  </h2>
+                )}
 
-              {/* Descripción */}
-              {block.description && (() => {
-                const descriptionStyles = {
-                  fontSize: (isMobile && block.description_mobile?.fontSize) || block.description.fontSize || '1rem',
-                  fontWeight: (isMobile && block.description_mobile?.fontWeight) || block.description.fontWeight || '400',
-                  color: (isMobile && block.description_mobile?.color) || block.description.color || '#ffffff',
-                  lineHeight: (isMobile && block.description_mobile?.lineHeight) || block.description.lineHeight || '1.5',
-                  textTransform: (isMobile && block.description_mobile?.textTransform) || block.description.textTransform || 'none',
-                };
-                return (
-                  <p
-                    style={{
-                      ...descriptionStyles,
-                      margin: 0,
-                      whiteSpace: 'pre-line',
-                      textAlign,
-                    }}
-                  >
-                    {block.description.text}
-                  </p>
-                );
-              })()}
-
-              {/* CTA */}
-              {block.cta && (() => {
-                const ctaStyles = {
-                  fontSize: (isMobile && block.cta_mobile?.fontSize) || block.cta.fontSize || '1rem',
-                  fontWeight: (isMobile && block.cta_mobile?.fontWeight) || block.cta.fontWeight || '600',
-                  backgroundColor: (isMobile && block.cta_mobile?.backgroundColor) || block.cta.backgroundColor || '#ffffff',
-                  color: (isMobile && block.cta_mobile?.color) || block.cta.color || '#000000',
-                  padding: (isMobile && block.cta_mobile?.padding) || block.cta.padding || '12px 24px',
-                  borderRadius: (isMobile && block.cta_mobile?.borderRadius) || block.cta.borderRadius || '8px',
-                  border: (isMobile && block.cta_mobile?.border) || block.cta.border || 'none',
-                  textTransform: (isMobile && block.cta_mobile?.textTransform) || block.cta.textTransform || 'none',
-                };
-                const href = block.cta.link_url || bannerLinkUrl || '#';
-
-                return (
-                  <div style={{ textAlign }}>
-                    <Link
-                      href={href}
-                      className="inline-block transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                {/* Subtítulo */}
+                {block.subtitle && (() => {
+                  const subtitleStyles = {
+                    fontSize: (isMobile && block.subtitle_mobile?.fontSize) || block.subtitle.fontSize || '1.5rem',
+                    fontWeight: (isMobile && block.subtitle_mobile?.fontWeight) || block.subtitle.fontWeight || '600',
+                    color: (isMobile && block.subtitle_mobile?.color) || block.subtitle.color || '#ffffff',
+                    lineHeight: (isMobile && block.subtitle_mobile?.lineHeight) || block.subtitle.lineHeight || '1.3',
+                    textTransform: (isMobile && block.subtitle_mobile?.textTransform) || block.subtitle.textTransform || 'none',
+                  };
+                  return (
+                    <h3
                       style={{
-                        ...ctaStyles,
-                        textDecoration: 'none',
-                        textAlign: 'center',
+                        ...subtitleStyles,
+                        margin: 0,
                         whiteSpace: 'pre-line',
+                        textAlign,
                       }}
                     >
-                      {block.cta.text}
-                    </Link>
-                  </div>
-                );
-              })()}
+                      {block.subtitle.text}
+                    </h3>
+                  );
+                })()}
+
+                {/* Descripción */}
+                {block.description && (() => {
+                  const descriptionStyles = {
+                    fontSize: (isMobile && block.description_mobile?.fontSize) || block.description.fontSize || '1rem',
+                    fontWeight: (isMobile && block.description_mobile?.fontWeight) || block.description.fontWeight || '400',
+                    color: (isMobile && block.description_mobile?.color) || block.description.color || '#ffffff',
+                    lineHeight: (isMobile && block.description_mobile?.lineHeight) || block.description.lineHeight || '1.5',
+                    textTransform: (isMobile && block.description_mobile?.textTransform) || block.description.textTransform || 'none',
+                  };
+                  return (
+                    <p
+                      style={{
+                        ...descriptionStyles,
+                        margin: 0,
+                        whiteSpace: 'pre-line',
+                        textAlign,
+                      }}
+                    >
+                      {block.description.text}
+                    </p>
+                  );
+                })()}
+
+                {/* CTA */}
+                {block.cta && (() => {
+                  const ctaStyles = {
+                    fontSize: (isMobile && block.cta_mobile?.fontSize) || block.cta.fontSize || '1rem',
+                    fontWeight: (isMobile && block.cta_mobile?.fontWeight) || block.cta.fontWeight || '600',
+                    backgroundColor: (isMobile && block.cta_mobile?.backgroundColor) || block.cta.backgroundColor || '#ffffff',
+                    color: (isMobile && block.cta_mobile?.color) || block.cta.color || '#000000',
+                    padding: (isMobile && block.cta_mobile?.padding) || block.cta.padding || '12px 24px',
+                    borderRadius: (isMobile && block.cta_mobile?.borderRadius) || block.cta.borderRadius || '8px',
+                    border: (isMobile && block.cta_mobile?.border) || block.cta.border || 'none',
+                    textTransform: (isMobile && block.cta_mobile?.textTransform) || block.cta.textTransform || 'none',
+                  };
+                  const href = block.cta.link_url || bannerLinkUrl || '#';
+
+                  return (
+                    <div style={{ textAlign }}>
+                      <Link
+                        href={href}
+                        className="inline-block transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                        style={{
+                          ...ctaStyles,
+                          textDecoration: 'none',
+                          textAlign: 'center',
+                          whiteSpace: 'pre-line',
+                        }}
+                      >
+                        {block.cta.text}
+                      </Link>
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
       </div>
     </div>
   );

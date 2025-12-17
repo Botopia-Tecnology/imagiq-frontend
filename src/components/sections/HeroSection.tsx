@@ -572,13 +572,13 @@ export default function HeroSection() {
               </div>
 
               {/* Mobile media */}
-              <div className={`block md:hidden w-full relative ${snapToFullScreen ? 'h-full' : 'h-auto'}`}>
+              <div className="block md:hidden w-full h-screen relative">
                 {shouldShowVideoMobile ? (
                   <>
                     {/* Mobile video */}
                     <video
                       key={`hero-mobile-video-${index}`}
-                      className={`block ${snapToFullScreen ? 'h-full object-cover' : 'w-full h-auto'}`}
+                      className="block w-full h-full object-cover"
                       autoPlay={isActive}
                       muted
                       loop={config.loop}
@@ -588,10 +588,7 @@ export default function HeroSection() {
                       poster={config.mobileImageSrc ? getCloudinaryUrl(config.mobileImageSrc, 'mobile-banner') : undefined}
                       style={{
                         opacity: bannerVideoEnded ? 0 : 1,
-                        transition: "opacity 0.5s ease-in-out, width 0.3s ease-out, margin 0.3s ease-out",
-                        width: `${100 - scrollProgress * 8}%`,
-                        marginLeft: `${scrollProgress * 4}%`,
-                        marginRight: `${scrollProgress * 4}%`,
+                        transition: "opacity 0.5s ease-in-out",
                       }}
                     >
                       <source src={config.mobileVideoSrc} type="video/mp4" />
@@ -601,13 +598,10 @@ export default function HeroSection() {
                       <img
                         src={getCloudinaryUrl(config.mobileImageSrc, 'mobile-banner')}
                         alt={config.heading || "Banner"}
-                        className={`block absolute top-0 left-0 ${snapToFullScreen ? 'h-full object-cover' : 'w-full h-auto'}`}
+                        className="absolute inset-0 w-full h-full object-cover"
                         style={{
                           opacity: bannerVideoEnded ? 1 : 0,
-                          transition: "opacity 0.5s ease-in-out, width 0.3s ease-out, margin 0.3s ease-out",
-                          width: `${100 - scrollProgress * 8}%`,
-                          marginLeft: `${scrollProgress * 4}%`,
-                          marginRight: `${scrollProgress * 4}%`,
+                          transition: "opacity 0.5s ease-in-out",
                         }}
                       />
                     )}
@@ -619,13 +613,7 @@ export default function HeroSection() {
                       key={`hero-mobile-image-${index}`}
                       src={getCloudinaryUrl(config.mobileImageSrc, 'mobile-banner')}
                       alt={config.heading || "Banner"}
-                      className={`block ${snapToFullScreen ? 'h-full object-cover' : 'w-full h-auto'}`}
-                      style={{
-                        transition: "width 0.3s ease-out, margin 0.3s ease-out",
-                        width: `${100 - scrollProgress * 8}%`,
-                        marginLeft: `${scrollProgress * 4}%`,
-                        marginRight: `${scrollProgress * 4}%`,
-                      }}
+                      className="block w-full h-full object-cover"
                     />
                   )
                 )}

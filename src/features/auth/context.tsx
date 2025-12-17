@@ -126,6 +126,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       apiClient.setAuthToken(token);
     }
 
+    // CRÍTICO: Si es usuario regular (rol 2), limpiar caché de candidate stores
+    // Esto asegura que se recalculen los stores con el nuevo userId
+    const userRole = userData.role ?? (userData as User & { rol?: number }).rol;
+    if (userRole === 2) {
+      console.log('🔄 [AuthContext] Usuario regular (rol 2) iniciando sesión - limpiando caché...');
+      
+      // Limpiar caché de candidate stores
+      try {
+        // Limpiar cualquier caché relacionado con el usuario anterior (invitado)
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (
+            key.startsWith('canPickUp_') ||
+            key.includes('candidate_stores') ||
+            key.includes('imagiq_guest_id')
+          )) {
+            keysToRemove.push(key);
+          }
+        }
+        
+        keysToRemove.forEach(key => {
+          localStorage.removeItem(key);
+          console.log(`🗑️ [AuthContext] Caché eliminado: ${key}`);
+        });
+        
+        console.log('✅ [AuthContext] Caché de candidate stores limpiado completamente');
+      } catch (error) {
+        console.error('❌ [AuthContext] Error limpiando caché:', error);
+      }
+      
+      // Disparar evento para que los componentes recalculen con el nuevo userId
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('user-changed', {
+          detail: { userId: userData.id, role: userRole }
+        }));
+      }
+    }
+
     // ✅ NUEVO: Cargar dirección predeterminada del usuario
     try {
       console.log('🔄 [AuthContext] Cargando dirección predeterminada del usuario...');

@@ -1,7 +1,7 @@
 "use client";
 import Step3 from "../Step3";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import useSecureStorage from "@/hooks/useSecureStorage";
 import { User } from "@/types/user";
 
@@ -9,74 +9,90 @@ export default function Step3Page() {
   const router = useRouter();
   const [loggedUser] = useSecureStorage<User | null>("imagiq_user", null);
   const [isChecking, setIsChecking] = useState(true);
+  const checkExecuted = useRef(false);
 
   // Protección: Solo permitir acceso si hay usuario logueado (invitado o regular con token)
   useEffect(() => {
-    if (!isChecking) return; // Ya se verificó, no volver a verificar
+    // Prevenir múltiples ejecuciones
+    if (checkExecuted.current) {
+      return;
+    }
 
-    const token = localStorage.getItem("imagiq_token");
-    
-    // Intentar obtener usuario desde el hook o localStorage directamente
-    const userToCheck = loggedUser || (() => {
+    const performCheck = () => {
+      checkExecuted.current = true;
+
+      const token = localStorage.getItem("imagiq_token");
+      
+      // Intentar obtener usuario desde localStorage directamente (más confiable)
+      let userToCheck = null;
       try {
         const userInfo = localStorage.getItem("imagiq_user");
-        return userInfo ? JSON.parse(userInfo) : null;
-      } catch {
-        return null;
-      }
-    })();
-    
-    console.log("🔍 [STEP3] Verificando acceso:", { 
-      hasToken: !!token, 
-      hasUser: !!userToCheck,
-      userRol: (userToCheck as any)?.rol ?? (userToCheck as any)?.role,
-      userEmail: userToCheck?.email
-    });
-
-    // Si hay token, permitir acceso (usuario regular logueado)
-    if (token) {
-      console.log("✅ [STEP3] Token encontrado, permitiendo acceso");
-      setIsChecking(false);
-      return;
-    }
-
-    // Si hay usuario, verificar si es invitado
-    if (userToCheck) {
-      // Si es usuario invitado (rol 3), verificar que tenga dirección guardada
-      // Verificar tanto 'rol' (backend) como 'role' (frontend) para compatibilidad
-      const userRole = (userToCheck as any).rol ?? (userToCheck as any).role;
-      if (userRole === 3) {
-        const savedAddress = localStorage.getItem("checkout-address");
-        if (savedAddress) {
-          try {
-            const address = JSON.parse(savedAddress);
-            if (address && address.id) {
-              console.log("✅ [STEP3] Usuario invitado con dirección, permitiendo acceso", {
-                addressId: address.id,
-                userId: userToCheck.id || userToCheck.email
-              });
-              setIsChecking(false);
-              return;
-            }
-          } catch (err) {
-            console.error("❌ [STEP3] Error al parsear dirección:", err);
-          }
+        if (userInfo) {
+          userToCheck = JSON.parse(userInfo);
         }
-        console.warn("⚠️ [STEP3] Usuario invitado sin dirección. Redirigiendo a step2...");
-        router.push("/carrito/step2");
-        return;
+      } catch {
+        userToCheck = null;
       }
       
-      // Si no es invitado y no tiene token, redirigir
-      console.warn("⚠️ [STEP3] Usuario sin token y no es invitado. Redirigiendo a step2...");
-      router.push("/carrito/step2");
-      return;
-    }
+      console.log("🔍 [STEP3] Verificando acceso:", { 
+        hasToken: !!token, 
+        hasUser: !!userToCheck,
+        userRol: userToCheck ? ((userToCheck as User & { rol?: number }).rol ?? (userToCheck as User).role) : null,
+        userEmail: userToCheck?.email
+      });
 
-    // Si no hay token ni usuario, redirigir a step2
-    console.warn("⚠️ [STEP3] No hay sesión activa. Redirigiendo a step2...");
-    router.push("/carrito/step2");
-  }, [router, loggedUser, isChecking]);
+      // CASO 1: Usuario autenticado con token (rol 2 o rol 3) - SIEMPRE permitir acceso
+      // Step3 es para TODOS los usuarios autenticados, pueden agregar/seleccionar dirección aquí
+      if (token && userToCheck) {
+        const userRole = (userToCheck as User & { rol?: number }).rol ?? (userToCheck as User).role;
+        console.log(`✅ [STEP3] Usuario autenticado (rol ${userRole}) con token, permitiendo acceso`);
+        setIsChecking(false);
+        return;
+      }
+
+      // CASO 2: Usuario invitado sin token pero CON dirección agregada en step2
+      // Permitir acceso si hay checkout-address (ya completó step2)
+      // IMPORTANTE: También verificar imagiq_default_address como fallback
+      let savedAddress = localStorage.getItem("checkout-address");
+      
+      // Si no hay checkout-address, intentar usar imagiq_default_address
+      if (!savedAddress || savedAddress === "null" || savedAddress === "undefined") {
+        console.log("⚠️ [STEP3] No hay checkout-address, intentando con imagiq_default_address...");
+        const defaultAddress = localStorage.getItem("imagiq_default_address");
+        if (defaultAddress && defaultAddress !== "null" && defaultAddress !== "undefined") {
+          // Copiar imagiq_default_address a checkout-address
+          localStorage.setItem("checkout-address", defaultAddress);
+          savedAddress = defaultAddress;
+          console.log("✅ [STEP3] imagiq_default_address copiado a checkout-address");
+        }
+      }
+      
+      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
+        try {
+          const address = JSON.parse(savedAddress);
+          // Validar que tenga los campos mínimos (ciudad y linea_uno)
+          if (address && address.ciudad && address.linea_uno) {
+            console.log("✅ [STEP3] Usuario invitado con dirección válida en checkout-address, permitiendo acceso");
+            console.log("📍 Dirección:", { ciudad: address.ciudad, linea_uno: address.linea_uno });
+            setIsChecking(false);
+            return;
+          } else {
+            console.warn("⚠️ [STEP3] checkout-address existe pero no tiene campos válidos:", address);
+          }
+        } catch (err) {
+          console.error("❌ [STEP3] Error al parsear checkout-address:", err);
+        }
+      } else {
+        console.log("⚠️ [STEP3] No hay checkout-address válido");
+      }
+
+      // CASO 3: Sin sesión activa Y sin dirección - redirigir a step2
+      console.warn("⚠️ [STEP3] No hay sesión activa ni dirección. Redirigiendo a step2...");
+      router.push("/carrito/step2");
+    };
+
+    performCheck();
+  }, [router]);
 
   const handleBack = () => router.push("/carrito/step1");
   const handleNext = () => router.push("/carrito/step4");

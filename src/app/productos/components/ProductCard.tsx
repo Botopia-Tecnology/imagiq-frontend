@@ -813,16 +813,19 @@ export default function ProductCard({
                 {currentProductName}
               </button>
             </h3>
-            {/* SKU y CodigoMarket dinámicos - Solo si la variable de entorno lo permite */}
+            {/* SKU - Siempre visible */}
+            {currentSku && (
+              <div className="mt-1">
+                <p className="text-xs text-gray-500 font-medium">
+                  SKU: {currentSku}
+                </p>
+              </div>
+            )}
+            {/* CodigoMarket y otros datos - Solo si la variable de entorno lo permite */}
             {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" &&
               process.env.NEXT_PUBLIC_MAINTENANCE_MODE !== "true" &&
-              (currentSku || currentCodigoMarket || currentskuPostback) && (
+              (currentCodigoMarket || currentskuPostback) && (
                 <div className="mt-1 space-y-0.5">
-                  {currentSku && (
-                    <p className="text-xs text-gray-500 font-medium">
-                      SKU: {currentSku}
-                    </p>
-                  )}
                   {currentCodigoMarket && (
                     <p className="text-xs text-gray-500 font-medium">
                       Código: {currentCodigoMarket}

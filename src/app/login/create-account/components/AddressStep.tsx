@@ -6,6 +6,8 @@ import { useState } from "react";
 
 interface AddressStepProps {
   onAddressAdded?: (address: Direccion) => void;
+  onFormValidChange?: (isValid: boolean) => void; // Callback para notificar validez del formulario
+  onSubmitRef?: React.MutableRefObject<(() => void) | null>; // Ref para submit externo
 }
 
 /**
@@ -24,7 +26,7 @@ const addressToDireccion = (address: Address): Direccion => {
   };
 };
 
-export function AddressStep({ onAddressAdded }: AddressStepProps) {
+export function AddressStep({ onAddressAdded, onFormValidChange, onSubmitRef }: AddressStepProps) {
   const [addressAdded, setAddressAdded] = useState(false);
 
   const handleAddressAdded = (address: Address) => {
@@ -38,13 +40,16 @@ export function AddressStep({ onAddressAdded }: AddressStepProps) {
     <div className="space-y-4">
       {addressAdded && (
         <p className="text-sm text-green-600">
-          Dirección agregada exitosamente. Puedes continuar o agregar otra.
+          Dirección agregada exitosamente. Redirigiendo...
         </p>
       )}
 
       <AddNewAddressForm
         onAddressAdded={handleAddressAdded}
         withContainer={false}
+        onFormValidChange={onFormValidChange}
+        onSubmitRef={onSubmitRef}
+        hideBackButton={true}
       />
     </div>
   );

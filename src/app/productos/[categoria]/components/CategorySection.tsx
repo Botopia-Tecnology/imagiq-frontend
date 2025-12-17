@@ -31,6 +31,7 @@ import { useSelectedHierarchy } from "@/hooks/useSelectedHierarchy";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
 import { useProductBanner } from "@/hooks/useProductBanner";
 import { useSubmenus } from "@/hooks/useSubmenus";
+import { usePreloadMenuSubmenus } from "@/hooks/usePreloadMenuSubmenus";
 import {
   useCategoryPagination,
   useCategorySorting,
@@ -58,6 +59,9 @@ export default function CategorySection({
   const setFilters = () => {};
   const { categoryCode, categoryUuid, menuUuid, submenuUuid } =
     useSelectedHierarchy(categoriaApiCode, seccion);
+  
+  // Verificar y cargar submenús bajo demanda cuando el usuario entra a un menú
+  usePreloadMenuSubmenus(categoryCode, menuUuid);
   
   // Obtener filtros dinámicos según el contexto
   const {

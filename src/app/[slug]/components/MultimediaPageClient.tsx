@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import MultimediaBannerCarousel from './MultimediaBannerCarousel';
 import ProductSection from './ProductSection';
 import FAQAccordion from './FAQAccordion';
@@ -14,7 +15,28 @@ interface MultimediaPageClientProps {
 }
 
 export default function MultimediaPageClient({ pageData }: MultimediaPageClientProps) {
-  const { page, banners, faqs, product_cards } = pageData;
+  // Estado local para manejar actualizaciones en tiempo real (preview)
+  const [data, setData] = useState<MultimediaPageData>(pageData);
+
+  // Efecto para escuchar mensajes del Dashboard (Preview)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Verificar si es un mensaje de actualización de preview
+      if (event.data?.type === 'PREVIEW_UPDATE' && event.data?.payload) {
+        console.log('Preview update received:', event.data.payload);
+        setData(event.data.payload as MultimediaPageData);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    // Avisar al padre que estamos listos para recibir datos
+    window.parent.postMessage({ type: 'PREVIEW_READY' }, '*');
+
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const { page, banners, faqs, product_cards } = data;
 
   return (
     <div className="min-h-screen bg-white -mt-12">

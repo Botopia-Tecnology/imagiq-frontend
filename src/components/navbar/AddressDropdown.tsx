@@ -710,6 +710,41 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
             <Plus className="w-4 h-4 flex-shrink-0" />
           </button>
         </div>
+        
+        {/* Modal para agregar dirección (usuarios autenticados sin direcciones) */}
+        {showModal && isMounted && createPortal(
+          <div
+            className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/50"
+            onClick={() => setShowModal(false)}
+          >
+            <div
+              className="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Agregar nueva dirección
+                </h2>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  type="button"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto p-6">
+                <AddNewAddressForm
+                  onAddressAdded={handleAddressAdded}
+                  onCancel={() => setShowModal(false)}
+                  withContainer={false}
+                />
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
       </>
     );
   }

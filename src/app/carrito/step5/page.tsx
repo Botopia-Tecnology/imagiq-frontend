@@ -16,48 +16,50 @@ export default function Step5Page() {
 
     const token = localStorage.getItem("imagiq_token");
     
-    // Si hay token, permitir acceso (usuario regular logueado)
-    if (token) {
-      console.log("✅ [STEP5] Token encontrado, permitiendo acceso");
-    } else {
-      // Intentar obtener usuario desde el hook o localStorage directamente
-      const userToCheck = loggedUser || (() => {
-        try {
-          const userInfo = localStorage.getItem("imagiq_user");
-          return userInfo ? JSON.parse(userInfo) : null;
-        } catch {
-          return null;
-        }
-      })();
+    // Intentar obtener usuario desde el hook o localStorage directamente
+    const userToCheck = loggedUser || (() => {
+      try {
+        const userInfo = localStorage.getItem("imagiq_user");
+        return userInfo ? JSON.parse(userInfo) : null;
+      } catch {
+        return null;
+      }
+    })();
 
-      // Si hay usuario invitado (rol 3) con dirección, permitir acceso
-      // Verificar tanto 'rol' (backend) como 'role' (frontend) para compatibilidad
-      const userRole = (userToCheck as any)?.rol ?? (userToCheck as any)?.role;
-      if (userToCheck && userRole === 3) {
-        const savedAddress = localStorage.getItem("checkout-address");
-        if (savedAddress) {
-          try {
-            const address = JSON.parse(savedAddress);
-            if (address && address.id) {
-              console.log("✅ [STEP5] Usuario invitado con dirección, permitiendo acceso");
-            } else {
-              console.warn("⚠️ [STEP5] Acceso denegado: Usuario invitado sin dirección. Redirigiendo a step2...");
-              router.push("/carrito/step2");
-              return;
-            }
-          } catch (err) {
-            console.error("❌ [STEP5] Error al parsear dirección:", err);
+    console.log("🔍 [STEP5] Verificando acceso:", { 
+      hasToken: !!token, 
+      hasUser: !!userToCheck,
+      userRol: userToCheck ? ((userToCheck as User & { rol?: number }).rol ?? (userToCheck as User).role) : null
+    });
+
+    // CASO 1: Usuario autenticado con token (rol 2 o rol 3) - SIEMPRE permitir acceso
+    if (token && userToCheck) {
+      const userRole = (userToCheck as User & { rol?: number }).rol ?? (userToCheck as User).role;
+      console.log(`✅ [STEP5] Usuario autenticado (rol ${userRole}) con token, permitiendo acceso`);
+      // Continuar para verificar si debe mostrar este step o saltar
+    } else {
+      // CASO 2: Usuario invitado sin token pero CON dirección agregada
+      const savedAddress = localStorage.getItem("checkout-address");
+      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
+        try {
+          const address = JSON.parse(savedAddress);
+          // Validar que tenga los campos mínimos
+          if (address && address.ciudad && address.linea_uno) {
+            console.log("✅ [STEP5] Usuario invitado con dirección válida, permitiendo acceso");
+            // Continuar para verificar si debe mostrar este step o saltar
+          } else {
+            console.warn("⚠️ [STEP5] checkout-address existe pero no tiene campos válidos");
             router.push("/carrito/step2");
             return;
           }
-        } else {
-          console.warn("⚠️ [STEP5] Acceso denegado: Usuario invitado sin dirección. Redirigiendo a step2...");
+        } catch (err) {
+          console.error("❌ [STEP5] Error al parsear dirección:", err);
           router.push("/carrito/step2");
           return;
         }
       } else {
-        // Si no hay token ni usuario invitado con dirección, redirigir
-        console.warn("⚠️ [STEP5] Acceso denegado: No hay sesión activa. Redirigiendo a step2...");
+        // CASO 3: Sin sesión activa ni dirección - redirigir
+        console.warn("⚠️ [STEP5] Acceso denegado: No hay sesión activa ni dirección. Redirigiendo a step2...");
         router.push("/carrito/step2");
         return;
       }

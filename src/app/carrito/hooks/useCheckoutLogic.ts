@@ -377,7 +377,8 @@ export function useCheckoutLogic() {
               unitPrice: String(p.price),
               skupostback: p.skuPostback || p.sku || "",
               desDetallada: p.desDetallada || p.name || "",
-              categoria: p.categoria || "",
+              categoria: p.categoria || (p.bundleInfo ? "IM" : ""),
+              category: p.categoria || (p.bundleInfo ? "IM" : ""),
               // Incluir bundleInfo si el producto es parte de un bundle
               ...(p.bundleInfo && {
                 bundleInfo: {
@@ -430,6 +431,7 @@ export function useCheckoutLogic() {
               cardId: selectedCardId,
               dues: card.installments || "1",
               items: cartProducts.map((p) => ({
+
                 name: String(p.name),
                 sku: String(p.sku),
                 ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
@@ -437,7 +439,8 @@ export function useCheckoutLogic() {
                 unitPrice: String(p.price),
                 skupostback: p.skuPostback || p.sku || "",
                 desDetallada: p.desDetallada || p.name || "",
-                categoria: p.categoria || "",
+                categoria: p.categoria || (p.bundleInfo ? "IM" : ""),
+                category: p.categoria || (p.bundleInfo ? "IM" : ""),
                 ...(p.bundleInfo && {
                   bundleInfo: {
                     codCampana: p.bundleInfo.codCampana,
@@ -525,7 +528,8 @@ export function useCheckoutLogic() {
                 unitPrice: String(p.price),
                 skupostback: p.skuPostback || p.sku || "",
                 desDetallada: p.desDetallada || p.name || "",
-                categoria: p.categoria || "",
+                categoria: p.categoria || (p.bundleInfo ? "IM" : ""),
+                category: p.categoria || (p.bundleInfo ? "IM" : ""),
                 ...(p.bundleInfo && {
                   bundleInfo: {
                     codCampana: p.bundleInfo.codCampana,
@@ -609,7 +613,8 @@ export function useCheckoutLogic() {
               unitPrice: String(p.price),
               skupostback: p.skuPostback || p.sku || "",
               desDetallada: p.desDetallada || p.name || "",
-              categoria: p.categoria || "",
+              categoria: p.categoria || (p.bundleInfo ? "IM" : ""),
+              category: p.categoria || (p.bundleInfo ? "IM" : ""),
               ...(p.bundleInfo && {
                 bundleInfo: {
                   codCampana: p.bundleInfo.codCampana,

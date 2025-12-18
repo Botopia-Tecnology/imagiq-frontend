@@ -505,7 +505,7 @@ export default function BundleCard({
 
         const products: Omit<CartProduct, "quantity">[] =
           selectedOption.productos.map((product, index) => ({
-            id: product.sku,
+            id: (product.codigoMarket || product.sku).split('/')[0],
             name: product.modelo,
             image:
               product.imagePreviewUrl ||
@@ -521,7 +521,7 @@ export default function BundleCard({
             ram: product.memoriaram,
             stock: product.stockTotal,
             modelo: product.modelo,
-            categoria: product.categoria || categoria || "",
+            categoria: product.categoria || categoria || "IM",
           }));
 
         const bundleInfo: BundleInfo = {
@@ -582,14 +582,14 @@ export default function BundleCard({
 
     try {
       // Verificar si tenemos el array de productos desde el backend
-      console.log("Selected option products:", selectedOption.productos);
+
       if (selectedOption.productos && selectedOption.productos.length > 0) {
         // Usar datos completos del backend que ya vienen en la opción
         const firstProduct = selectedOption.productos[0];
 
         const products: Omit<CartProduct, "quantity">[] =
           selectedOption.productos.map((product, index) => ({
-            id: product.sku,
+            id: (product.codigoMarket || product.sku).split('/')[0],
             name: product.modelo,
             image:
               product.imagePreviewUrl ||
@@ -605,7 +605,7 @@ export default function BundleCard({
             ram: product.memoriaram,
             stock: product.stockTotal,
             modelo: product.modelo,
-            categoria: product.categoria || categoria || "",
+            categoria: product.categoria || categoria || "IM",
           }));
 
         const bundleInfo: BundleInfo = {
@@ -762,7 +762,7 @@ export default function BundleCard({
             Paga con <span className="font-bold">addi</span>
           </p>
         </div>
-        
+
         <BundlePreviewImages images={previewImages} bundleName={displayName} />
       </div>
 
@@ -821,8 +821,8 @@ export default function BundleCard({
                         selectedOptionStock > 5
                           ? "text-green-600"
                           : selectedOptionStock > 0
-                          ? "text-orange-600"
-                          : "text-red-600"
+                            ? "text-orange-600"
+                            : "text-red-600"
                       )}
                     >
                       {selectedOptionStock} unidades

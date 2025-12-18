@@ -100,7 +100,7 @@ export default function BundleViewPage({ params }: BundleViewPageProps) {
   };
 
   const basePrice = parsePrice(selectedOption.price);
-  const originalPrice = selectedOption.originalPrice 
+  const originalPrice = selectedOption.originalPrice
     ? parsePrice(selectedOption.originalPrice)
     : undefined;
 
@@ -159,6 +159,7 @@ export default function BundleViewPage({ params }: BundleViewPageProps) {
                 codCampana={codCampana || ""}
                 skusBundle={selectedOption.skus_bundle || []}
                 onAddToCart={(handler) => { addToCartHandlerRef.current = handler; }}
+                categoria={(Array.isArray(bundle.categoria) ? bundle.categoria[0] : bundle.categoria) || "IM"}
               />
             </div>
           </div>

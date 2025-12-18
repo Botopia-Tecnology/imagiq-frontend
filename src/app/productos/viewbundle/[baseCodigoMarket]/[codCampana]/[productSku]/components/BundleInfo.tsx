@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -23,6 +22,7 @@ interface BundleInfoProps {
   codCampana: string;
   skusBundle: string[];
   onAddToCart?: (handler: () => Promise<void>) => void;
+  categoria?: string;
 }
 
 /**
@@ -39,6 +39,7 @@ export function BundleInfo({
   codCampana,
   skusBundle,
   onAddToCart: exposeAddToCart,
+  categoria,
 }: BundleInfoProps) {
   const router = useRouter();
   const { addBundleToCart } = useCartContext();
@@ -121,6 +122,7 @@ export function BundleInfo({
         ram: product.memoriaram,
         stock: product.stockTotal,
         modelo: product.modelo,
+        categoria: product.categoria || categoria || "IM",
       }));
 
       const firstProduct = selectedOption.productos[0];

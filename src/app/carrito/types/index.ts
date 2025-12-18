@@ -55,6 +55,7 @@ export interface Item {
   desDetallada: string;
   ean: string;
   categoria?: string; // Category for shipping logic
+  category?: string; // Backend DTO expectation
 }
 
 export interface UserInfo {

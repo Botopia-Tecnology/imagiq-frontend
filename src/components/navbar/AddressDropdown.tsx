@@ -79,7 +79,7 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   // Verificar si estamos en el cliente
   useEffect(() => {
     setIsMounted(true);
-    
+
     // CRÍTICO: Cargar dirección de invitado INMEDIATAMENTE al montar (antes de verificar autenticación)
     // Esto asegura que la dirección se muestre después de un refresh
     try {
@@ -87,7 +87,7 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
       if (!savedAddress) {
         savedAddress = globalThis.window?.localStorage.getItem('imagiq_default_address');
       }
-      
+
       if (savedAddress) {
         const direccion = JSON.parse(savedAddress);
         const address = direccionToAddress(direccion) as Address;
@@ -99,79 +99,69 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
     }
   }, []);
 
-  // Para usuarios invitados, leer dirección de localStorage cuando cambia autenticación
+  // Efecto para cargar y mantener sincronizada la dirección local (checkout-address o imagiq_default_address)
+  // Se ejecuta SIEMPRE, esté logueado o no, para asegurar que la navbar refleje la selección actual
   useEffect(() => {
-    if (!isAuthenticated || !user?.id) {
+    const loadLocalAddress = () => {
       try {
         // Buscar primero en checkout-address, si no existe buscar en imagiq_default_address
         let savedAddress = globalThis.window?.localStorage.getItem('checkout-address');
         if (!savedAddress) {
           savedAddress = globalThis.window?.localStorage.getItem('imagiq_default_address');
         }
-        
+
         if (savedAddress) {
           const direccion = JSON.parse(savedAddress);
-          // Convertir Direccion a Address usando la función helper
           const address = direccionToAddress(direccion) as Address;
-          setGuestAddress(address);
+
+          // Si el usuario está autenticado, verificar que la dirección le pertenezca
+          if (isAuthenticated && user?.id) {
+            // Si la dirección tiene usuario_id y no coincide, o si es una dirección guardada en backend (tiene ID UUID)
+            // pero no es del usuario actual, podríamos decidir no mostrarla.
+            // PERO: Si el usuario acaba de seleccionarla en el checkout, queremos mostrarla.
+            // Asumimos que si está en local storage es la "activa" recientemente seleccionada.
+            setGuestAddress(address);
+          } else {
+            setGuestAddress(address);
+          }
         } else {
           setGuestAddress(null);
         }
       } catch (error) {
-        console.error('Error reading guest address from localStorage:', error);
+        console.error('Error reading local address from localStorage:', error);
         setGuestAddress(null);
       }
-    } else {
-      // Si el usuario se autentica, limpiar dirección de invitado
-      setGuestAddress(null);
-    }
-  }, [isAuthenticated, user?.id]);
+    };
 
-  // Escuchar cambios en localStorage para usuarios invitados
-  useEffect(() => {
-    if (!isAuthenticated || !user?.id) {
-      const handleStorageChange = (e: StorageEvent | Event) => {
-        const key = (e as StorageEvent).key;
-        if (key === 'checkout-address' || key === 'imagiq_default_address' || !key) {
-          try {
-            // Buscar primero en checkout-address, si no existe buscar en imagiq_default_address
-            let savedAddress = globalThis.window?.localStorage.getItem('checkout-address');
-            if (!savedAddress) {
-              savedAddress = globalThis.window?.localStorage.getItem('imagiq_default_address');
-            }
-            
-            if (savedAddress) {
-              const direccion = JSON.parse(savedAddress);
-              const address = direccionToAddress(direccion) as Address;
-              setGuestAddress(address);
-              console.log('✅ [AddressDropdown] Dirección de invitado actualizada desde storage:', address);
-            } else {
-              setGuestAddress(null);
-            }
-          } catch (error) {
-            console.error('Error reading guest address from localStorage:', error);
-            setGuestAddress(null);
-          }
-        }
-      };
+    // Cargar inicialmente
+    loadLocalAddress();
 
-      globalThis.window?.addEventListener('storage', handleStorageChange);
-      globalThis.window?.addEventListener('checkout-address-changed', handleStorageChange as EventListener);
+    // Escuchar cambios
+    const handleStorageChange = (e: StorageEvent | Event) => {
+      const key = (e as StorageEvent).key;
+      if (key === 'checkout-address' || key === 'imagiq_default_address' || !key) {
+        loadLocalAddress();
+      }
+    };
 
-      return () => {
-        globalThis.window?.removeEventListener('storage', handleStorageChange);
-        globalThis.window?.removeEventListener('checkout-address-changed', handleStorageChange as EventListener);
-      };
-    }
+    globalThis.window?.addEventListener('storage', handleStorageChange);
+    globalThis.window?.addEventListener('checkout-address-changed', handleStorageChange as EventListener);
+
+    return () => {
+      globalThis.window?.removeEventListener('storage', handleStorageChange);
+      globalThis.window?.removeEventListener('checkout-address-changed', handleStorageChange as EventListener);
+    };
   }, [isAuthenticated, user?.id]);
 
   // Cargar direcciones al inicio si no hay dirección predeterminada
+  // Cargar direcciones al inicio si no hay direcciones cargadas (incluso si ya tenemos la default)
+  // ESTO ES CLAVE: Antes se detenía si había currentAddress, por lo que la lista quedaba vacía.
   useEffect(() => {
-    if (!loadingDefault && !currentAddress && user?.id && addresses.length === 0 && !isFetchingRef.current) {
+    if (!loadingDefault && user?.id && addresses.length === 0 && !isFetchingRef.current) {
       fetchAddresses();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadingDefault, currentAddress, user?.id]);
+  }, [loadingDefault, user?.id]);
 
   // Escuchar cambios de dirección desde otros componentes (ej: carrito)
   useEffect(() => {
@@ -224,8 +214,10 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   };
 
   const handleSelectAddress = async (address: Address) => {
-    const currentAddressId = currentAddress?.id || (addresses.length > 0 ? addresses[0]?.id : null);
-    if (address.id === currentAddressId) {
+    // Usar displayAddress para consistencia con la UI (puede ser guestAddress o currentAddress)
+    const currentActiveId = displayAddress?.id || currentAddress?.id || (addresses.length > 0 ? addresses[0]?.id : null);
+
+    if (address.id === currentActiveId) {
       setOpen(false);
       return;
     }
@@ -372,215 +364,9 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
     };
   }, [open]);
 
-  // Si no hay usuario logueado pero hay dirección en localStorage, mostrarla
-  // Si no hay dirección, mostrar botón para agregar dirección que redirige al login
-  if (!isAuthenticated || !user?.id) {
-    // Si hay dirección de invitado, mostrarla
-    if (guestAddress) {
-      const displayAddress = guestAddress;
-      return (
-        <>
-          <div className="relative" ref={dropdownRef}>
-          {/* Botón para Desktop (>= 1280px) - Una línea */}
-          <button
-            className={cn(
-              "hidden xl:flex items-center gap-1.5 text-[12px] md:text-[13px] lg:text-[11px] xl:text-[10px] font-medium max-w-[280px] xl:max-w-[220px] 2xl:max-w-[260px] truncate hover:opacity-80 transition-opacity cursor-pointer",
-              showWhiteItems ? "text-white/90" : "text-black/80"
-            )}
-            onClick={handleToggle}
-            title={displayAddress.direccionFormateada || displayAddress.lineaUno || 'Dirección'}
-            style={{ lineHeight: "1.4" }}
-            type="button"
-          >
-            <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-            <span
-              className="truncate block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
-              style={{
-                lineHeight: "1.4",
-                maxWidth: "calc(100% - 60px)"
-              }}
-              title={displayAddress.direccionFormateada || displayAddress.lineaUno || 'Dirección'}
-            >
-              {getAddressUpToCity(displayAddress)}
-            </span>
-            <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 ml-1" />
-          </button>
-
-          {/* Botón para Mobile/Tablet (< 1280px) */}
-          {renderMobileTrigger ? (
-            <>{renderMobileTrigger({
-              onClick: handleToggle,
-              isOpen: open,
-              showWhiteItems,
-              displayAddress,
-            })}</>
-          ) : (
-            <button
-              className={cn(
-                "xl:hidden flex items-center justify-center w-10 h-10 hover:opacity-80 transition-opacity cursor-pointer",
-                "text-black"
-              )}
-              onClick={handleToggle}
-              title={displayAddress.direccionFormateada || displayAddress.lineaUno || displayAddress.ciudad || 'Dirección'}
-              type="button"
-            >
-              <MapPin className="w-5 h-5 text-black" />
-            </button>
-          )}
-
-          {/* Dropdown para mostrar la dirección y permitir agregar más (también para invitados) */}
-          {open && (
-            <div
-              className="absolute top-full left-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-4">
-                <div className="mb-3">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Dirección de envío</h3>
-                  <p className="text-sm text-gray-700">
-                    {displayAddress.direccionFormateada || displayAddress.lineaUno}
-                  </p>
-                  {displayAddress.ciudad && (
-                    <p className="text-xs text-gray-500 mt-1">{displayAddress.ciudad}</p>
-                  )}
-                </div>
-
-                {/* Botón para agregar nueva dirección (disponible para invitados) */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAddNewAddress();
-                  }}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Agregar nueva dirección</span>
-                </button>
-              </div>
-            </div>
-          )}
-          {showModal && isMounted && createPortal(
-            <div
-              className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/50"
-              onClick={() => setShowModal(false)}
-            >
-              <div
-                className="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Agregar nueva dirección
-                  </h2>
-                  <button
-                    onClick={() => setShowModal(false)}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    type="button"
-                  >
-                    <X className="w-5 h-5 text-gray-500" />
-                  </button>
-                </div>
-
-                <div className="overflow-y-auto p-6">
-                  <AddNewAddressForm
-                    onAddressAdded={handleAddressAdded}
-                    onCancel={() => setShowModal(false)}
-                    withContainer={false}
-                  />
-                </div>
-              </div>
-            </div>,
-            document.body
-          )}
-          </div>
-        </>
-      );
-    }
-
-    // Si no hay dirección, mostrar botón para agregar dirección
-    return (
-      <>
-        <div className="relative" ref={dropdownRef}>
-          {/* Botón para Desktop (>= 1280px) */}
-          <button
-          className={cn(
-            "hidden xl:flex items-center gap-1.5 text-[12px] md:text-[13px] font-medium max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px] truncate hover:opacity-80 transition-opacity cursor-pointer",
-            showWhiteItems ? "text-white/90" : "text-black/80"
-          )}
-          onClick={handleAddNewAddress}
-          title="Agregar dirección"
-          style={{ lineHeight: "1.4" }}
-          type="button"
-        >
-          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-          <span className="truncate block" style={{ lineHeight: "1.4" }}>
-            Agregar dirección
-          </span>
-          <Plus className="w-3.5 h-3.5 flex-shrink-0 ml-1" />
-        </button>
-
-        {/* Botón para Mobile/Tablet (< 1280px) */}
-        <button
-          className={cn(
-            "xl:hidden flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer py-1 max-w-[200px] sm:max-w-[280px] pr-4",
-            showWhiteItems ? "text-white/90" : "text-black/80"
-          )}
-          onClick={handleAddNewAddress}
-          title="Agregar dirección"
-          type="button"
-        >
-          <div className="flex flex-col items-start gap-0 min-w-0 flex-1">
-            <div className="flex items-center gap-1 w-full">
-              <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="text-[11px] font-semibold truncate">
-                Agregar dirección
-              </span>
-            </div>
-          </div>
-          <Plus className="w-4 h-4 flex-shrink-0" />
-        </button>
-      </div>
-      
-      {showModal && isMounted && createPortal(
-        <div
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/50"
-          onClick={() => setShowModal(false)}
-        >
-          <div
-            className="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Agregar nueva dirección
-              </h2>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                type="button"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-
-            <div className="overflow-y-auto p-6">
-              <AddNewAddressForm
-                onAddressAdded={handleAddressAdded}
-                onCancel={() => setShowModal(false)}
-                withContainer={false}
-              />
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-      </>
-    );
-  }
-
   // Skeleton mientras carga la dirección predeterminada (solo si hay usuario logueado)
-  if (loadingDefault) {
+  // Si tenemos dirección local (guestAddress), NO mostramos skeleton, mostramos la dirección inmediatamente
+  if (loadingDefault && !guestAddress) {
     return (
       <div className="relative" ref={dropdownRef}>
         {/* Skeleton para Desktop (>= 1280px) */}
@@ -605,8 +391,11 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
     );
   }
 
-  // Determinar qué dirección mostrar: predeterminada o primera disponible
-  const displayAddress = currentAddress || (addresses.length > 0 ? addresses[0] : null);
+  // Determine address to display:
+  // 1. Local saved address (most recent user selection in checkout)
+  // 2. Default address from backend
+  // 3. First address from list
+  const displayAddress = guestAddress || currentAddress || (addresses.length > 0 ? addresses[0] : null);
 
   // COMENTADO: Función getShortAddress ya no se usa
   /*
@@ -710,7 +499,7 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
             <Plus className="w-4 h-4 flex-shrink-0" />
           </button>
         </div>
-        
+
         {/* Modal para agregar dirección (usuarios autenticados sin direcciones) */}
         {showModal && isMounted && createPortal(
           <div
@@ -827,29 +616,37 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
                     </div>
                   ))}
                 </div>
-              ) : addresses.length === 0 ? (
+              ) : (addresses.length === 0 && !displayAddress) ? (
                 <div className="p-6 text-center text-gray-500 text-sm">
                   No hay direcciones registradas
                 </div>
               ) : (
-                addresses.map((address) => {
-                  const currentAddressId = currentAddress?.id || (addresses.length > 0 ? addresses[0]?.id : null);
-                  const isSelected = address.id === currentAddressId;
-                  // COMENTADO: Variables para eliminar dirección (ya no se usa)
-                  // const isDeleting = deletingId === address.id;
-                  // const isConfirming = confirmingDeleteId === address.id;
-                  return (
-                    <div
-                      key={address.id}
-                      className={cn(
-                        "w-full px-4 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 group",
-                        isSelected && "bg-blue-50 hover:bg-blue-100"
-                        // COMENTADO: Ya no se usa la confirmación de eliminar
-                        // isConfirming && "bg-red-50"
-                      )}
-                    >
-                      {/* COMENTADO: Vista de confirmación de eliminar dirección */}
-                      {/* {isConfirming ? (
+                (() => {
+                  // Asegurar que la dirección visualizada esté en la lista
+                  const addressesToDisplay = [...addresses];
+                  if (displayAddress && !addresses.some(a => a.id === displayAddress.id)) {
+                    // Si la dirección visualizada no está en la lista (ej: local storage o no sincronizada aun), agregarla al principio
+                    addressesToDisplay.unshift(displayAddress);
+                  }
+
+                  return addressesToDisplay.map((address) => {
+                    const currentAddressId = displayAddress?.id;
+                    const isSelected = address.id === currentAddressId;
+                    // COMENTADO: Variables para eliminar dirección (ya no se usa)
+                    // const isDeleting = deletingId === address.id;
+                    // const isConfirming = confirmingDeleteId === address.id;
+                    return (
+                      <div
+                        key={address.id}
+                        className={cn(
+                          "w-full px-4 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 group",
+                          isSelected && "bg-blue-50 hover:bg-blue-100"
+                          // COMENTADO: Ya no se usa la confirmación de eliminar
+                          // isConfirming && "bg-red-50"
+                        )}
+                      >
+                        {/* COMENTADO: Vista de confirmación de eliminar dirección */}
+                        {/* {isConfirming ? (
                         // Vista de confirmación
                         <div className="flex flex-col gap-3">
                           <p className="text-sm font-medium text-gray-900">
@@ -891,8 +688,8 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
                             className="flex-1 min-w-0 text-left"
                             onClick={() => handleSelectAddress(address)}
                             type="button"
-                            // COMENTADO: Ya no se usa isDeleting
-                            // disabled={isDeleting}
+                          // COMENTADO: Ya no se usa isDeleting
+                          // disabled={isDeleting}
                           >
                             <div className="flex items-center gap-2">
                               <span className="font-semibold text-gray-900 text-sm">
@@ -930,11 +727,12 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
                             )}
                           </button> */}
                         </div>
-                      {/* COMENTADO: Cierre del condicional isConfirming */}
-                      {/* )} */}
-                    </div>
-                );
-                })
+                        {/* COMENTADO: Cierre del condicional isConfirming */}
+                        {/* )} */}
+                      </div>
+                    );
+                  })
+                })()
               )}
             </div>
 

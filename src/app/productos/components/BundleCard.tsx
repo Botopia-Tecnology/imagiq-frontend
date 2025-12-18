@@ -505,7 +505,7 @@ export default function BundleCard({
 
         const products: Omit<CartProduct, "quantity">[] =
           selectedOption.productos.map((product, index) => ({
-            id: product.sku,
+            id: (product.codigoMarket || product.sku).split('/')[0],
             name: product.modelo,
             image:
               product.imagePreviewUrl ||
@@ -589,7 +589,7 @@ export default function BundleCard({
 
         const products: Omit<CartProduct, "quantity">[] =
           selectedOption.productos.map((product, index) => ({
-            id: product.sku,
+            id: (product.codigoMarket || product.sku).split('/')[0],
             name: product.modelo,
             image:
               product.imagePreviewUrl ||
@@ -762,7 +762,7 @@ export default function BundleCard({
             Paga con <span className="font-bold">addi</span>
           </p>
         </div>
-        
+
         <BundlePreviewImages images={previewImages} bundleName={displayName} />
       </div>
 
@@ -821,8 +821,8 @@ export default function BundleCard({
                         selectedOptionStock > 5
                           ? "text-green-600"
                           : selectedOptionStock > 0
-                          ? "text-orange-600"
-                          : "text-red-600"
+                            ? "text-orange-600"
+                            : "text-red-600"
                       )}
                     >
                       {selectedOptionStock} unidades

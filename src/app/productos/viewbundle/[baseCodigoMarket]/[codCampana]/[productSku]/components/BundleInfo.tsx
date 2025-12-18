@@ -8,9 +8,9 @@ import type { BundleProduct } from "@/lib/api";
 import { PurchaseSummary } from "./PurchaseSummary";
 import { useCartContext } from "@/features/cart/CartContext";
 import type { CartProduct, BundleInfo as BundleInfoType } from "@/hooks/useCart";
-import { 
-  TradeInSelector, 
-  TradeInModal 
+import {
+  TradeInSelector,
+  TradeInModal
 } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
 
 interface BundleInfoProps {
@@ -43,14 +43,14 @@ export function BundleInfo({
   const router = useRouter();
   const { addBundleToCart } = useCartContext();
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Trade-In states
   const [tradeInOption, setTradeInOption] = useState<"no" | "yes">("no");
   const [isTradeInModalOpen, setIsTradeInModalOpen] = useState(false);
   const [tradeInCompleted, setTradeInCompleted] = useState(false);
   const [tradeInValue, setTradeInValue] = useState<number>(0);
   const [tradeInDeviceName, setTradeInDeviceName] = useState<string>("");
-  
+
   // Verificar si alguno de los productos del bundle tiene ind_entre_estre === 1
   // Accedemos al campo de forma segura ya que viene de la API pero no está en el tipo
   const hasTradeIn = selectedOption.productos?.some((p) => (p as BundleProduct & { ind_entre_estre?: number }).ind_entre_estre === 1) || false;
@@ -59,7 +59,7 @@ export function BundleInfo({
   // Cargar datos de Trade-In desde localStorage al montar el componente
   useEffect(() => {
     if (!hasTradeIn) return;
-    
+
     const storedTradeIn = localStorage.getItem("imagiq_trade_in");
     if (storedTradeIn) {
       try {
@@ -96,9 +96,9 @@ export function BundleInfo({
   // Función para agregar al carrito
   const handleAddToCart = async () => {
     if (isLoading) return;
-    
+
     setIsLoading(true);
-    
+
     try {
       if (!selectedOption.productos || selectedOption.productos.length === 0) {
         toast.error("No se pudo agregar el bundle", {
@@ -108,7 +108,7 @@ export function BundleInfo({
       }
 
       const products: Omit<CartProduct, "quantity">[] = selectedOption.productos.map((product) => ({
-        id: product.sku,
+        id: (product.codigoMarket || product.sku).split('/')[0],
         name: product.modelo,
         image: product.imagePreviewUrl || "/img/logo_imagiq.png",
         price: product.product_discount_price,
@@ -134,11 +134,11 @@ export function BundleInfo({
       };
 
       await addBundleToCart(products, bundleInfo);
-      
+
       toast.success("Bundle agregado al carrito", {
         description: "El bundle se ha agregado correctamente",
       });
-      
+
       // Si hay Trade-In completado, navegar al carrito
       if (tradeInCompleted && tradeInOption === "yes") {
         router.push("/carrito/step1");
@@ -158,7 +158,7 @@ export function BundleInfo({
     if (exposeAddToCart) {
       exposeAddToCart(handleAddToCart);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exposeAddToCart]);
 
   // Handlers de Trade-In
@@ -168,12 +168,12 @@ export function BundleInfo({
 
   const handleTradeInChange = (option: "no" | "yes") => {
     setTradeInOption(option);
-    
+
     if (option === "no") {
       setTradeInCompleted(false);
       setTradeInValue(0);
       setTradeInDeviceName("");
-      
+
       // Limpiar localStorage
       if (productSku) {
         try {
@@ -280,11 +280,10 @@ function OptionsSelector({
             key={index}
             type="button"
             onClick={() => onSelect(index)}
-            className={`px-4 py-2 rounded-md border transition-all ${
-              selectedIndex === index
-                ? "border-black bg-black text-white"
-                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-            }`}
+            className={`px-4 py-2 rounded-md border transition-all ${selectedIndex === index
+              ? "border-black bg-black text-white"
+              : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+              }`}
           >
             Opción {index + 1}
           </button>

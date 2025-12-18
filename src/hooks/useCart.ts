@@ -890,10 +890,9 @@ export function useCart(): UseCartReturn {
         // Obtener el SKU del bundle correspondiente por índice
         const bundleSku = bundleInfo.skusBundle[index] || item.sku;
 
-        // Crear un ID único: usar el índice si el bundleSku es igual a productSku para evitar duplicados
-        const uniqueId = bundleSku === bundleInfo.productSku
-          ? `${bundleInfo.productSku}-${index}-${item.sku}`
-          : `${bundleInfo.productSku}-${bundleSku}`;
+        // Usar el ID original (codigoMarket) como ID único, solicitado por requerimiento de negocio
+        // Anteriormente se generaba un ID compuesto, pero ahora se requiere identifiación por código de mercado
+        const uniqueId = item.id;
 
         return {
           ...item,

@@ -260,7 +260,8 @@ function ContentBlocksOverlay({
                     border: (isMobile && block.cta_mobile?.border) || block.cta.border || 'none',
                     textTransform: (isMobile && block.cta_mobile?.textTransform) || block.cta.textTransform || 'none',
                   };
-                  const href = block.cta.link_url || bannerLinkUrl || '#';
+                  // Usar la URL específica del CTA, no la del banner
+                  const href = block.cta.link_url || '#';
 
                   return (
                     <div style={{ textAlign }}>

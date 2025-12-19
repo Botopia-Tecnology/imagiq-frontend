@@ -61,7 +61,9 @@ export default function MultimediaBannerCarousel({ banners }: MultimediaBannerCa
             <div
               key={banner.id}
               className={`transition-opacity duration-500 ${
-                index === currentIndex ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'
+                index === currentIndex 
+                  ? 'opacity-100 relative z-10' 
+                  : 'opacity-0 absolute inset-0 pointer-events-none z-0'
               }`}
             >
               <MultimediaBannerSlide

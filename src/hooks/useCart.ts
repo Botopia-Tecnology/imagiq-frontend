@@ -887,19 +887,25 @@ export function useCart(): UseCartReturn {
       // Mapear cada item con el SKU correspondiente de skusBundle
       // El orden de los items debe coincidir con el orden de los SKUs en skusBundle
       const itemsWithBundle: CartProduct[] = items.map((item, index) => {
-        // Obtener el SKU del bundle correspondiente por índice
-        const bundleSku = bundleInfo.skusBundle[index] || item.sku;
+        // bundleInfo.skusBundle contiene los SKUs POSTBACK (ej: F-SM-S731BDBKL)
+        // item.sku contiene el SKU INTERNO (ej: SM-S731BDBKLTC)
+        const bundlePostbackSku = bundleInfo.skusBundle[index];
 
         // Usar el ID original (codigoMarket) como ID único, solicitado por requerimiento de negocio
         // Anteriormente se generaba un ID compuesto, pero ahora se requiere identifiación por código de mercado
         const uniqueId = item.id;
 
+        // IMPORTANTE: Mantener consistencia con productos individuales:
+        // - sku: SKU interno del producto (item.sku o item.skuPostback si no hay interno)
+        // - skuPostback: SKU postback del bundle (bundleInfo.skusBundle[])
         return {
           ...item,
           quantity: 1,
           bundleInfo,
-          // SIEMPRE usar el SKU del bundle como sku principal
-          sku: bundleSku, // SKU del bundle (F-SM-F966BDBJA, SM-L320NDAAOBQ, etc.)
+          // Mantener el SKU interno del producto (desde item.sku que viene de productos[].sku)
+          sku: item.sku, // SKU interno (SM-S731BDBKLTC, SM-R420NZKALTA, etc.)
+          // El skuPostback es el que viene de bundleInfo.skusBundle (F-SM-S731BDBKL, SM-R420NZKAOBQ, etc.)
+          skuPostback: bundlePostbackSku || item.skuPostback || item.sku,
           // ID único para identificar cada producto del bundle
           id: uniqueId,
         };

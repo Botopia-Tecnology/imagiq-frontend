@@ -24,15 +24,11 @@ class LogosService {
     // Verificar si el caché es válido
     const now = Date.now()
     if (this.cache && now - this.cacheTimestamp < this.CACHE_TTL) {
-      console.log("✅ [LogosService] Retornando logos desde caché:", this.cache.length)
       return this.cache
     }
 
     try {
-      console.log("📡 [LogosService] Fetching logos desde API...")
       const response = await apiClient.get<Logo[]>("/api/multimedia/logos")
-
-      console.log("📦 [LogosService] Response completo:", response)
 
       // El API devuelve directamente el array (no envuelto en { data: [...] })
       // Verificar si viene en response.data o directamente
@@ -43,11 +39,8 @@ class LogosService {
       } else if (Array.isArray(response)) {
         logos = response as unknown as Logo[]
       } else {
-        console.warn("⚠️ [LogosService] Respuesta inesperada del API:", response)
         return []
       }
-
-      console.log("✅ [LogosService] Logos procesados:", logos.length, logos)
 
       // Actualizar caché
       this.cache = logos
@@ -55,7 +48,6 @@ class LogosService {
 
       return this.cache
     } catch (error) {
-      console.error("❌ [LogosService] Error fetching logos:", error)
       return []
     }
   }

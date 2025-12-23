@@ -115,6 +115,10 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   const [availableStoresWhenCanPickUpFalse, setAvailableStoresWhenCanPickUpFalse] = useState<FormattedStore[]>([]); // Tiendas disponibles cuando canPickUp es false
   const [lastResponse, setLastResponse] = useState<ApiResponse<CandidateStoresResponse> | null>(null); // DEBUG: Estado para guardar la última respuesta
 
+  // Ref para contar llamadas y prevenir bucles infinitos
+  const fetchCountRef = useRef(0);
+  const fetchCountResetTimeRef = useRef(Date.now());
+
   // Ref para prevenir llamadas infinitas a fetchCandidateStores
   const isFetchingRef = useRef(false);
   const lastFetchTimeRef = useRef(0);
@@ -223,6 +227,21 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     console.log('🚀🚀🚀 INICIO fetchCandidateStores - FUNCIÓN LLAMADA');
     console.log('   Configuración:', { canFetchFromEndpoint, onlyReadCache, allowFetchOnAddressChange: allowFetchOnAddressChangeRef.current });
 
+    // PROTECCIÓN CONTRA BUCLES INFINITOS
+    const nowCall = Date.now();
+    if (nowCall - fetchCountResetTimeRef.current > 10000) {
+      // Resetear contador cada 10 segundos
+      fetchCountRef.current = 0;
+      fetchCountResetTimeRef.current = nowCall;
+    }
+
+    if (fetchCountRef.current >= 5) {
+      setStoresLoading(false);
+      return;
+    }
+
+    fetchCountRef.current++;
+
     // OPTIMIZACIÓN: Si onlyReadCache es true, SOLO leer del caché y retornar inmediatamente
     // EXCEPCIÓN: Si allowFetchOnAddressChangeRef es true, permitir petición (cambio de dirección)
     if (onlyReadCache && !allowFetchOnAddressChangeRef.current) {
@@ -245,7 +264,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
               userId = parsed.usuario_id;
             }
           }
-          
+
           if (!userId) {
             const defaultAddress = globalThis.window?.localStorage.getItem("imagiq_default_address");
             if (defaultAddress) {
@@ -450,7 +469,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
             console.log('👤 [useDelivery] User ID recuperado de checkout-address:', userId);
           }
         }
-        
+
         if (!userId) {
           const defaultAddress = globalThis.window?.localStorage.getItem("imagiq_default_address");
           if (defaultAddress) {
@@ -976,6 +995,8 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     if (productsHashRef.current === '' || productsHashRef.current !== productsHash) {
       productsHashRef.current = productsHash;
       console.log('✅ [useDelivery] Productos cambiaron - llamando fetchCandidateStores');
+      console.log('   Hash Anterior:', productsHashRef.current);
+      console.log('   Hash Nuevo:', productsHash);
 
       // Verificar que NO estemos eliminando trade-in
       if (!isRemovingTradeInRef.current) {
@@ -983,12 +1004,13 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         // Especialmente importante cuando se viene desde "Entrego y Estreno"
         setTimeout(() => {
           fetchCandidateStores();
-        }, 100);
+        }, 300); // Aumentado a 300ms para mayor seguridad
       } else {
         console.log('⏸️ [useDelivery] NO llamando fetchCandidateStores porque se está eliminando trade-in');
       }
     } else {
-      console.log('⏭️ [useDelivery] Productos NO cambiaron - saltando fetchCandidateStores');
+      // Log menos intrusivo si no hay cambios
+      // console.log('⏭️ [useDelivery] Productos NO cambiaron - saltando fetchCandidateStores');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products, canFetchFromEndpoint, onlyReadCache]); // Depender de products completo pero con protección de hash
@@ -1509,20 +1531,20 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       // Si se proporcionó la nueva dirección, disparar consulta de candidate stores
       if (newAddress) {
         console.log('🔄 Nueva dirección agregada, consultando candidate stores...');
-        
+
         // Actualizar estado
         setAddress(newAddress);
-        
+
         // IMPORTANTE: Disparar fetchCandidateStores para actualizar el caché
         // y que Step4OrderSummary se entere
         allowFetchOnAddressChangeRef.current = true;
-        
+
         // Actualizar refs para forzar fetch
         if (newAddress.id) {
           lastAddressIdRef.current = newAddress.id;
           invalidateCacheOnAddressChange(newAddress.id);
         }
-        
+
         // Llamar a fetch
         fetchCandidateStores();
       }

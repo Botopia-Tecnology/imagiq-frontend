@@ -9,6 +9,8 @@ export function validateCardFields(
     expiryMonth: "",
     expiryYear: "",
     cvc: "",
+    name: "",
+    docNumber: "",
   };
   let hasError = false;
 

@@ -1079,11 +1079,13 @@ export default function Step7({ onBack }: Step7Props) {
       console.log("📨 [Step7] Datos completos:", JSON.stringify(event.data, null, 2));
       console.log("📨 [Step7] Tipo de datos:", typeof event.data);
 
-      // Verificar que el evento tenga los datos esperados
-      if (event.data && (event.data.success !== undefined || event.data.message)) {
-        console.log("✅ [Step7] Mensaje 3DS válido detectado");
+      // CRÍTICO: Filtrar eventos según documentación de ePayco
+      // El evento FINAL debe contener ref_payco para ser válido
+      // Eventos intermedios (sin ref_payco) deben ser ignorados
+      if (event.data && typeof event.data === 'object' && 'ref_payco' in event.data) {
+        console.log("✅ [Step7] Mensaje 3DS FINAL detectado (contiene ref_payco)");
         console.log("🔐 [Step7] event.data.success:", event.data.success);
-        console.log("🔐 [Step7] event.data.message:", event.data.message);
+        console.log("🔐 [Step7] event.data.ref_payco:", event.data.ref_payco);
         console.log("🔐 [Step7] Proceso 3DS finalizado:", event.data);
 
         // Obtener orderId guardado
@@ -1092,6 +1094,8 @@ export default function Step7({ onBack }: Step7Props) {
 
         if (event.data.success && orderId) {
           console.log("✅ [Step7] 3DS exitoso, redirigiendo a verificación:", orderId);
+          // Limpiar el localStorage
+          localStorage.removeItem('pending_order_id');
           // toast.success("Autenticación 3DS exitosa. Verificando pago...");
           // Redirigir a página de verificación
           router.push(`/verify-purchase/${orderId}`);
@@ -1101,6 +1105,7 @@ export default function Step7({ onBack }: Step7Props) {
           setIsProcessing(false);
         } else if (event.data.success === false) {
           console.error("❌ [Step7] 3DS rechazado explícitamente");
+          localStorage.removeItem('pending_order_id');
           toast.error("La autenticación 3DS falló o fue cancelada.");
           setIsProcessing(false);
         } else {
@@ -1109,7 +1114,10 @@ export default function Step7({ onBack }: Step7Props) {
           setIsProcessing(false);
         }
       } else {
-        console.log("ℹ️ [Step7] Mensaje ignorado (no es de 3DS o no tiene estructura esperada)");
+        console.log("ℹ️ [Step7] Mensaje ignorado (evento intermedio sin ref_payco)");
+        console.log("   • Tiene 'success'?", 'success' in (event.data || {}));
+        console.log("   • Tiene 'ref_payco'?", 'ref_payco' in (event.data || {}));
+        console.log("   → Este es un evento de Cardinal Commerce, esperando modal...");
       }
       console.log("📨 [Step7] ========================================");
     };
@@ -1519,89 +1527,94 @@ export default function Step7({ onBack }: Step7Props) {
 
           // Verificar si requiere 3DS
           if (res.requires3DS && res.data3DS) {
-            console.log("🔐 [Step7] Requiere validación 3DS");
-            console.log("🔐 [Step7] Respuesta completa del backend:", JSON.stringify(res, null, 2));
-            console.log("🔐 [Step7] data3DS recibido:", JSON.stringify(res.data3DS, null, 2));
+            console.log("═".repeat(80));
+            console.log("🎬 PROCESO 3D SECURE - FRONTEND");
+            console.log("═".repeat(80));
+            console.log("");
+            console.log("📋 INFORMACIÓN DEL SISTEMA:");
+            console.log("   • Navegador:", navigator.userAgent);
+            console.log("");
+            console.log("🏢 CONFIGURACIÓN EPAYCO:");
+            console.log("   • Cuenta ID (IMAGIQ):", process.env.NEXT_PUBLIC_EPAYCO_ACCOUNT_ID || '1518439');
+            console.log("   • Public Key:", process.env.NEXT_PUBLIC_EPAYCO_PUBLIC_KEY || '0ff2ba66a958499f2a081134b7632e40');
+            console.log("   • Fecha/Hora:", new Date().toISOString());
+            console.log("   • URL Actual:", window.location.href);
+            console.log("");
+            console.log("📦 RESPUESTA COMPLETA DEL BACKEND:");
+            console.log(JSON.stringify(res, null, 2));
+            console.log("");
+            console.log("📦 OBJETO data3DS RECIBIDO:");
+            console.log(JSON.stringify(res.data3DS, null, 2));
 
             const data3DS = res.data3DS as { resultCode?: string; ref_payco?: number; franquicia?: string; '3DS'?: { success: boolean; data: unknown } };
-            console.log("🔐 [Step7] Result Code:", data3DS.resultCode);
-            console.log("🔐 [Step7] Franquicia:", data3DS.franquicia);
-            console.log("🔐 [Step7] ref_payco:", data3DS.ref_payco);
-            console.log("🔐 [Step7] Objeto 3DS completo:", data3DS['3DS']);
+            
+            console.log("");
+            console.log("🔍 ANÁLISIS DEL OBJETO data3DS:");
+            console.log("   • Franquicia:", data3DS.franquicia);
+            console.log("   • ref_payco:", data3DS.ref_payco);
+            console.log("   • Result Code:", data3DS.resultCode);
+            console.log("   • Objeto 3DS existe:", !!data3DS['3DS']);
+            console.log("");
+            console.log("🔍 VALIDACIONES ESTRUCTURA 3DS:");
+            console.log("   ✓ ¿Objeto '3DS' existe?", !!data3DS['3DS']);
+            console.log("   ✓ ¿success = true?", data3DS['3DS']?.success);
+            console.log("   ✓ ¿Tiene propiedad 'data'?", !!data3DS['3DS']?.data);
+            console.log("");
+            console.log("📦 OBJETO 3DS COMPLETO:");
+            console.log(JSON.stringify(data3DS['3DS'], null, 2));
 
             // Guardar orderId para verificación posterior
             const orderId = res.orderId || "";
             if (orderId) {
               localStorage.setItem('pending_order_id', orderId);
-              console.log("🔐 [Step7] OrderId guardado:", orderId);
+              console.log("");
+              console.log("💾 OrderId guardado en localStorage:", orderId);
             }
 
-            // Ejecutar validación 3DS con el script de ePayco
-            // IMPORTANTE: El script espera recibir SOLO el objeto data3DS['3DS'].data
+            // ========================================
+            // 🔐 3D SECURE AUTHENTICATION (ePayco)
+            // Documentación: https://docs.epayco.com/docs/3d-secure-via-api
+            // ========================================
+            console.log("");
+            console.log("🔌 VALIDACIÓN DEL SCRIPT validate3ds:");
+            console.log("   • typeof window.validate3ds:", typeof window.validate3ds);
+            console.log("   • ¿Script cargado?", typeof window.validate3ds === 'function');
+            
             if (typeof window !== 'undefined' && window.validate3ds) {
-              console.log("✅ [Step7] Script validate3ds encontrado en window");
+              console.log("   ✅ Script validate3ds encontrado en window");
+              console.log("");
               
-              // Extraer el objeto data del 3DS
-              const threeDSData = data3DS['3DS']?.data;
+              console.log(" OBJETO QUE SE PASARÁ A window.validate3ds():");
+              console.log(JSON.stringify(data3DS, null, 2));
+              console.log("");
+              console.log("📊 ESTADO DEL DOM ANTES DE EJECUTAR:");
+              const iframesBefore = document.querySelectorAll('iframe').length;
+              const modalsBefore = document.querySelectorAll('div[id*="modal"], div[class*="modal"]').length;
+              const bodyChildrenBefore = document.body.children.length;
               
-              if (threeDSData) {
-                console.log("🔐 [Step7] Ejecutando window.validate3ds() con el objeto data:");
-                console.log(JSON.stringify(threeDSData, null, 2));
+              console.log("   • Elementos en <body>:", bodyChildrenBefore);
+              console.log("   • Iframes existentes:", iframesBefore);
+              console.log("   • Divs con 'modal':", modalsBefore);
+              console.log("");
+              console.log("🚀 EJECUTANDO window.validate3ds()...");
 
-                // Verificar si hay elementos del modal en el DOM antes de ejecutar
-                console.log("🔍 [Step7] Elementos en body antes de validate3ds:", document.body.children.length);
-
-                try {
-                  window.validate3ds(threeDSData);
-                  console.log("✅ [Step7] validate3ds() ejecutado exitosamente");
+              try {
+                // CRÍTICO: Pasar el objeto completo data3DS, NO solo data3DS['3DS'].data
+                // El script de ePayco espera la estructura completa con franquicia, ref_payco, etc.
+                window.validate3ds(data3DS);
                   
-                  // Esperar un poco y verificar si se creó el modal
-                  setTimeout(() => {
-                    const iframesAfter = document.querySelectorAll('iframe').length;
-                    const modalsAfter = document.querySelectorAll('div[id*="modal"], div[class*="modal"], div[id*="cardinal"], div[class*="cardinal"]').length;
-                    
-                    console.log("🔍 [Step7] Elementos en body después de validate3ds:", document.body.children.length);
-                    console.log("🔍 [Step7] Buscando iframes:", iframesAfter);
-                    console.log("🔍 [Step7] Buscando divs con 'modal' o 'cardinal':", modalsAfter);
-                    
-                    // Listar todos los elementos agregados recientemente
-                    const allDivs = document.querySelectorAll('body > div, body > iframe');
-                    console.log("🔍 [Step7] Elementos directos en body:", allDivs.length);
-                    allDivs.forEach((el, i) => {
-                      console.log(`  ${i}: ${el.tagName} - id: ${el.id || 'sin id'} - class: ${el.className || 'sin clase'}`);
-                    });
-                    
-                    // Si no se creó ningún modal, mostrar advertencia
-                    if (modalsAfter === 0 && iframesAfter <= 1) {
-                      console.warn("⚠️ [Step7] ADVERTENCIA: El modal 3DS NO se generó.");
-                      console.warn("⚠️ [Step7] Esto indica que la Configuración 75 de ePayco NO está activa.");
-                      console.warn("⚠️ [Step7] Por favor contacta a soporte de ePayco para activar 3D Secure vía API.");
-                      
-                      setError(
-                        "⚠️ Configuración 3D Secure pendiente. " +
-                        "El sistema detectó que se requiere autenticación 3DS, " +
-                        "pero la Configuración 75 de ePayco no está activa. " +
-                        "Contacta a soporte para activarla."
-                      );
-                      setIsProcessing(false);
-                    }
-                  }, 1000);
-                  
-                  console.log("⏳ [Step7] Esperando respuesta del banco via postMessage...");
-                  // No redirigir, el script de ePayco manejará el flujo
-                  return;
+                console.log("✅ window.validate3ds() ejecutado correctamente");
+                console.log("⏳ Esperando respuesta del usuario (modal 3DS)...");
+                console.log("");
+                
+                // No redirigir aquí - el listener de 'message' manejará el resultado
+                return;
                 } catch (error) {
                   console.error("❌ [Step7] Error ejecutando validate3ds:", error);
                   setError(`Error ejecutando validación 3DS: ${error}`);
                   setIsProcessing(false);
                   return;
                 }
-              } else {
-                console.error("❌ [Step7] No se encontró data3DS['3DS'].data");
-                setError("Error: Datos de 3DS incompletos");
-                setIsProcessing(false);
-                return;
-              }
             } else {
               console.error("❌ [Step7] Script de ePayco no cargado");
               console.log("🔍 [Step7] window.validate3ds:", typeof window !== 'undefined' ? window.validate3ds : 'window is undefined');

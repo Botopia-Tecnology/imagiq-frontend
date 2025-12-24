@@ -92,6 +92,34 @@ export default function PaymentForm({
     return null;
   };
 
+  // Helper para obtener el rol del usuario
+  const getUserRole = (): number | null => {
+    if (authContext.user?.role) {
+      return authContext.user.role;
+    }
+    if ((authContext.user as any)?.rol) {
+      return (authContext.user as any).rol;
+    }
+    if (loggedUser?.rol) {
+      return loggedUser.rol;
+    }
+
+    try {
+      const storedUser = localStorage.getItem("imagiq_user");
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        return parsedUser.rol || parsedUser.role || null;
+      }
+    } catch (error) {
+      // Ignore
+    }
+
+    return null;
+  };
+
+  const userRole = getUserRole();
+  const canSaveCards = userRole === 2; // Solo rol 2 puede guardar tarjetas
+
   // Helper para obtener el máximo de cuotas sin interés de una tarjeta
   const getMaxInstallments = (cardId: string): number | null => {
     if (!zeroInterestData?.cards) return null;
@@ -328,7 +356,7 @@ export default function PaymentForm({
                   {/* Formulario inline siempre visible */}
                   {isNewCardSelected && (
                     <div className="ml-8 mb-3 mt-1">
-                      <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <div className="p-4">
                         <AddCardForm
                           userId={getUserId() || ""}
                           embedded={true}
@@ -433,8 +461,8 @@ export default function PaymentForm({
         </div>
       </div>
 
-      {/* Sección de Tarjetas guardadas */}
-      {activeCards.length > 0 ? (
+      {/* Sección de Tarjetas guardadas - Solo para rol 2 */}
+      {canSaveCards && activeCards.length > 0 ? (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold text-gray-700">
@@ -572,7 +600,7 @@ export default function PaymentForm({
             })}
           </div>
         </div>
-      ) : (
+      ) : canSaveCards ? (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold text-gray-700">
@@ -625,7 +653,7 @@ export default function PaymentForm({
             Agrega una tarjeta desde tu perfil para continuar con el pago
           </p>
         </div>
-      )}
+      ) : null}
 
     </div>
   );

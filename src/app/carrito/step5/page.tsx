@@ -15,7 +15,7 @@ export default function Step5Page() {
     if (!isLoading) return; // Ya se verificó, no volver a verificar
 
     const token = localStorage.getItem("imagiq_token");
-    
+
     // Intentar obtener usuario desde el hook o localStorage directamente
     const userToCheck = loggedUser || (() => {
       try {
@@ -26,8 +26,8 @@ export default function Step5Page() {
       }
     })();
 
-    console.log("🔍 [STEP5] Verificando acceso:", { 
-      hasToken: !!token, 
+    console.log("🔍 [STEP5] Verificando acceso:", {
+      hasToken: !!token,
       hasUser: !!userToCheck,
       userRol: userToCheck ? ((userToCheck as User & { rol?: number }).rol ?? (userToCheck as User).role) : null
     });
@@ -67,11 +67,14 @@ export default function Step5Page() {
 
     // Verificar si el método de pago es tarjeta
     const paymentMethod = localStorage.getItem("checkout-payment-method");
+    console.log("🔍 [STEP5] Payment Method:", paymentMethod);
 
     // Si no es pago con tarjeta, saltar este paso
     if (paymentMethod !== "tarjeta") {
+      console.log("⚠️ [STEP5] Payment method is NOT tarjeta, redirecting to Step6");
       router.push("/carrito/step6");
     } else {
+      console.log("✅ [STEP5] Payment method IS tarjeta, staying in Step5");
       setIsLoading(false);
     }
   }, [router, loggedUser, isLoading]);

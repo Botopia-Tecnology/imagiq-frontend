@@ -5,7 +5,7 @@ import PaymentForm from "./components/PaymentForm";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
 import Modal from "@/components/ui/Modal";
-import AddCardForm from "@/components/forms/AddCardForm";
+import AddCardForm, { AddCardFormHandle } from "@/components/forms/AddCardForm";
 import { useCheckoutLogic } from "./hooks/useCheckoutLogic";
 import { useAuthContext } from "@/features/auth/context";
 import { useCart } from "@/hooks/useCart";
@@ -57,6 +57,9 @@ export default function Step4({
     "imagiq_user",
     null
   );
+  const [isValidatingCard, setIsValidatingCard] = React.useState(false);
+  const [isCardFormValid, setIsCardFormValid] = React.useState(false);
+  const formRef = React.useRef<AddCardFormHandle>(null);
 
   // Trade-In state management
   const [tradeInData, setTradeInData] = React.useState<{
@@ -84,7 +87,7 @@ export default function Step4({
   const handleRemoveTradeIn = () => {
     localStorage.removeItem("imagiq_trade_in");
     setTradeInData(null);
-    
+
     // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
     if (typeof globalThis.window !== "undefined") {
       const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
@@ -164,17 +167,22 @@ export default function Step4({
     // Si no hay método de pago seleccionado
     if (!paymentMethod) return false;
 
-    // Si es tarjeta, debe tener una tarjeta seleccionada
-    if (paymentMethod === "tarjeta" && !selectedCardId) return false;
+    // Si es tarjeta, debe tener una tarjeta seleccionada O estar usando una nueva Y que el formulario sea válido
+    if (paymentMethod === "tarjeta") {
+      if (!selectedCardId && !useNewCard) return false;
+      if (useNewCard && !selectedCardId && !isCardFormValid) return false;
+    }
 
     // Si es PSE, debe tener un banco seleccionado
     if (paymentMethod === "pse" && !selectedBank) return false;
 
     // Si es Addi, siempre está válido (no requiere más datos)
     return true;
-  }, [paymentMethod, selectedCardId, selectedBank]);
+  }, [paymentMethod, selectedCardId, selectedBank, useNewCard, isCardFormValid]);
 
   const handleContinueToNextStep = async (e: React.FormEvent) => {
+    e.preventDefault(); // Prevenir recarga inmediatamente
+
     // Validar Trade-In antes de continuar
     const validation = validateTradeInProducts(products);
     if (!validation.isValid) {
@@ -183,9 +191,53 @@ export default function Step4({
       return;
     }
 
+    // Validar y procesar formulario de tarjeta inline si corresponde
+    if (paymentMethod === "tarjeta" && useNewCard && !selectedCardId && formRef.current) {
+      console.log("💳 [Step4] Processing inline new card...");
+      setIsValidatingCard(true);
+      try {
+        // Enviar formulario (saveInfo determina si se tokeniza y guarda en perfil o solo en LS)
+        const success = await formRef.current.submitForm(saveInfo);
+        console.log("💳 [Step4] Inline card submission result:", success);
+        if (!success) {
+          e.preventDefault();
+          setIsValidatingCard(false);
+          return;
+        }
+
+        // Si tuvo éxito, los datos están en localStorage (checkout-card-data).
+        // Necesitamos sincronizarlos con el estado 'card' de useCheckoutLogic para que el pago funcione.
+        const tempCardData = localStorage.getItem("checkout-card-data");
+        console.log("💳 [Step4] Temp card data found after submission:", !!tempCardData);
+        if (tempCardData) {
+          const parsed = JSON.parse(tempCardData);
+          handleCardChange({
+            number: parsed.cardNumber || "",
+            name: parsed.cardHolder || "",
+            expiryMonth: parsed.cardExpMonth || "",
+            expiryYear: parsed.cardExpYear || "",
+            cvc: parsed.cardCvc || "",
+            docType: "C.C.", // Default
+            docNumber: authContext.user?.numero_documento || loggedUser?.numero_documento || "",
+            installments: "1"
+          });
+        }
+      } catch (err) {
+        console.error("Error processing inline card:", err);
+        setIsValidatingCard(false);
+        e.preventDefault();
+        return;
+      }
+    }
+
     const isValid = await handleSavePaymentData(e);
+    console.log("💳 [Step4] handleSavePaymentData result:", isValid);
+    setIsValidatingCard(false); // Reset here in case validation failed or we are just moving on
     if (isValid && onContinue) {
+      console.log("💳 [Step4] isValid is true, calling onContinue()");
       onContinue();
+    } else {
+      console.warn("💳 [Step4] Validation failed or onContinue missing", { isValid, hasOnContinue: !!onContinue });
     }
   };
 
@@ -235,13 +287,15 @@ export default function Step4({
             zeroInterestData={zeroInterestData}
             isLoadingZeroInterest={isLoadingZeroInterest}
             onFetchZeroInterest={fetchZeroInterestInfo}
+            formRef={formRef}
+            onValidityChange={setIsCardFormValid}
           />
         </form>
 
         {/* Resumen de compra y Trade-In - Hidden en mobile */}
         <aside className="hidden md:block space-y-4">
           <Step4OrderSummary
-            isProcessing={isProcessing}
+            isProcessing={isProcessing || isValidatingCard}
             onFinishPayment={() => {
               const form = document.getElementById(
                 "checkout-form"
@@ -250,17 +304,17 @@ export default function Step4({
             }}
             onBack={onBack}
             buttonText="Continuar"
-            disabled={isProcessing || !tradeInValidation.isValid || !isPaymentMethodValid}
+            disabled={isProcessing || isValidatingCard || !tradeInValidation.isValid || !isPaymentMethodValid}
             isSticky={false}
             deliveryMethod={
               typeof window !== "undefined"
                 ? (() => {
-                    const method = localStorage.getItem("checkout-delivery-method");
-                    if (method === "tienda") return "pickup";
-                    if (method === "domicilio") return "delivery";
-                    if (method === "delivery" || method === "pickup") return method;
-                    return undefined;
-                  })()
+                  const method = localStorage.getItem("checkout-delivery-method");
+                  if (method === "tienda") return "pickup";
+                  if (method === "domicilio") return "delivery";
+                  if (method === "delivery" || method === "pickup") return method;
+                  return undefined;
+                })()
                 : undefined
             }
           />
@@ -299,18 +353,17 @@ export default function Step4({
 
           {/* Botón continuar */}
           <button
-            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
-              isProcessing || !tradeInValidation.isValid || !isPaymentMethodValid
-                ? "bg-gray-400 cursor-not-allowed opacity-70"
-                : "bg-[#222] hover:bg-[#333] cursor-pointer"
-            }`}
+            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${isProcessing || isValidatingCard || !tradeInValidation.isValid || !isPaymentMethodValid
+              ? "bg-gray-400 cursor-not-allowed opacity-70"
+              : "bg-[#222] hover:bg-[#333] cursor-pointer"
+              }`}
             onClick={() => {
               const form = document.getElementById("checkout-form") as HTMLFormElement;
               if (form) form.requestSubmit();
             }}
-            disabled={isProcessing || !tradeInValidation.isValid || !isPaymentMethodValid}
+            disabled={isProcessing || isValidatingCard || !tradeInValidation.isValid || !isPaymentMethodValid}
           >
-            {isProcessing ? "Procesando..." : "Continuar"}
+            {isProcessing || isValidatingCard ? "Procesando..." : "Continuar"}
           </button>
         </div>
       </div>

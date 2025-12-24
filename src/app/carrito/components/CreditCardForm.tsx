@@ -6,9 +6,9 @@ interface CardData {
   expiryMonth: string;
   expiryYear: string;
   cvc: string;
-  // name: string;
-  // docType: string;
-  // docNumber: string;
+  name: string;
+  docType: string;
+  docNumber: string;
   installments: string;
 }
 
@@ -17,8 +17,8 @@ interface CardErrors {
   expiryMonth: string;
   expiryYear: string;
   cvc: string;
-  // name: string;
-  // docNumber: string;
+  name: string;
+  docNumber: string;
 }
 
 interface CreditCardFormProps {
@@ -79,9 +79,8 @@ export default function CreditCardForm({
           inputMode="numeric"
           maxLength={19} // 16 dígitos + 3 espacios
           pattern="[0-9 ]{19}"
-          className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
-            cardErrors.number ? "border-red-500" : ""
-          }`}
+          className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${cardErrors.number ? "border-red-500" : ""
+            }`}
           placeholder="Número de tarjeta (16 dígitos)"
           value={card.number.replace(/(\d{4})(?=\d)/g, "$1 ").trim()}
           onChange={(e) => {
@@ -108,9 +107,8 @@ export default function CreditCardForm({
             inputMode="numeric"
             maxLength={2}
             pattern="\d{1,2}"
-            className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
-              cardErrors.expiryMonth ? "border-red-500" : ""
-            }`}
+            className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${cardErrors.expiryMonth ? "border-red-500" : ""
+              }`}
             placeholder="Mes (MM)"
             value={card.expiryMonth.replace(/\D/g, "").slice(0, 2)}
             onChange={(e) => {
@@ -156,9 +154,8 @@ export default function CreditCardForm({
             inputMode="numeric"
             maxLength={4}
             pattern="\d{4}"
-            className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
-              cardErrors.expiryYear ? "border-red-500" : ""
-            }`}
+            className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${cardErrors.expiryYear ? "border-red-500" : ""
+              }`}
             placeholder="Año (AAAA)"
             value={card.expiryYear.replace(/\D/g, "").slice(0, 4)}
             onChange={(e) => {
@@ -190,9 +187,8 @@ export default function CreditCardForm({
             inputMode="numeric"
             maxLength={isAmex ? 4 : 3}
             pattern={isAmex ? "\\d{4}" : "\\d{3}"}
-            className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
-              cardErrors.cvc ? "border-red-500" : ""
-            }`}
+            className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${cardErrors.cvc ? "border-red-500" : ""
+              }`}
             placeholder={isAmex ? "CVC (4 dígitos)" : "CVC (3 dígitos)"}
             value={card.cvc.replace(/\D/g, "").slice(0, isAmex ? 4 : 3)}
             onChange={(e) => {

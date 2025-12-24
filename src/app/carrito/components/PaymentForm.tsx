@@ -6,6 +6,7 @@ import { CardData, CardErrors } from "./CreditCardForm";
 import { PaymentMethod, CheckZeroInterestResponse } from "../types";
 import { useAuthContext } from "@/features/auth/context";
 import CardBrandLogo from "@/components/ui/CardBrandLogo";
+import AddCardForm, { AddCardFormHandle } from "@/components/forms/AddCardForm";
 import pseLogo from "@/img/iconos/logo-pse.png";
 import addiLogo from "@/img/iconos/addi_negro.png";
 import { fetchBanks } from "../utils";
@@ -33,6 +34,8 @@ interface PaymentFormProps {
   zeroInterestData?: CheckZeroInterestResponse | null;
   isLoadingZeroInterest?: boolean;
   onFetchZeroInterest?: (cardIds: string[]) => void;
+  formRef?: React.RefObject<AddCardFormHandle | null>;
+  onValidityChange?: (isValid: boolean) => void;
 }
 
 export default function PaymentForm({
@@ -55,6 +58,8 @@ export default function PaymentForm({
   zeroInterestData,
   isLoadingZeroInterest,
   onFetchZeroInterest,
+  formRef,
+  onValidityChange,
 }: PaymentFormProps) {
   const authContext = useAuthContext();
   const { savedCards, isLoadingCards, loadSavedCards } = useCardsCache();
@@ -81,7 +86,7 @@ export default function PaymentForm({
         return parsedUser.id || null;
       }
     } catch (error) {
-    
+
     }
 
     return null;
@@ -137,16 +142,21 @@ export default function PaymentForm({
 
       // Solo procesar si el método de pago actual o guardado es "tarjeta"
       if (paymentMethod === "tarjeta" || savedPaymentMethod === "tarjeta") {
+        console.log("💳 [PaymentForm] Auto-selection check triggered", { paymentMethod, savedPaymentMethod, selectedCardId, useNewCard });
+
         // Solo auto-seleccionar si:
         // 1. No hay tarjeta seleccionada actualmente Y no hay una guardada en localStorage Y el método actual es tarjeta
         // 2. Se agregó una nueva tarjeta (savedCardsReloadCounter > 0)
         const savedCardId = localStorage.getItem("checkout-saved-card-id");
-        const shouldSelectCard = (!selectedCardId && !savedCardId && paymentMethod === "tarjeta") || (savedCardsReloadCounter !== undefined && savedCardsReloadCounter > 0);
+        const shouldSelectCard = (!selectedCardId && !savedCardId && paymentMethod === "tarjeta" && !useNewCard) || (savedCardsReloadCounter !== undefined && savedCardsReloadCounter > 0 && !useNewCard);
+
+        console.log("💳 [PaymentForm] Should select card?", shouldSelectCard, { savedCardId, savedCardsReloadCounter });
 
         if (shouldSelectCard) {
           const defaultCard =
             savedCards.find((card) => card.es_predeterminada) || savedCards[0];
           if (defaultCard) {
+            console.log("💳 [PaymentForm] Auto-selecting default card", defaultCard.id);
             onCardSelect(String(defaultCard.id));
             onUseNewCardChange(false);
             // Cambiar método de pago a tarjeta si no está seleccionado
@@ -154,7 +164,8 @@ export default function PaymentForm({
               onPaymentMethodChange("tarjeta");
             }
           }
-        } else if (savedCardId && !selectedCardId && paymentMethod === "tarjeta") {
+        } else if (savedCardId && !selectedCardId && paymentMethod === "tarjeta" && !useNewCard) {
+          console.log("💳 [PaymentForm] Restoring saved card from LS", savedCardId);
           // Si hay una tarjeta guardada en localStorage pero no está seleccionada en el estado, seleccionarla
           // SOLO si el método de pago actual es tarjeta
           onCardSelect(savedCardId);
@@ -162,7 +173,7 @@ export default function PaymentForm({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedCards.length, paymentMethod, savedCardsReloadCounter, isLoadingCards]);
+  }, [savedCards.length, savedCardsReloadCounter, isLoadingCards, useNewCard, paymentMethod, selectedCardId]);
 
   // Llamar a fetchZeroInterestInfo cuando se cargan las tarjetas
   useEffect(() => {
@@ -176,13 +187,9 @@ export default function PaymentForm({
   }, [savedCards, onFetchZeroInterest]);
 
 
-  // Obtener tarjeta predeterminada
-  const defaultCard =
-    savedCards.find((card) => card.es_predeterminada) || savedCards[0];
-
-  // Filtrar tarjetas activas y no expiradas, excluyendo la predeterminada (ya está en Recomendados)
+  // Filtrar tarjetas activas y no expiradas - MOSTRAR TODAS (incluyendo predeterminada)
   const activeCards = savedCards.filter((card) => {
-  
+
     if (!card.activa) return false;
     if (card.fecha_vencimiento) {
       const [month, year] = card.fecha_vencimiento.split("/");
@@ -192,8 +199,8 @@ export default function PaymentForm({
       );
       if (expDate < new Date()) return false;
     }
-    // Excluir la tarjeta que ya está en Recomendados
-    return defaultCard ? String(card.id) !== String(defaultCard.id) : true;
+    // Incluir TODAS las tarjetas activas (sin excluir la predeterminada)
+    return true;
   });
 
 
@@ -280,62 +287,60 @@ export default function PaymentForm({
             className="px-6 py-2 flex flex-col gap-2"
             style={{ background: "#fff" }}
           >
-            {/* Tarjeta predeterminada */}
-            {defaultCard && (
-              <label className="flex items-center gap-3 justify-between py-3 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors px-3 -mx-3">
-                <span className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    name="payment"
-                    checked={
-                      paymentMethod === "tarjeta" &&
-                      selectedCardId === String(defaultCard.id)
-                    }
-                    onChange={() => {
-                      onPaymentMethodChange("tarjeta");
-                      onCardSelect(String(defaultCard.id));
-                      onUseNewCardChange(false);
-                    }}
-                    className="accent-black w-5 h-5 flex-shrink-0"
-                  />
-                  <CardBrandLogo brand={defaultCard.marca} size="md" />
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-gray-900 tracking-wider">
-                        •••• {defaultCard.ultimos_dijitos}
+            {/* Opción: Tarjeta de crédito o débito (Nueva tarjeta) */}
+            {(() => {
+              const tempCardData = localStorage.getItem("checkout-card-data");
+              const hasTempCard = !!tempCardData;
+              const isNewCardSelected = paymentMethod === "tarjeta" && !selectedCardId;
+
+              return (
+                <div>
+                  <label className="flex items-center gap-3 justify-between py-3 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors px-3 -mx-3">
+                    <span className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="payment"
+                        checked={isNewCardSelected}
+                        onChange={() => {
+                          onPaymentMethodChange("tarjeta");
+                          onCardSelect(null);
+                          onUseNewCardChange(true);
+                        }}
+                        className="accent-black w-5 h-5 flex-shrink-0"
+                      />
+                      <div className="flex items-center gap-2">
+                        <svg className="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <rect x="2" y="5" width="20" height="14" rx="2" strokeWidth="2" />
+                          <line x1="2" y1="10" x2="22" y2="10" strokeWidth="2" />
+                        </svg>
+                        <span className="font-medium text-black">
+                          Tarjeta de crédito o débito
+                        </span>
+                      </div>
+                    </span>
+                    {hasTempCard && isNewCardSelected && (
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">
+                        Ingresada
                       </span>
-                      {defaultCard.tipo_tarjeta && (
-                        <span className="text-xs text-gray-500 uppercase">
-                          {defaultCard.tipo_tarjeta
-                            .toUpperCase()
-                            .includes("CREDIT")
-                            ? "Crédito"
-                            : "Débito"}
-                        </span>
-                      )}
+                    )}
+                  </label>
+
+                  {/* Formulario inline siempre visible */}
+                  {isNewCardSelected && (
+                    <div className="ml-8 mb-3 mt-1">
+                      <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                        <AddCardForm
+                          userId={getUserId() || ""}
+                          embedded={true}
+                          ref={formRef}
+                          onValidityChange={onValidityChange}
+                        />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                      {defaultCard.nombre_titular && (
-                        <span className="uppercase">
-                          {defaultCard.nombre_titular}
-                        </span>
-                      )}
-                      {defaultCard.banco && (
-                        <>
-                          {defaultCard.nombre_titular && <span>•</span>}
-                          <span>{defaultCard.banco}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </span>
-                {defaultCard.es_predeterminada && (
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold">
-                    Predeterminada
-                  </span>
-                )}
-              </label>
-            )}
+                  )}
+                </div>
+              );
+            })()}
 
             {/* PSE */}
             <label className="flex items-center gap-3 justify-between py-3 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors px-3 -mx-3">
@@ -480,73 +485,77 @@ export default function PaymentForm({
 
           <div className="flex flex-col gap-3">
             {activeCards.map((card) => {
-                const isSelected =
-                  paymentMethod === "tarjeta" &&
-                  selectedCardId === String(card.id);
+              const isSelected =
+                paymentMethod === "tarjeta" &&
+                selectedCardId === String(card.id);
 
-                return (
-                  <label
-                    key={card.id}
-                    className={`flex items-center gap-3 justify-between py-3 px-4 cursor-pointer rounded-lg border-2 transition-all ${
-                      isSelected
-                        ? "border-black bg-gray-50"
-                        : "border-gray-200 hover:border-gray-300 bg-white"
+              return (
+                <label
+                  key={card.id}
+                  className={`flex items-center gap-3 justify-between py-3 px-4 cursor-pointer rounded-lg border-2 transition-all ${isSelected
+                    ? "border-black bg-gray-50"
+                    : "border-gray-200 hover:border-gray-300 bg-white"
                     }`}
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      checked={isSelected}
-                      onChange={() => {
-                        onPaymentMethodChange("tarjeta");
-                        onCardSelect(String(card.id));
-                        onUseNewCardChange(false);
-                      }}
-                      className="sr-only"
-                    />
-                    <span className="flex items-center gap-3 flex-1 min-w-0">
-                      <div
-                        className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                          isSelected
-                            ? "border-black bg-white"
-                            : "border-gray-300 bg-white"
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    checked={isSelected}
+                    onChange={() => {
+                      onPaymentMethodChange("tarjeta");
+                      onCardSelect(String(card.id));
+                      onUseNewCardChange(false);
+                    }}
+                    className="sr-only"
+                  />
+                  <span className="flex items-center gap-3 flex-1 min-w-0">
+                    <div
+                      className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isSelected
+                        ? "border-black bg-white"
+                        : "border-gray-300 bg-white"
                         }`}
-                      >
-                        {isSelected && (
-                          <div className="w-3 h-3 rounded-full bg-black"></div>
+                    >
+                      {isSelected && (
+                        <div className="w-3 h-3 rounded-full bg-black"></div>
+                      )}
+                    </div>
+                    <CardBrandLogo brand={card.marca} size="md" />
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-900 tracking-wider">
+                          •••• {card.ultimos_dijitos}
+                        </span>
+                        {card.tipo_tarjeta && (
+                          <span className="text-xs text-gray-500 uppercase">
+                            {card.tipo_tarjeta
+                              .toUpperCase()
+                              .includes("CREDIT")
+                              ? "Crédito"
+                              : "Débito"}
+                          </span>
                         )}
                       </div>
-                      <CardBrandLogo brand={card.marca} size="md" />
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-gray-900 tracking-wider">
-                            •••• {card.ultimos_dijitos}
+                      <div className="flex items-center gap-2 text-xs text-gray-600">
+                        {card.nombre_titular && (
+                          <span className="uppercase">
+                            {card.nombre_titular}
                           </span>
-                          {card.tipo_tarjeta && (
-                            <span className="text-xs text-gray-500 uppercase">
-                              {card.tipo_tarjeta
-                                .toUpperCase()
-                                .includes("CREDIT")
-                                ? "Crédito"
-                                : "Débito"}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                          {card.nombre_titular && (
-                            <span className="uppercase">
-                              {card.nombre_titular}
-                            </span>
-                          )}
-                          {card.banco && (
-                            <>
-                              {card.nombre_titular && <span>•</span>}
-                              <span>{card.banco}</span>
-                            </>
-                          )}
-                        </div>
+                        )}
+                        {card.banco && (
+                          <>
+                            {card.nombre_titular && <span>•</span>}
+                            <span>{card.banco}</span>
+                          </>
+                        )}
                       </div>
-                    </span>
+                    </div>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {card.es_predeterminada && (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold whitespace-nowrap">
+                        Predeterminada
+                      </span>
+                    )}
                     {(() => {
                       const maxInstallments = getMaxInstallments(
                         String(card.id)
@@ -557,9 +566,10 @@ export default function PaymentForm({
                         </span>
                       ) : null;
                     })()}
-                  </label>
-                );
-              })}
+                  </div>
+                </label>
+              );
+            })}
           </div>
         </div>
       ) : (

@@ -38,8 +38,19 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
     value: number;
   } | null>(null);
 
+  // Estado para tarjeta temporal
+  const [tempCard, setTempCard] = useState<{
+    cardNumber: string;
+    cardHolder: string;
+    cardType?: string;
+    franchise?: string;
+    bankName?: string;
+  } | null>(null);
+
   // Cargar cuotas guardadas de localStorage
   useEffect(() => {
+    console.log("🚀 [Step5] Mounting Step5 component");
+
     const savedInstallments = localStorage.getItem("checkout-installments");
     if (savedInstallments) {
       setSelectedInstallments(parseInt(savedInstallments));
@@ -58,7 +69,22 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
 
     // Cargar ID de tarjeta seleccionada
     const cardId = localStorage.getItem("checkout-saved-card-id");
+    console.log("💳 [Step5] Saved Card ID:", cardId);
     setSelectedCardId(cardId);
+
+    // Cargar tarjeta temporal si no hay tarjeta guardada
+    if (!cardId) {
+      const tempCardData = localStorage.getItem("checkout-card-data");
+      console.log("💳 [Step5] Temp Card Data exists:", !!tempCardData);
+      if (tempCardData) {
+        try {
+          const parsed = JSON.parse(tempCardData);
+          setTempCard(parsed);
+        } catch (e) {
+          console.error("Error parsing temp card data:", e);
+        }
+      }
+    }
 
     // Cargar tarjetas guardadas desde el cache
     try {
@@ -89,7 +115,7 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
   const handleRemoveTradeIn = () => {
     localStorage.removeItem("imagiq_trade_in");
     setTradeInData(null);
-    
+
     // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
     if (typeof globalThis.window !== "undefined") {
       const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
@@ -270,45 +296,77 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
               {/* Título y tarjeta seleccionada */}
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-[22px] font-bold">Elige las cuotas</h2>
-                {selectedCardId && (() => {
-                  const selectedCard = savedCards.find(card => String(card.id) === selectedCardId);
+                {/* Lógica para mostrar tarjeta seleccionada o temporal */}
+                {(() => {
+                  if (selectedCardId) {
+                    const selectedCard = savedCards.find(card => String(card.id) === selectedCardId);
 
-                  if (!selectedCard) {
+                    if (!selectedCard) {
+                      return (
+                        <p className="text-sm text-gray-600">
+                          Tarjeta terminada en •••• {selectedCardId.slice(-4)}
+                        </p>
+                      );
+                    }
+
                     return (
-                      <p className="text-sm text-gray-600">
-                        Tarjeta terminada en •••• {selectedCardId.slice(-4)}
-                      </p>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0">
+                          <CardBrandLogo brand={selectedCard.marca} size="lg" />
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <p className="font-bold text-gray-900 tracking-wider text-sm">
+                            •••• {selectedCard.ultimos_dijitos}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-gray-600">
+                            {selectedCard.banco && <span>{selectedCard.banco}</span>}
+                            {selectedCard.nombre_titular && (
+                              <>
+                                {selectedCard.banco && <span>•</span>}
+                                <span className="uppercase truncate max-w-[120px]">
+                                  {selectedCard.nombre_titular}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     );
                   }
 
-                  return (
-                    <div className="flex items-center gap-3">
-                      {/* Logo de marca */}
-                      <div className="flex-shrink-0">
-                        <CardBrandLogo brand={selectedCard.marca} size="lg" />
-                      </div>
-
-                      {/* Información de la tarjeta */}
-                      <div className="flex flex-col items-end">
-                        <p className="font-bold text-gray-900 tracking-wider text-sm">
-                          •••• {selectedCard.ultimos_dijitos}
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                          {selectedCard.banco && (
-                            <span>{selectedCard.banco}</span>
-                          )}
-                          {selectedCard.nombre_titular && (
-                            <>
-                              {selectedCard.banco && <span>•</span>}
-                              <span className="uppercase truncate max-w-[120px]">
-                                {selectedCard.nombre_titular}
+                  // Si no hay tarjeta guardada, verificar temporal
+                  if (tempCard) {
+                    return (
+                      <div className="flex items-center gap-3">
+                        {/* Intentar mostrar logo si tenemos info de franquicia, sino genérico */}
+                        <div className="flex-shrink-0">
+                          {/* CardBrandLogo maneja 'unknown' o strings genéricos */}
+                          <CardBrandLogo brand={tempCard.franchise || "unknown"} size="lg" />
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <div className="flex items-center gap-2 text-xs text-gray-600">
+                            {tempCard.bankName ? (
+                              <span className="font-medium">{tempCard.bankName}</span>
+                            ) : (
+                              <span className="bg-gray-100 px-2 py-0.5 rounded text-[10px] font-medium uppercase">
+                                Tarjeta Nueva
                               </span>
-                            </>
-                          )}
+                            )}
+                            {tempCard.cardHolder && (
+                              <>
+                                <span>•</span>
+                                <span className="uppercase truncate max-w-[120px]">
+                                  {tempCard.cardHolder}
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
+                    );
+                  }
+
+                  return null;
                 })()}
               </div>
 
@@ -325,11 +383,10 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
                   return (
                     <label
                       key={option.installments}
-                      className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        selectedInstallments === option.installments
-                          ? "border-black bg-gray-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
+                      className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all ${selectedInstallments === option.installments
+                        ? "border-black bg-gray-50"
+                        : "border-gray-200 hover:border-gray-300"
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <input
@@ -376,12 +433,12 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
               deliveryMethod={
                 typeof window !== "undefined"
                   ? (() => {
-                      const method = localStorage.getItem("checkout-delivery-method");
-                      if (method === "tienda") return "pickup";
-                      if (method === "domicilio") return "delivery";
-                      if (method === "delivery" || method === "pickup") return method;
-                      return undefined;
-                    })()
+                    const method = localStorage.getItem("checkout-delivery-method");
+                    if (method === "tienda") return "pickup";
+                    if (method === "domicilio") return "delivery";
+                    if (method === "delivery" || method === "pickup") return method;
+                    return undefined;
+                  })()
                   : undefined
               }
             />
@@ -417,11 +474,10 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
 
           {/* Botón continuar */}
           <button
-            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
-              selectedInstallments === null || !tradeInValidation.isValid
-                ? "bg-gray-400 cursor-not-allowed opacity-70"
-                : "bg-[#222] hover:bg-[#333] cursor-pointer"
-            }`}
+            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${selectedInstallments === null || !tradeInValidation.isValid
+              ? "bg-gray-400 cursor-not-allowed opacity-70"
+              : "bg-[#222] hover:bg-[#333] cursor-pointer"
+              }`}
             onClick={handleContinue}
             disabled={selectedInstallments === null || !tradeInValidation.isValid}
           >
@@ -429,6 +485,6 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
           </button>
         </div>
       </div>
-    </div>
+    </div >
   );
 }

@@ -15,7 +15,7 @@ export default function Step4Page() {
     if (!isChecking) return; // Ya se verificó, no volver a verificar
 
     const token = localStorage.getItem("imagiq_token");
-    
+
     // Intentar obtener usuario desde el hook o localStorage directamente
     const userToCheck = loggedUser || (() => {
       try {
@@ -26,8 +26,8 @@ export default function Step4Page() {
       }
     })();
 
-    console.log("🔍 [STEP4] Verificando acceso:", { 
-      hasToken: !!token, 
+    console.log("🔍 [STEP4] Verificando acceso:", {
+      hasToken: !!token,
       hasUser: !!userToCheck,
       userRol: userToCheck ? ((userToCheck as User & { rol?: number }).rol ?? (userToCheck as User).role) : null
     });
@@ -89,6 +89,25 @@ export default function Step4Page() {
         } catch (error) {
           console.error("Error parsing cards data:", error);
         }
+      }
+    }
+
+    // Si NO hay tarjeta guardada, verificar si es una tarjeta nueva temporal
+    const tempCardData = localStorage.getItem("checkout-card-data");
+    if (tempCardData && !savedCardId) {
+      try {
+        const cardData = JSON.parse(tempCardData);
+        console.log("💳 [Step4] Verificando tipo de tarjeta nueva:", cardData);
+
+        // Verificar si es débito
+        if (cardData.cardType === "debit") {
+          console.log("💳 [Step4] Tarjeta Nueva es DÉBITO - Saltando Step5 (cuotas)");
+          router.push("/carrito/step6");
+          return;
+        }
+
+      } catch (e) {
+        console.error("Error parsing temp card:", e);
       }
     }
 

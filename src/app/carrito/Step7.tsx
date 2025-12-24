@@ -54,8 +54,9 @@ type StoreValidationData = StoreValidationResponse | StoreValidationResponse[];
 interface CardData {
   cardNumber: string;
   cardHolder: string;
-  expiryDate: string;
-  cvv: string;
+  cardExpYear: string;
+  cardExpMonth: string;
+  cardCvc: string;
   brand?: string;
   cardType?: string;
   bank?: string;
@@ -1073,24 +1074,24 @@ export default function Step7({ onBack }: Step7Props) {
   // Escuchar eventos de validación 3DS
   useEffect(() => {
     const handle3DSMessage = (event: MessageEvent) => {
-      //       console.log("📨 [Step7] ========== MENSAJE RECIBIDO ==========");
-      //       console.log("📨 [Step7] Origen:", event.origin);
-      //       console.log("📨 [Step7] Datos completos:", JSON.stringify(event.data, null, 2));
-      //       console.log("📨 [Step7] Tipo de datos:", typeof event.data);
+      console.log("📨 [Step7] ========== MENSAJE RECIBIDO ==========");
+      console.log("📨 [Step7] Origen:", event.origin);
+      console.log("📨 [Step7] Datos completos:", JSON.stringify(event.data, null, 2));
+      console.log("📨 [Step7] Tipo de datos:", typeof event.data);
 
       // Verificar que el evento tenga los datos esperados
       if (event.data && (event.data.success !== undefined || event.data.message)) {
-        //         console.log("✅ [Step7] Mensaje 3DS válido detectado");
-        //         console.log("🔐 [Step7] event.data.success:", event.data.success);
-        //         console.log("🔐 [Step7] event.data.message:", event.data.message);
-        //         console.log("🔐 [Step7] Proceso 3DS finalizado:", event.data);
+        console.log("✅ [Step7] Mensaje 3DS válido detectado");
+        console.log("🔐 [Step7] event.data.success:", event.data.success);
+        console.log("🔐 [Step7] event.data.message:", event.data.message);
+        console.log("🔐 [Step7] Proceso 3DS finalizado:", event.data);
 
         // Obtener orderId guardado
         const orderId = localStorage.getItem('pending_order_id');
-        //         console.log("🔐 [Step7] OrderId desde localStorage:", orderId);
+        console.log("🔐 [Step7] OrderId desde localStorage:", orderId);
 
         if (event.data.success && orderId) {
-          //           console.log("✅ [Step7] 3DS exitoso, redirigiendo a verificación:", orderId);
+          console.log("✅ [Step7] 3DS exitoso, redirigiendo a verificación:", orderId);
           // toast.success("Autenticación 3DS exitosa. Verificando pago...");
           // Redirigir a página de verificación
           router.push(`/verify-purchase/${orderId}`);
@@ -1108,15 +1109,15 @@ export default function Step7({ onBack }: Step7Props) {
           setIsProcessing(false);
         }
       } else {
-        //         console.log("ℹ️ [Step7] Mensaje ignorado (no es de 3DS o no tiene estructura esperada)");
+        console.log("ℹ️ [Step7] Mensaje ignorado (no es de 3DS o no tiene estructura esperada)");
       }
-      //       console.log("📨 [Step7] ========================================");
+      console.log("📨 [Step7] ========================================");
     };
 
-    //     console.log("👂 [Step7] Listener de mensajes 3DS registrado");
+    console.log("👂 [Step7] Listener de mensajes 3DS registrado");
     window.addEventListener("message", handle3DSMessage);
     return () => {
-      //       console.log("🔇 [Step7] Listener de mensajes 3DS removido");
+      console.log("🔇 [Step7] Listener de mensajes 3DS removido");
       window.removeEventListener("message", handle3DSMessage);
     };
   }, [router]);
@@ -1498,7 +1499,15 @@ export default function Step7({ onBack }: Step7Props) {
                 authContext.user?.id ||
                 String(loggedUser?.id),
             },
+            // Pass cardTokenId only if savedCard exists
             cardTokenId: paymentData.savedCard?.id || "",
+            // Pass raw card data if NO savedCard (temporary card)
+            ...(!paymentData.savedCard?.id && paymentData.cardData ? {
+              cardNumber: paymentData.cardData.cardNumber,
+              cardCvc: paymentData.cardData.cardCvc,
+              cardExpMonth: paymentData.cardData.cardExpMonth,
+              cardExpYear: paymentData.cardData.cardExpYear,
+            } : {}),
             informacion_facturacion,
             beneficios: buildBeneficios(),
           });
@@ -1510,45 +1519,92 @@ export default function Step7({ onBack }: Step7Props) {
 
           // Verificar si requiere 3DS
           if (res.requires3DS && res.data3DS) {
-            //             console.log("🔐 [Step7] Requiere validación 3DS");
-            //             console.log("🔐 [Step7] Respuesta completa del backend:", JSON.stringify(res, null, 2));
-            //             console.log("🔐 [Step7] data3DS recibido:", JSON.stringify(res.data3DS, null, 2));
+            console.log("🔐 [Step7] Requiere validación 3DS");
+            console.log("🔐 [Step7] Respuesta completa del backend:", JSON.stringify(res, null, 2));
+            console.log("🔐 [Step7] data3DS recibido:", JSON.stringify(res.data3DS, null, 2));
 
-            const data3DS = res.data3DS as { resultCode?: string; ref_payco?: number; franquicia?: string; '3DS'?: unknown };
-            //             console.log("🔐 [Step7] Result Code:", data3DS.resultCode);
-            //             console.log("🔐 [Step7] Franquicia:", data3DS.franquicia);
-            //             console.log("🔐 [Step7] ref_payco:", data3DS.ref_payco);
-            //             console.log("🔐 [Step7] Objeto 3DS:", data3DS['3DS']);
+            const data3DS = res.data3DS as { resultCode?: string; ref_payco?: number; franquicia?: string; '3DS'?: { success: boolean; data: unknown } };
+            console.log("🔐 [Step7] Result Code:", data3DS.resultCode);
+            console.log("🔐 [Step7] Franquicia:", data3DS.franquicia);
+            console.log("🔐 [Step7] ref_payco:", data3DS.ref_payco);
+            console.log("🔐 [Step7] Objeto 3DS completo:", data3DS['3DS']);
 
             // Guardar orderId para verificación posterior
             const orderId = res.orderId || "";
             if (orderId) {
               localStorage.setItem('pending_order_id', orderId);
-              //               console.log("🔐 [Step7] OrderId guardado:", orderId);
+              console.log("🔐 [Step7] OrderId guardado:", orderId);
             }
 
             // Ejecutar validación 3DS con el script de ePayco
-            // Esto maneja tanto IdentifyShopper como ChallengeShopper automáticamente
+            // IMPORTANTE: El script espera recibir SOLO el objeto data3DS['3DS'].data
             if (typeof window !== 'undefined' && window.validate3ds) {
-              //               console.log("✅ [Step7] Script validate3ds encontrado en window");
-              //               console.log("🔐 [Step7] Ejecutando window.validate3ds() con el siguiente objeto:");
-              //               console.log(JSON.stringify(res.data3DS, null, 2));
+              console.log("✅ [Step7] Script validate3ds encontrado en window");
+              
+              // Extraer el objeto data del 3DS
+              const threeDSData = data3DS['3DS']?.data;
+              
+              if (threeDSData) {
+                console.log("🔐 [Step7] Ejecutando window.validate3ds() con el objeto data:");
+                console.log(JSON.stringify(threeDSData, null, 2));
 
-              try {
-                window.validate3ds(res.data3DS);
-                //                 console.log("✅ [Step7] validate3ds() ejecutado exitosamente");
-                //                 console.log("⏳ [Step7] Esperando respuesta del banco via postMessage...");
-                // No redirigir, el script de ePayco manejará el flujo
-                return;
-              } catch (error) {
-                console.error("❌ [Step7] Error ejecutando validate3ds:", error);
-                setError(`Error ejecutando validación 3DS: ${error}`);
+                // Verificar si hay elementos del modal en el DOM antes de ejecutar
+                console.log("🔍 [Step7] Elementos en body antes de validate3ds:", document.body.children.length);
+
+                try {
+                  window.validate3ds(threeDSData);
+                  console.log("✅ [Step7] validate3ds() ejecutado exitosamente");
+                  
+                  // Esperar un poco y verificar si se creó el modal
+                  setTimeout(() => {
+                    const iframesAfter = document.querySelectorAll('iframe').length;
+                    const modalsAfter = document.querySelectorAll('div[id*="modal"], div[class*="modal"], div[id*="cardinal"], div[class*="cardinal"]').length;
+                    
+                    console.log("🔍 [Step7] Elementos en body después de validate3ds:", document.body.children.length);
+                    console.log("🔍 [Step7] Buscando iframes:", iframesAfter);
+                    console.log("🔍 [Step7] Buscando divs con 'modal' o 'cardinal':", modalsAfter);
+                    
+                    // Listar todos los elementos agregados recientemente
+                    const allDivs = document.querySelectorAll('body > div, body > iframe');
+                    console.log("🔍 [Step7] Elementos directos en body:", allDivs.length);
+                    allDivs.forEach((el, i) => {
+                      console.log(`  ${i}: ${el.tagName} - id: ${el.id || 'sin id'} - class: ${el.className || 'sin clase'}`);
+                    });
+                    
+                    // Si no se creó ningún modal, mostrar advertencia
+                    if (modalsAfter === 0 && iframesAfter <= 1) {
+                      console.warn("⚠️ [Step7] ADVERTENCIA: El modal 3DS NO se generó.");
+                      console.warn("⚠️ [Step7] Esto indica que la Configuración 75 de ePayco NO está activa.");
+                      console.warn("⚠️ [Step7] Por favor contacta a soporte de ePayco para activar 3D Secure vía API.");
+                      
+                      setError(
+                        "⚠️ Configuración 3D Secure pendiente. " +
+                        "El sistema detectó que se requiere autenticación 3DS, " +
+                        "pero la Configuración 75 de ePayco no está activa. " +
+                        "Contacta a soporte para activarla."
+                      );
+                      setIsProcessing(false);
+                    }
+                  }, 1000);
+                  
+                  console.log("⏳ [Step7] Esperando respuesta del banco via postMessage...");
+                  // No redirigir, el script de ePayco manejará el flujo
+                  return;
+                } catch (error) {
+                  console.error("❌ [Step7] Error ejecutando validate3ds:", error);
+                  setError(`Error ejecutando validación 3DS: ${error}`);
+                  setIsProcessing(false);
+                  return;
+                }
+              } else {
+                console.error("❌ [Step7] No se encontró data3DS['3DS'].data");
+                setError("Error: Datos de 3DS incompletos");
                 setIsProcessing(false);
                 return;
               }
             } else {
               console.error("❌ [Step7] Script de ePayco no cargado");
-              // console.log("🔍 [Step7] window.validate3ds:", typeof window !== 'undefined' ? window.validate3ds : 'window is undefined');
+              console.log("🔍 [Step7] window.validate3ds:", typeof window !== 'undefined' ? window.validate3ds : 'window is undefined');
               setError("Error: Script de validación 3DS no disponible. Por favor recarga la página.");
               setIsProcessing(false);
               return;

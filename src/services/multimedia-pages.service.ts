@@ -29,6 +29,32 @@ export interface ProductCardData {
   created_by: string | null;
 }
 
+// Estructura del contenido de Tiptap
+export interface TiptapContent {
+  type: 'doc';
+  content: TiptapNode[];
+}
+
+export interface TiptapNode {
+  type: string;
+  attrs?: Record<string, unknown>;
+  content?: TiptapNode[];
+  marks?: TiptapMark[];
+  text?: string;
+}
+
+export interface TiptapMark {
+  type: string;
+  attrs?: Record<string, unknown>;
+}
+
+// Secciones para navegación lateral en documentos legales
+export interface LegalSection {
+  id: string;
+  title: string;
+  level: number;
+}
+
 export interface MultimediaPage {
   id: string;
   slug: string;
@@ -55,6 +81,11 @@ export interface MultimediaPage {
   created_at: string;
   updated_at: string;
   created_by: string;
+  // Campos para documentos legales
+  page_type?: 'landing' | 'legal' | 'promo';
+  legal_content?: TiptapContent | null;
+  legal_sections?: LegalSection[];
+  last_updated_legal?: string | null;
 }
 
 export interface MultimediaPageBanner {

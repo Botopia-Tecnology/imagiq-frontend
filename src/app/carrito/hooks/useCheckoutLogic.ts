@@ -42,8 +42,24 @@ export function useCheckoutLogic() {
   const [selectedBankName, setSelectedBankName] = useState<string>("");
 
   // Estados para tarjetas guardadas
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-  const [useNewCard, setUseNewCard] = useState(false);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("checkout-saved-card-id");
+    }
+    return null;
+  });
+
+  const [useNewCard, setUseNewCard] = useState(() => {
+    if (typeof window !== "undefined") {
+      const savedCardId = localStorage.getItem("checkout-saved-card-id");
+      const tempCardData = localStorage.getItem("checkout-card-data");
+      // If we have temporary card data and NO saved card selected, default to new card
+      if (tempCardData && !savedCardId) {
+        return true;
+      }
+    }
+    return false;
+  });
   const [isAddCardModalOpen, setIsAddCardModalOpen] = useState(false);
   // Contador para forzar recarga de tarjetas guardadas
   const [savedCardsReloadCounter, setSavedCardsReloadCounter] = useState(0);
@@ -54,28 +70,54 @@ export function useCheckoutLogic() {
 
   const [card, setCard] = useState<CardData>(() => {
     let cedula = "";
-    if (typeof window !== "undefined") {
-      const savedDoc = localStorage.getItem("checkout-document");
-      if (savedDoc) {
-        cedula = savedDoc;
-      }
-    }
-    return {
+    let initialCardData = {
       number: "",
       expiryMonth: "",
       expiryYear: "",
       cvc: "",
       name: "",
       docType: "C.C.",
-      docNumber: cedula,
+      docNumber: "",
       installments: "1",
     };
+
+    if (typeof window !== "undefined") {
+      const savedDoc = localStorage.getItem("checkout-document");
+      if (savedDoc) {
+        cedula = savedDoc;
+        initialCardData.docNumber = savedDoc;
+      }
+
+      // Check for temporary card data
+      try {
+        const tempCardData = localStorage.getItem("checkout-card-data");
+        if (tempCardData) {
+          const parsed = JSON.parse(tempCardData);
+          initialCardData = {
+            ...initialCardData,
+            number: parsed.cardNumber || "",
+            name: parsed.cardHolder || "",
+            expiryMonth: parsed.cardExpMonth || "",
+            expiryYear: parsed.cardExpYear || "",
+            cvc: parsed.cardCvc || "",
+            // Preserve docNumber if not in temp data
+            docNumber: parsed.docNumber || cedula,
+            installments: parsed.installments || "1"
+          };
+        }
+      } catch (e) {
+        console.error("Error parsing temporary card data:", e);
+      }
+    }
+    return initialCardData;
   });
   const [cardErrors, setCardErrors] = useState<CardErrors>({
     number: "",
     expiryMonth: "",
     expiryYear: "",
     cvc: "",
+    name: "",
+    docNumber: "",
   });
   const [billingError, setBillingError] = useState("");
   const [billingType, setBillingType] = useState("");
@@ -199,9 +241,11 @@ export function useCheckoutLogic() {
 
     // Validar campos de tarjeta si corresponde
     if (paymentMethod === "tarjeta") {
-      // Verificar que haya seleccionado una tarjeta guardada
-      if (!selectedCardId) {
-        setError("Debes seleccionar una tarjeta. Si no tienes tarjetas guardadas, agrega una desde tu perfil.");
+      // Verificar que haya seleccionado una tarjeta guardada O esté usando una nueva
+      const hasTempCard = typeof window !== 'undefined' && localStorage.getItem("checkout-card-data");
+
+      if (!selectedCardId && !hasTempCard) {
+        setError("Debes seleccionar una tarjeta o ingresar los datos de una nueva.");
         valid = false;
       }
     }
@@ -233,6 +277,9 @@ export function useCheckoutLogic() {
         if (zeroInterestData) {
           safeSetLocalStorage("checkout-zero-interest", zeroInterestData);
         }
+      } else {
+        // Si no hay tarjeta guardada seleccionada (es tarjeta nueva), limpiar el ID guardado
+        localStorage.removeItem("checkout-saved-card-id");
       }
     } else if (paymentMethod === "pse") {
       // Guardar tanto código como nombre del banco para uso en resumen
@@ -258,9 +305,11 @@ export function useCheckoutLogic() {
 
     // Validar campos de tarjeta si corresponde
     if (paymentMethod === "tarjeta") {
-      // Verificar que haya seleccionado una tarjeta guardada
-      if (!selectedCardId) {
-        setError("Debes seleccionar una tarjeta. Si no tienes tarjetas guardadas, agrega una desde tu perfil.");
+      // Verificar que haya seleccionado una tarjeta guardada O esté usando una nueva
+      const hasTempCard = typeof window !== 'undefined' && localStorage.getItem("checkout-card-data");
+
+      if (!selectedCardId && !hasTempCard) {
+        setError("Debes seleccionar una tarjeta o ingresar los datos de una nueva.");
         valid = false;
       }
     }
@@ -514,6 +563,7 @@ export function useCheckoutLogic() {
             });
           } else {
             // Pago con tarjeta nueva
+            console.log("💳 [useCheckoutLogic] Paying with NEW CARD. Data:", card);
             res = await payWithCard({
               cardCvc: card.cvc,
               cardExpMonth: card.expiryMonth,

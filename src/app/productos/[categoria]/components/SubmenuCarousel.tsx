@@ -5,14 +5,17 @@
 
 "use client";
 
-import { useMemo, useCallback, useRef } from "react";
+import { useMemo, useCallback, useRef, useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useSubmenus } from "@/hooks/useSubmenus";
-import type { Menu } from "@/lib/api";
+import type { Menu, ProductFilterParams } from "@/lib/api";
 import SeriesSlider from "./SeriesSlider";
 import type { SeriesItem } from "../config/series-configs";
 import { submenuNameToFriendly } from "../utils/submenuUtils";
 import { usePrefetchProducts } from "@/hooks/usePrefetchProducts";
+import { executeBatchPrefetch } from "@/lib/batchPrefetch";
+import { usePrefetchCoordinator } from "@/hooks/usePrefetchCoordinator";
+import { productCache } from "@/lib/productCache";
 
 interface Props {
   readonly menu: Menu;
@@ -35,12 +38,79 @@ export default function SubmenuCarousel({
   const searchParams = useSearchParams();
   const { submenus, loading, error } = useSubmenus(menu.uuid);
   const { prefetchWithDebounce, cancelPrefetch, prefetchProducts } = usePrefetchProducts();
+  const { shouldPrefetch } = usePrefetchCoordinator();
   
   // Ref para rastrear qué submenús se están precargando por hover
   const autoPrefetchingRef = useRef<Set<string>>(new Set());
   
   // Ref para rastrear qué submenús ya fueron precargados por hover
   const autoPrefetchedRef = useRef<Set<string>>(new Set());
+  
+  // Ref para rastrear si ya se precargaron productos de los primeros submenús
+  const proactivePrefetchDoneRef = useRef<boolean>(false);
+  
+  // Precargar productos de los primeros 3-5 submenús visibles cuando se renderiza el carousel
+  useEffect(() => {
+    // Solo precargar si tenemos los datos necesarios y no se ha hecho ya
+    if (!categoryCode || !menuUuid || loading || submenus.length === 0 || proactivePrefetchDoneRef.current) {
+      return;
+    }
+    
+    // Filtrar submenús activos y tomar los primeros 5
+    const activeSubmenus = submenus
+      .filter(submenu => submenu.activo && submenu.uuid)
+      .slice(0, 5);
+    
+    if (activeSubmenus.length === 0) {
+      return;
+    }
+    
+    // Marcar como hecho para evitar múltiples ejecuciones
+    proactivePrefetchDoneRef.current = true;
+    
+    // Construir parámetros para batch request
+    const buildParams = (submenuUuid: string): ProductFilterParams => ({
+      page: 1,
+      limit: 50,
+      precioMin: 1,
+      lazyLimit: 6,
+      lazyOffset: 0,
+      sortBy: "precio",
+      sortOrder: "desc",
+      categoria: categoryCode,
+      menuUuid: menuUuid,
+      submenuUuid: submenuUuid,
+    });
+    
+    // Filtrar solo los submenús que NO están en caché y deben precargarse
+    const submenusToPrefetch: ProductFilterParams[] = [];
+    
+    for (const submenu of activeSubmenus) {
+      if (!submenu.uuid) continue;
+      
+      const params = buildParams(submenu.uuid);
+      
+      // Verificar si ya está en caché
+      const cached = productCache.get(params);
+      if (cached) {
+        continue;
+      }
+      
+      // Verificar con el coordinador si debe precargarse
+      if (shouldPrefetch(params)) {
+        submenusToPrefetch.push(params);
+      }
+    }
+    
+    // Si hay submenús sin cargar, hacer batch de ellos en background
+    if (submenusToPrefetch.length > 0) {
+      // Ejecutar en background sin bloquear la UI
+      executeBatchPrefetch(submenusToPrefetch, 'SubmenuCarousel-proactive')
+        .catch(() => {
+          // Silenciar errores - no afectar la UX
+        });
+    }
+  }, [categoryCode, menuUuid, loading, submenus, shouldPrefetch]);
 
   const handleSubmenuClick = (submenuId: string) => {
     // Encontrar el submenú por UUID para obtener su nombre

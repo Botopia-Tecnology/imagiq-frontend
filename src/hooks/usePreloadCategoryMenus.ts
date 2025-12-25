@@ -43,7 +43,47 @@ export function usePreloadCategoryMenus() {
       (category) => category.uuid && !isStaticCategoryUuid(category.uuid)
     );
 
+    // PRECARGAR SUBMENÚS INMEDIATAMENTE (no esperar a que se carguen los menús)
+    // Esto asegura que los submenús estén disponibles en caché antes de que el usuario los necesite
+    if (!submenusPreloadedRef.current) {
+      submenusPreloadedRef.current = true;
+
+      // Función helper para cargar submenús con reintento
+      const loadSubmenusWithRetry = async (attempt: number = 1, maxAttempts: number = 3): Promise<void> => {
+        try {
+          const response = await categoriesEndpoints.getCompleteCategories();
+          if (response.success && response.data) {
+            // Poblar el caché de submenús directamente desde la respuesta
+            populateSubmenusCache(response.data);
+            console.debug('[PreloadSubmenus] Todos los submenús precargados desde endpoint completo');
+          } else if (attempt < maxAttempts) {
+            // Reintentar si falló pero no fue un error de red
+            const backoffDelay = attempt * 2000; // 2s, 4s, 6s
+            setTimeout(() => {
+              loadSubmenusWithRetry(attempt + 1, maxAttempts);
+            }, backoffDelay);
+          }
+        } catch (error) {
+          // Reintentar en caso de error
+          if (attempt < maxAttempts) {
+            const backoffDelay = attempt * 2000; // 2s, 4s, 6s
+            console.debug(`[PreloadSubmenus] Intento ${attempt} falló, reintentando en ${backoffDelay}ms...`);
+            setTimeout(() => {
+              loadSubmenusWithRetry(attempt + 1, maxAttempts);
+            }, backoffDelay);
+          } else {
+            // Silenciar errores después de todos los intentos - no afectar la UX
+            console.debug('[PreloadSubmenus] Error después de todos los intentos:', error);
+          }
+        }
+      };
+
+      // Iniciar carga inmediatamente
+      loadSubmenusWithRetry();
+    }
+
     // Pre-cargar menús de todas las categorías dinámicas en paralelo
+    // (Esto se ejecuta en paralelo con la carga de submenús)
     const loadAllMenus = async () => {
       const menuPromises: Array<Promise<void>> = [];
       const loadingUpdates: LoadingState = {};
@@ -72,9 +112,7 @@ export function usePreloadCategoryMenus() {
         setLoadingStates((prev) => ({ ...prev, ...loadingUpdates }));
       }
 
-      // Crear promesas para cargar menús en paralelo y recopilar los menús cargados
-      const allLoadedMenus: Menu[] = [];
-      
+      // Crear promesas para cargar menús en paralelo
       categoriesToLoad.forEach((category) => {
         if (!category.uuid) return;
 
@@ -87,8 +125,6 @@ export function usePreloadCategoryMenus() {
                 ...prev,
                 [category.uuid]: response.data,
               }));
-              // Recopilar para precargar submenús
-              allLoadedMenus.push(...response.data);
             }
           })
           .catch((error) => {
@@ -106,30 +142,8 @@ export function usePreloadCategoryMenus() {
         menuPromises.push(promise);
       });
 
-      // Esperar a que todas las peticiones terminen (o fallen)
-      await Promise.allSettled(menuPromises);
-
-      // Una vez que todos los menús estén cargados, precargar submenús
-      // usando una sola petición al endpoint /api/categorias/visibles/completas
-      // para evitar "Too many requests"
-      if (!submenusPreloadedRef.current) {
-        submenusPreloadedRef.current = true;
-
-        // Hacer una sola petición para obtener todas las categorías completas con submenús
-        categoriesEndpoints
-          .getCompleteCategories()
-          .then((response) => {
-            if (response.success && response.data) {
-              // Poblar el caché de submenús directamente desde la respuesta
-              populateSubmenusCache(response.data);
-              console.debug('[PreloadSubmenus] Todos los submenús precargados desde endpoint completo');
-            }
-          })
-          .catch((error) => {
-            // Silenciar errores en precarga - no afectar la UX
-            console.debug('[PreloadSubmenus] Error silencioso al cargar categorías completas:', error);
-          });
-      }
+      // Ejecutar en paralelo (no esperar)
+      Promise.allSettled(menuPromises);
     };
 
     loadAllMenus();

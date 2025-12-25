@@ -26,6 +26,8 @@ import { toast } from "sonner";
 import { useStockNotification } from "@/hooks/useStockNotification";
 import StockNotificationModal from "@/components/StockNotificationModal";
 import { shouldRenderValue } from "./utils/shouldRenderValue";
+import CeroInteresSection from "@/components/CeroInteresSection";
+import type { ZeroInterestSkuResult } from "@/services/cero-interes-sku.service";
 
 /**
  * Selector de variantes del bundle con colores y capacidades
@@ -422,6 +424,7 @@ export default function BundleCard({
   submenu,
   fecha_inicio,
   fecha_final,
+  ceroInteresData,
   className,
 }: BundleCardProps & { className?: string }) {
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
@@ -981,8 +984,10 @@ export default function BundleCard({
             </button>
           </div>
 
-          {/* Espacio reservado para mantener altura consistente con ProductCard */}
-          <div className="mt-2 sm:mt-3 min-h-[32px] sm:min-h-[36px]"></div>
+          {/* Sección de cero interés - Debajo de los botones */}
+          <div className="mt-2 sm:mt-3 min-h-[120px] sm:min-h-[130px] flex items-start justify-center">
+            <CeroInteresSection ceroInteresData={ceroInteresData} />
+          </div>
         </div>
       </div>
 

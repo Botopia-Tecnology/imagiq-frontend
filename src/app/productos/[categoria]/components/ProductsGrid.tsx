@@ -18,6 +18,8 @@ import { ProductBannerCard } from "../../components/ProductBannerCard";
 import { insertBannersInGrid } from "../../utils/insertBanners";
 import type { Banner } from "@/types/banner";
 import type { BundleCardProps, MixedProductItem } from "@/lib/productMapper";
+import { useCeroInteresSku } from "@/hooks/useCeroInteresSku";
+import type { ZeroInterestSkuResult } from "@/services/cero-interes-sku.service";
 
 // Tipos para items con flag interno de bundle
 type ProductWithFlag = ProductCardProps & { __isBundle: false };
@@ -68,6 +70,38 @@ export const CategoryProductsGrid = forwardRef<
     const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
 
     const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
+
+    // Extraer SKUs de productos con indcerointeres=1 y product_sku de TODAS las opciones de bundles
+    const skusConCeroInteres = useMemo(() => {
+      const skus: string[] = [];
+      
+      // Productos: solo los que tienen indcerointeres=1
+      products.forEach((product) => {
+        const indcerointeres = product.apiProduct?.indcerointeres?.[0] ?? 0;
+        if (indcerointeres === 1) {
+          const sku = product.selectedColor?.sku || product.colors[0]?.sku;
+          if (sku && !skus.includes(sku)) {
+            skus.push(sku);
+          }
+        }
+      });
+      
+      // Bundles: TODOS los product_sku de todas las opciones (sin filtro de indcerointeres)
+      // El backend/componente decide si muestra logos según los resultados
+      bundles.forEach((bundle) => {
+        bundle.opciones?.forEach((opcion) => {
+          const sku = opcion.product_sku;
+          if (sku && !skus.includes(sku)) {
+            skus.push(sku);
+          }
+        });
+      });
+      
+      return skus;
+    }, [products, bundles]);
+
+    // Hook que hace el fetch de cero interés (1 sola vez por página)
+    const { data: ceroInteresMap } = useCeroInteresSku(skusConCeroInteres);
 
     // Usar orderedItems directamente (ya viene del API en el orden correcto - intercalado)
     // Mezclar con banners
@@ -203,8 +237,23 @@ export const CategoryProductsGrid = forwardRef<
                   const isBundle = itemData.__isBundle === true;
 
                   if (isBundle) {
-                    // Renderizar BundleCard
+                    // Renderizar BundleCard con data de cero interés
                     const { __isBundle: _, ...bundleProps } = itemData;
+                    
+                    // Recolectar todos los resultados de cero interés de todas las opciones del bundle
+                    const bundleCeroInteres: ZeroInterestSkuResult[] = [];
+                    bundleProps.opciones?.forEach((opcion) => {
+                      const opcionData = ceroInteresMap.get(opcion.product_sku);
+                      if (opcionData && opcionData.length > 0) {
+                        bundleCeroInteres.push(...opcionData);
+                      }
+                    });
+                    
+                    // Eliminar duplicados basados en codEntidad
+                    const uniqueCeroInteres = bundleCeroInteres.filter((item, index, self) =>
+                      index === self.findIndex((t) => t.codEntidad === item.codEntidad)
+                    );
+                    
                     return (
                       <div
                         key={item.key}
@@ -212,6 +261,7 @@ export const CategoryProductsGrid = forwardRef<
                       >
                         <BundleCard
                           {...bundleProps}
+                          ceroInteresData={uniqueCeroInteres}
                           className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}
                         />
                       </div>
@@ -220,6 +270,11 @@ export const CategoryProductsGrid = forwardRef<
                     // Renderizar ProductCard
                     const { __isBundle: __, ...productProps } = itemData;
                     const product = productProps as ProductCardProps;
+                    
+                    // Obtener datos de cero interés para este producto
+                    const currentSku = product.selectedColor?.sku || product.colors[0]?.sku;
+                    const ceroInteresData = currentSku ? ceroInteresMap.get(currentSku) : undefined;
+                    
                     return (
                       <div
                         key={item.key}
@@ -228,6 +283,7 @@ export const CategoryProductsGrid = forwardRef<
                         <ProductCard
                           key={product.id}
                           {...product}
+                          ceroInteresData={ceroInteresData}
                           isFavorite={isFavorite(product.id)}
                           onToggleFavorite={(productId: string) => {
                             if (isFavorite(productId)) {

@@ -37,6 +37,8 @@ import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
 import { shouldRenderValue } from "./utils/shouldRenderValue";
 import { prefetchFlixmediaScript } from "@/lib/flixmedia";
+import CeroInteresSection from "@/components/CeroInteresSection";
+import { ZeroInterestSkuResult } from "@/services/cero-interes-sku.service";
 
 /**
  * Formatea la capacidad para mostrar correctamente GB, TB, litros o pulgadas
@@ -119,6 +121,7 @@ export interface ProductCardProps {
   desDetallada?: string; // Indica si el producto acepta retoma (basado en indRetoma)
   isInChat?: boolean; // Indica si está siendo renderizado en el chat (para ajustar estilos)
   skuflixmedia?: string; // SKU específico para Flixmedia
+  ceroInteresData?: ZeroInterestSkuResult[]; // Datos de cero interés para este producto
 }
 
 export default function ProductCard({
@@ -140,6 +143,7 @@ export default function ProductCard({
   apiProduct, // Nuevo prop para el sistema de selección inteligente
   isInChat = false, // Por defecto NO está en chat
   acceptsTradeIn, // Indica si el producto acepta retoma
+  ceroInteresData, // Datos de cero interés desde el parent
 }: ProductCardProps & { puntos_q?: number }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -1101,32 +1105,12 @@ export default function ProductCard({
             </div>
 
             {/* Mensaje de cuotas sin interés - Altura fija para mantener consistencia */}
-            <div className="mt-2 sm:mt-3 min-h-[32px] sm:min-h-[36px] flex items-center justify-center">
+            <div className="mt-2 sm:mt-3 min-h-[120px] sm:min-h-[130px] flex items-start justify-center">
               {apiProduct?.indcerointeres?.[0] === 1 && (
-                <div className="flex flex-col items-center gap-0.5 sm:gap-1 px-1">
-                  <Link href="/#footer">
-                    <p
-                      className={cn(
-                        "text-blue-600 font-bold text-center leading-tight cursor-pointer hover:opacity-80 transition-opacity",
-                        isInChat
-                          ? "text-[8px] sm:text-[9px]" // Mucho más pequeño en chat
-                          : "text-[8px] sm:text-[9px] md:text-xs lg:text-sm" // Tamaño normal en catálogo
-                      )}
-                    >
-                      Compra con 0% de interés con bancos aliados{" "}
-                      <span
-                        className={cn(
-                          "text-gray-500 block sm:inline",
-                          isInChat
-                            ? "text-[5px] sm:text-[6px]" // Mucho más pequeño en chat
-                            : "text-[6px] sm:text-[7px] md:text-[8px] lg:text-[9px]" // Tamaño normal en catálogo
-                        )}
-                      >
-                        Aplican T&C <span className="text-red-600">*</span>
-                      </span>
-                    </p>
-                  </Link>
-                </div>
+                <CeroInteresSection
+                  ceroInteresData={ceroInteresData}
+                  isInChat={isInChat}
+                />
               )}
             </div>
           </div>

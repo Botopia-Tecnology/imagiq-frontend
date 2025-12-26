@@ -99,6 +99,9 @@ export function usePreloadMenuSubmenus(
         }
 
         // Si hay submenús sin cargar, hacer batch de ellos
+        // executeBatchPrefetch agrupa todos los submenús en un solo batch request
+        // usando /api/products/v2/batch (máximo 100 queries por batch)
+        // Esto reduce de N peticiones individuales a 1 petición batch
         if (submenusToPrefetch.length > 0) {
           await executeBatchPrefetch(submenusToPrefetch, 'usePreloadMenuSubmenus');
         }

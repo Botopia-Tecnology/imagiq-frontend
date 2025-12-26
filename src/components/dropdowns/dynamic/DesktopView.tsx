@@ -4,7 +4,7 @@ import { MenuItemCard } from "./MenuItemCard";
 import { CloseButton } from "@/components/navbar/components/CloseButton";
 import type { MenuItem } from "./types";
 import { usePrefetchProducts } from "@/hooks/usePrefetchProducts";
-import { menusEndpoints, type ProductFilterParams } from "@/lib/api";
+import { menusEndpoints, getSubmenusFromCache, type ProductFilterParams } from "@/lib/api";
 import { executeBatchPrefetch } from "@/lib/batchPrefetch";
 import { usePrefetchCoordinator } from "@/hooks/usePrefetchCoordinator";
 
@@ -49,9 +49,20 @@ export const DesktopView: FC<Props> = ({ items, categoryName, categoryCode, onIt
     // Crear nuevo timer para precargar submenús
     const timer = setTimeout(async () => {
       try {
-        // Llamada silenciosa para precargar submenús
-        // El endpoint ya maneja caché y deduplicación automáticamente
-        const submenusResponse = await menusEndpoints.getSubmenus(menuUuid);
+        // Verificar primero si los submenús ya están en caché
+        const cachedSubmenus = getSubmenusFromCache(menuUuid);
+        let submenus = cachedSubmenus;
+        
+        // Si no están en caché, cargarlos (el endpoint maneja deduplicación automáticamente)
+        if (!submenus) {
+          const submenusResponse = await menusEndpoints.getSubmenus(menuUuid);
+          if (submenusResponse.success && submenusResponse.data) {
+            submenus = submenusResponse.data;
+          } else {
+            submenuPrefetchTimers.current.delete(menuUuid);
+            return;
+          }
+        }
         
         // Si ya estamos precargando productos de submenús para este menú, no hacerlo de nuevo
         if (menuSubmenuProductsPrefetchingRef.current.has(menuUuid)) {
@@ -60,41 +71,40 @@ export const DesktopView: FC<Props> = ({ items, categoryName, categoryCode, onIt
         }
         
         // Si hay submenús activos, precargar productos usando batch
-        if (submenusResponse.success && submenusResponse.data) {
-          const activeSubmenus = submenusResponse.data.filter(submenu => submenu.activo && submenu.uuid);
+        const activeSubmenus = submenus.filter(submenu => submenu.activo && submenu.uuid);
+        
+        if (activeSubmenus.length > 0) {
+          menuSubmenuProductsPrefetchingRef.current.add(menuUuid);
           
-          if (activeSubmenus.length > 0) {
-            menuSubmenuProductsPrefetchingRef.current.add(menuUuid);
-            
-            // Construir parámetros para batch request
-            const buildParams = (submenuUuid: string): ProductFilterParams => ({
-              page: 1,
-              limit: 50,
-              precioMin: 1,
-              lazyLimit: 6,
-              lazyOffset: 0,
-              sortBy: "precio",
-              sortOrder: "desc",
-              categoria: categoryCode,
-              menuUuid: menuUuid,
-              submenuUuid: submenuUuid,
-            });
+          // Construir parámetros para batch request
+          const buildParams = (submenuUuid: string): ProductFilterParams => ({
+            page: 1,
+            limit: 50,
+            precioMin: 1,
+            lazyLimit: 6,
+            lazyOffset: 0,
+            sortBy: "precio",
+            sortOrder: "desc",
+            categoria: categoryCode,
+            menuUuid: menuUuid,
+            submenuUuid: submenuUuid,
+          });
 
-            // Filtrar submenús que deben precargarse usando coordinador
-            const submenusToPrefetch: ProductFilterParams[] = [];
-            
-            for (const submenu of activeSubmenus) {
-              if (!submenu.uuid) continue;
-              const params = buildParams(submenu.uuid);
-              if (shouldPrefetch(params)) {
-                submenusToPrefetch.push(params);
-              }
+          // Filtrar submenús que deben precargarse usando coordinador
+          const submenusToPrefetch: ProductFilterParams[] = [];
+          
+          for (const submenu of activeSubmenus) {
+            if (!submenu.uuid) continue;
+            const params = buildParams(submenu.uuid);
+            if (shouldPrefetch(params)) {
+              submenusToPrefetch.push(params);
             }
+          }
 
-            if (submenusToPrefetch.length > 0) {
-              // Ejecutar batch prefetch usando helper centralizado
-              await executeBatchPrefetch(submenusToPrefetch, 'DesktopView');
-            }
+          if (submenusToPrefetch.length > 0) {
+            // Ejecutar batch prefetch usando helper centralizado
+            // Esto agrupa todos los submenús en un solo batch request
+            await executeBatchPrefetch(submenusToPrefetch, 'DesktopView');
           }
         }
       } catch {

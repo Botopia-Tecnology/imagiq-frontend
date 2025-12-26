@@ -8,6 +8,7 @@
 import { ProductApiData, BundleApiData, BundleOption, ProductOrBundleApiData, BundleDirectResponse } from './api';
 import { ProductCardProps, ProductColor, ProductCapacity } from '@/app/productos/components/ProductCard';
 import { StaticImageData } from 'next/image';
+import type { ZeroInterestSkuResult } from '@/services/cero-interes-sku.service';
 
 // Importar imágenes mock para usar temporalmente
 import emptyImg from '@/img/empty.jpeg';
@@ -55,6 +56,7 @@ export interface BundleCardProps {
   fecha_inicio: string;
   fecha_final: string;
   isBundle: true; // Indicador para distinguir de productos normales
+  ceroInteresData?: ZeroInterestSkuResult[]; // Opciones de cero interés del producto padre
 }
 
 

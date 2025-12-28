@@ -73,7 +73,7 @@ export function MobileView({ onItemClick }: Props) {
                   href={href}
                   onClick={() =>
                     onItemClick(
-                      oferta.producto.nombreMarket || oferta.nombre,
+                      oferta.nombre || oferta.producto.nombreMarket,
                       href
                     )
                   }
@@ -83,7 +83,7 @@ export function MobileView({ onItemClick }: Props) {
                     {oferta.producto.imagen ? (
                       <Image
                         src={oferta.producto.imagen}
-                        alt={oferta.producto.nombreMarket || oferta.nombre}
+                        alt={oferta.nombre || oferta.producto.nombreMarket}
                         fill
                         className="object-contain"
                       />
@@ -96,7 +96,7 @@ export function MobileView({ onItemClick }: Props) {
                     )}
                   </div>
                   <span className="text-xs font-semibold text-gray-900 leading-snug line-clamp-3">
-                    {oferta.producto.nombreMarket || oferta.nombre}
+                    {oferta.nombre || oferta.producto.nombreMarket}
                   </span>
                 </Link>
               );

@@ -8,7 +8,7 @@
 "use client";
 
 import { useEffect, memo, useCallback, useState, useRef } from "react";
-import { parseSkuString } from "@/lib/flixmedia";
+import { parseSkuString, generateMpnVariants } from "@/lib/flixmedia";
 import { useRouter } from "next/navigation";
 
 declare global {
@@ -196,29 +196,65 @@ function FlixmediaPlayerComponent({
         return;
       }
 
+      // Log temporal para debug
+      console.log('[FLIXMEDIA DEBUG] Buscando contenido con:', { mpn: targetMpn, ean: targetEan });
+
       // 1. PRIMERO: Verificar si hay contenido con la API de Match
+      // Probar múltiples variantes del MPN (con/sin guiones, barras, etc.)
       try {
-        const matchUrl = targetMpn
-          ? `https://media.flixcar.com/delivery/webcall/match/${DISTRIBUTOR_ID}/${LANGUAGE}/mpn/${encodeURIComponent(targetMpn)}`
-          : `https://media.flixcar.com/delivery/webcall/match/${DISTRIBUTOR_ID}/${LANGUAGE}/ean/${encodeURIComponent(targetEan!)}`;
+        let matchedMpn: string | null = null;
+        let matchData: { event?: string } | null = null;
+        
+        if (targetMpn) {
+          const mpnVariants = generateMpnVariants(targetMpn);
+          console.log('[FLIXMEDIA DEBUG] Probando variantes de MPN:', mpnVariants);
+          
+          for (const variant of mpnVariants) {
+            const matchUrl = `https://media.flixcar.com/delivery/webcall/match/${DISTRIBUTOR_ID}/${LANGUAGE}/mpn/${encodeURIComponent(variant)}`;
+            console.log('[FLIXMEDIA DEBUG] Probando URL:', matchUrl);
+            
+            try {
+              const response = await fetch(matchUrl);
+              if (!isMounted) return;
+              
+              if (response.ok) {
+                const data = await response.json();
+                if (data.event === 'matchhit') {
+                  matchedMpn = variant;
+                  matchData = data;
+                  console.log('[FLIXMEDIA DEBUG] ✅ Match encontrado con:', variant);
+                  break;
+                }
+              }
+            } catch {
+              // Continuar con la siguiente variante
+            }
+          }
+        } else if (targetEan) {
+          // Probar con EAN
+          const matchUrl = `https://media.flixcar.com/delivery/webcall/match/${DISTRIBUTOR_ID}/${LANGUAGE}/ean/${encodeURIComponent(targetEan)}`;
+          const response = await fetch(matchUrl);
+          if (!isMounted) return;
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.event === 'matchhit') {
+              matchData = data;
+            }
+          }
+        }
 
-        const response = await fetch(matchUrl);
-
-        if (!isMounted) return;
-
-        if (!response.ok) {
-          // 404 = no hay contenido
+        // Si no encontramos contenido con ninguna variante
+        if (!matchData || matchData.event !== 'matchhit') {
+          console.log('[FLIXMEDIA DEBUG] ❌ No hay contenido disponible');
           setHasContent(false);
           redirectToView();
           return;
         }
 
-        const data = await response.json();
-
-        if (data.event === 'matchmiss') {
-          setHasContent(false);
-          redirectToView();
-          return;
+        // Usar el MPN que funcionó
+        if (matchedMpn) {
+          targetMpn = matchedMpn;
         }
 
         setHasContent(true);

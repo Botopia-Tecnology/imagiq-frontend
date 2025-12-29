@@ -125,6 +125,34 @@ export function buildFlixmediaUrl(
 }
 
 /**
+ * Genera variantes del MPN para probar con Flixmedia
+ * Algunos productos usan formato con guiones/barras y otros sin ellos
+ */
+export function generateMpnVariants(mpn: string): string[] {
+  const variants: string[] = [mpn]; // Original primero
+  
+  // Variante sin caracteres especiales (guiones, barras, espacios)
+  const normalized = mpn.replace(/[-\/\s]/g, '');
+  if (normalized !== mpn) {
+    variants.push(normalized);
+  }
+  
+  // Variante con guiones convertidos a barras
+  const withSlash = mpn.replace(/-/g, '/');
+  if (withSlash !== mpn && !variants.includes(withSlash)) {
+    variants.push(withSlash);
+  }
+  
+  // Variante con barras convertidas a guiones
+  const withDash = mpn.replace(/\//g, '-');
+  if (withDash !== mpn && !variants.includes(withDash)) {
+    variants.push(withDash);
+  }
+  
+  return variants;
+}
+
+/**
  * Procesa una cadena de SKUs (separados por comas) y devuelve un array
  */
 export function parseSkuString(skuString: string): string[] {

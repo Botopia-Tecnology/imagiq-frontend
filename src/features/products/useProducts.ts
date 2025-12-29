@@ -1009,78 +1009,104 @@ export const useProducts = (
 
 export const useProduct = (productId: string) => {
   const [product, setProduct] = useState<ProductCardProps | null>(null);
-  const [loading, setLoading] = useState(true); // Cambiar a true inicialmente
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [relatedProducts, setRelatedProducts] = useState<ProductCardProps[]>(
-    []
-  );
+  const [relatedProducts, setRelatedProducts] = useState<ProductCardProps[]>([]);
 
   useEffect(() => {
+    // Flag para evitar actualizaciones después de unmount
+    let isMounted = true;
+    
+    // Resetear estado inmediatamente
+    setProduct(null);
+    setLoading(true);
+    setError(null);
+    setRelatedProducts([]);
+
     const fetchProduct = async () => {
+      if (!productId) {
+        if (isMounted) {
+          setLoading(false);
+          setError("ID de producto no válido");
+        }
+        return;
+      }
+
       // Verificar si hay datos en cache primero
       const cachedResponse = productCache.getSingleProduct(productId);
 
       if (cachedResponse && cachedResponse.success && cachedResponse.data) {
         // Usar datos del cache inmediatamente
         const apiData = cachedResponse.data;
-        const mappedProducts = mapApiProductsToFrontend(apiData.products);
+        
+        // La API puede devolver los productos en 'products' o en 'allGroupedProducts'
+        const cachedProducts = apiData.products || (apiData as { allGroupedProducts?: typeof apiData.products })?.allGroupedProducts;
+        
+        // Validar que products exista
+        if (!cachedProducts || !Array.isArray(cachedProducts)) {
+          console.warn('[useProduct] Cache inválido, limpiando...');
+          productCache.clear();
+          // Continuar con la petición normal
+        } else {
+          const mappedProducts = mapApiProductsToFrontend(cachedProducts);
 
-        if (mappedProducts.length > 0) {
-          const foundProduct = mappedProducts[0];
-          setProduct(foundProduct);
-          setError(null);
+          if (mappedProducts.length > 0) {
+            const foundProduct = mappedProducts[0];
+            setProduct(foundProduct);
+            setError(null);
 
-          // Obtener productos relacionados
-          const modelBase =
-            foundProduct.name.split(" ")[1] ||
-            foundProduct.name.split(" ")[0];
-          const related = mappedProducts
-            .filter(
-              (p) => p.name.includes(modelBase) && p.id !== foundProduct.id
-            )
-            .slice(0, 4);
-          setRelatedProducts(related);
+            // Obtener productos relacionados
+            const modelBase =
+              foundProduct.name.split(" ")[1] ||
+              foundProduct.name.split(" ")[0];
+            const related = mappedProducts
+              .filter(
+                (p) => p.name.includes(modelBase) && p.id !== foundProduct.id
+              )
+              .slice(0, 4);
+            setRelatedProducts(related);
 
-          // Mostrar datos del cache inmediatamente
-          setLoading(false);
+            // Mostrar datos del cache inmediatamente
+            setLoading(false);
 
-          // Actualizar en background (stale-while-revalidate)
-          // No bloquear la UI, solo actualizar los datos si cambiaron
-          productEndpoints.getByCodigoMarket(productId)
-            .then(response => {
-              if (response.success && response.data) {
-                const freshData = response.data;
-                const freshMappedProducts = mapApiProductsToFrontend(freshData.products);
+            // Actualizar en background (stale-while-revalidate)
+            // No bloquear la UI, solo actualizar los datos si cambiaron
+            productEndpoints.getByCodigoMarket(productId)
+              .then(response => {
+                const freshProducts = response.data?.products || (response.data as { allGroupedProducts?: typeof response.data.products })?.allGroupedProducts;
+                if (response.success && response.data && freshProducts && freshProducts.length > 0) {
+                  const freshMappedProducts = mapApiProductsToFrontend(freshProducts);
 
-                if (freshMappedProducts.length > 0) {
-                  const freshProduct = freshMappedProducts[0];
+                  if (freshMappedProducts.length > 0) {
+                    const freshProduct = freshMappedProducts[0];
 
-                  // Solo actualizar si los datos son diferentes
-                  setProduct(prev => {
-                    if (!prev || JSON.stringify(prev) !== JSON.stringify(freshProduct)) {
-                      return freshProduct;
-                    }
-                    return prev;
-                  });
+                    // Solo actualizar si los datos son diferentes
+                    setProduct(prev => {
+                      if (!prev || JSON.stringify(prev) !== JSON.stringify(freshProduct)) {
+                        return freshProduct;
+                      }
+                      return prev;
+                    });
 
-                  // Actualizar cache con datos frescos
-                  productCache.setSingleProduct(productId, response, 10 * 60 * 1000);
+                    // Actualizar cache con datos frescos
+                    productCache.setSingleProduct(productId, response, 10 * 60 * 1000);
 
-                  // Actualizar productos relacionados
-                  const modelBase = freshProduct.name.split(" ")[1] || freshProduct.name.split(" ")[0];
-                  const related = freshMappedProducts
-                    .filter((p) => p.name.includes(modelBase) && p.id !== freshProduct.id)
-                    .slice(0, 4);
-                  setRelatedProducts(related);
+                    // Actualizar productos relacionados
+                    const modelBase = freshProduct.name.split(" ")[1] || freshProduct.name.split(" ")[0];
+                    const related = freshMappedProducts
+                      .filter((p) => p.name.includes(modelBase) && p.id !== freshProduct.id)
+                      .slice(0, 4);
+                    setRelatedProducts(related);
+                  }
                 }
-              }
-            })
-            .catch(err => {
-              console.debug('[useProduct] Error al actualizar producto en background:', err);
-              // No mostrar error, ya tenemos datos del cache
-            });
+              })
+              .catch(err => {
+                console.debug('[useProduct] Error al actualizar producto en background:', err);
+                // No mostrar error, ya tenemos datos del cache
+              });
 
-          return; // Salir temprano, ya mostramos los datos del cache
+            return; // Salir temprano, ya mostramos los datos del cache
+          }
         }
       }
 
@@ -1093,14 +1119,16 @@ export const useProduct = (productId: string) => {
 
         // Usar el endpoint específico para buscar por codigoMarketBase
         const response = await productEndpoints.getByCodigoMarket(codigoMarketBase);
+        
+        // La API puede devolver los productos en 'products' o en 'allGroupedProducts'
+        const productsArray = response.data?.products || (response.data as { allGroupedProducts?: typeof response.data.products })?.allGroupedProducts;
 
-        if (response.success && response.data) {
-          const apiData = response.data;
-          const mappedProducts = mapApiProductsToFrontend(apiData.products);
+        if (response.success && response.data && productsArray && productsArray.length > 0) {
+          const mappedProducts = mapApiProductsToFrontend(productsArray);
 
           if (mappedProducts.length > 0) {
             const foundProduct = mappedProducts[0]; // Tomar el primer producto encontrado
-            setProduct(foundProduct);
+            if (isMounted) setProduct(foundProduct);
 
             // Guardar en cache
             productCache.setSingleProduct(productId, response, 10 * 60 * 1000);
@@ -1114,27 +1142,26 @@ export const useProduct = (productId: string) => {
                 (p) => p.name.includes(modelBase) && p.id !== foundProduct.id
               )
               .slice(0, 4);
-            setRelatedProducts(related);
+            if (isMounted) setRelatedProducts(related);
           } else {
-            setError("Producto no encontrado");
+            if (isMounted) setError("Producto no encontrado");
           }
         } else {
-          setError("Error al obtener datos del producto");
+          if (isMounted) setError("Error al obtener datos del producto");
         }
       } catch (err) {
         console.error("Error fetching product:", err);
-        setError("Error al cargar el producto");
+        if (isMounted) setError("Error al cargar el producto");
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
-    if (productId) {
-      fetchProduct();
-    } else {
-      setLoading(false);
-      setError("ID de producto no válido");
-    }
+    fetchProduct();
+
+    return () => {
+      isMounted = false;
+    };
   }, [productId]);
 
   return {

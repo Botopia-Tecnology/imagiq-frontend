@@ -67,7 +67,7 @@ export function usePrefetchProduct({
       try {
         const response = await productEndpoints.getByCodigoMarket(productId);
 
-        if (response.success && response.data) {
+        if (response.success && response.data && response.data.products && response.data.products.length > 0) {
           // Guardar en cache con TTL de 10 minutos (más tiempo que el default)
           // para que esté disponible cuando el usuario navegue
           productCache.setSingleProduct(productId, response, 10 * 60 * 1000);

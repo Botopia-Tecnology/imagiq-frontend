@@ -207,10 +207,11 @@ export default function MultimediaPage({
   }
 
   // SOLO usar el campo skuflixmedia - NO usar otros SKUs
-  // Si no hay skuflixmedia, no mostrar contenido de Flixmedia
+  // Si no hay skuflixmedia, intentar usar el SKU normal del producto como fallback
   const productSku = selectedProductData?.skuflixmedia
     ? selectedProductData.skuflixmedia
-    : (product?.skuflixmedia || product?.apiProduct?.skuflixmedia?.[0] || null);
+    : (product?.skuflixmedia || product?.apiProduct?.skuflixmedia?.[0] || 
+       selectedProductData?.sku || allSkus[0] || null);
 
   // EAN solo como respaldo si hay skuflixmedia pero se necesita EAN
   const productEan = productSku ? (allEans.length > 0 ? allEans[0] : null) : null;

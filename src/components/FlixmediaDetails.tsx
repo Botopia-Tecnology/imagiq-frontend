@@ -9,6 +9,7 @@
 
 import { useEffect, useRef, memo, useCallback, useState } from "react";
 import { parseSkuString } from "@/lib/flixmedia";
+import { FlixmediaSpecsSkeleton } from "./FlixmediaStates";
 
 declare global {
   interface Window {
@@ -26,6 +27,42 @@ interface FlixmediaDetailsProps {
   className?: string;
 }
 
+/**
+ * Hook personalizado para precargar Flixmedia temprano
+ */
+function useFlixmediaPreload() {
+  useEffect(() => {
+    // Precargar recursos de Flixmedia apenas se monte el componente
+    if (typeof window === 'undefined') return;
+
+    // DNS prefetch
+    const dnsPrefetch = document.createElement('link');
+    dnsPrefetch.rel = 'dns-prefetch';
+    dnsPrefetch.href = '//media.flixfacts.com';
+    if (!document.querySelector('link[href="//media.flixfacts.com"]')) {
+      document.head.appendChild(dnsPrefetch);
+    }
+
+    // Preconnect
+    const preconnect = document.createElement('link');
+    preconnect.rel = 'preconnect';
+    preconnect.href = 'https://media.flixfacts.com';
+    preconnect.crossOrigin = 'anonymous';
+    if (!document.querySelector('link[href="https://media.flixfacts.com"]')) {
+      document.head.appendChild(preconnect);
+    }
+
+    // Preload del script
+    const preload = document.createElement('link');
+    preload.rel = 'preload';
+    preload.as = 'script';
+    preload.href = '//media.flixfacts.com/js/loader.js';
+    if (!document.querySelector('link[href="//media.flixfacts.com/js/loader.js"]')) {
+      document.head.appendChild(preload);
+    }
+  }, []);
+}
+
 function FlixmediaDetailsComponent({
   mpn,
   ean,
@@ -35,6 +72,10 @@ function FlixmediaDetailsComponent({
   // Generar ID único para este montaje
   const [uniqueId] = useState(() => `flix-specifications-${Math.random().toString(36).substr(2, 9)}`);
   const currentMpnRef = useRef<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Precargar recursos de Flixmedia temprano
+  useFlixmediaPreload();
 
   const applyStyles = useCallback(() => {
     if (document.getElementById('flixmedia-specifications-styles')) return;
@@ -206,6 +247,7 @@ function FlixmediaDetailsComponent({
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
     let targetMpn: string | null = null;
     let targetEan: string | null = null;
 
@@ -217,7 +259,10 @@ function FlixmediaDetailsComponent({
       const eans = parseSkuString(ean);
       if (eans.length > 0) targetEan = eans[0];
     }
-    if (!targetMpn && !targetEan) return;
+    if (!targetMpn && !targetEan) {
+      setIsLoading(false);
+      return;
+    }
 
     const productKey = targetMpn || targetEan || '';
 
@@ -235,7 +280,6 @@ function FlixmediaDetailsComponent({
           const container = document.getElementById(uniqueId);
 
           if (container) {
-            // resolve(container);
             resolve(container);
           } else if (attempts >= maxAttempts) {
             reject(new Error('Container timeout'));
@@ -260,12 +304,12 @@ function FlixmediaDetailsComponent({
       flixScript.type = 'text/javascript';
       flixScript.async = true;
 
+      // Configurar atributos según PDF Sección 1b
       flixScript.setAttribute('data-flix-distributor', '17257');
       flixScript.setAttribute('data-flix-language', 'f5');
       flixScript.setAttribute('data-flix-brand', 'Samsung');
       flixScript.setAttribute('data-flix-mpn', targetMpn || '');
       flixScript.setAttribute('data-flix-ean', targetEan || '');
-      // ID Único
       flixScript.setAttribute('data-flix-inpage', uniqueId);
       flixScript.setAttribute('data-flix-button', '');
       flixScript.setAttribute('data-flix-price', '');
@@ -273,22 +317,35 @@ function FlixmediaDetailsComponent({
 
       flixScript.onload = function () {
         applyStyles();
+        
+        // Configurar callback después de que el script se cargue
         if (typeof window.flixJsCallbacks === "object") {
           window.flixJsCallbacks.setLoadCallback(function () {
             applyStyles();
+            if (isMounted) setIsLoading(false);
           }, 'inpage');
         }
+        
+        // Timeout fallback
+        setTimeout(() => {
+          if (isMounted) setIsLoading(false);
+        }, 3000);
       };
 
       headID.appendChild(flixScript);
       flixScript.src = '//media.flixfacts.com/js/loader.js';
     };
 
+    // Cargar el script directamente (Specifications ya verificó que hay contenido)
     waitForContainer()
       .then(loadScript)
-      .catch(err => console.error('[FLIXMEDIA DETAILS] Error:', err));
+      .catch(err => {
+        console.error('[FLIXMEDIA DETAILS] Error:', err);
+        if (isMounted) setIsLoading(false);
+      });
 
     return () => {
+      isMounted = false;
       const scripts = document.querySelectorAll(`script[data-flix-inpage="${uniqueId}"]`);
       scripts.forEach(s => s.remove());
       currentMpnRef.current = null;
@@ -298,8 +355,17 @@ function FlixmediaDetailsComponent({
   if (!mpn && !ean) return null;
 
   return (
-    <div ref={containerRef} className={`${className} w-full min-h-[200px] relative`}>
-      <div id={uniqueId} className="w-full" />
+    <div ref={containerRef} className={`${className} w-full relative`}>
+      {isLoading && (
+        <div className="absolute inset-0 z-10 bg-white">
+          <FlixmediaSpecsSkeleton />
+        </div>
+      )}
+      <div 
+        id={uniqueId} 
+        className="w-full"
+        style={{ opacity: isLoading ? 0 : 1, transition: 'opacity 0.2s ease-in' }}
+      />
     </div>
   );
 }

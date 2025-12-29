@@ -338,7 +338,7 @@ export default function ProductViewPage({ params }) {
     });
   };
 
-  const hasPremiumContent = 
+  const hasPremiumContent =
     // Verificar en apiProduct (imagenPremium/videoPremium o sus alias)
     checkArrayOfArrays(productToUse.apiProduct?.imagenPremium) ||
     checkArrayOfArrays(productToUse.apiProduct?.videoPremium) ||
@@ -347,11 +347,11 @@ export default function ProductViewPage({ params }) {
     // Verificar en los colores del producto (imagen_premium/video_premium)
     // En los colores vienen como string[] (array simple)
     productToUse.colors?.some(color => {
-      const hasColorImages = color.imagen_premium && Array.isArray(color.imagen_premium) && 
-        color.imagen_premium.length > 0 && 
+      const hasColorImages = color.imagen_premium && Array.isArray(color.imagen_premium) &&
+        color.imagen_premium.length > 0 &&
         color.imagen_premium.some(img => img && typeof img === 'string' && img.trim() !== '');
-      const hasColorVideos = color.video_premium && Array.isArray(color.video_premium) && 
-        color.video_premium.length > 0 && 
+      const hasColorVideos = color.video_premium && Array.isArray(color.video_premium) &&
+        color.video_premium.length > 0 &&
         color.video_premium.some(vid => vid && typeof vid === 'string' && vid.trim() !== '');
       return hasColorImages || hasColorVideos;
     }) || false;
@@ -476,7 +476,6 @@ export default function ProductViewPage({ params }) {
           product={productToUse}
           flix={productToUse}
           selectedSku={productSelection.selectedSku || undefined}
-          selectedEan={productSelection.selectedVariant?.ean || undefined}
         />
       </div>
 

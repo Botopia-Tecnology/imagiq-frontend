@@ -43,6 +43,42 @@ interface FlixmediaPlayerProps {
 const DISTRIBUTOR_ID = "17257";
 const LANGUAGE = "f5";
 
+/**
+ * Hook personalizado para precargar Flixmedia temprano
+ */
+function useFlixmediaPreload() {
+  useEffect(() => {
+    // Precargar recursos de Flixmedia apenas se monte el componente
+    if (typeof window === 'undefined') return;
+
+    // DNS prefetch
+    const dnsPrefetch = document.createElement('link');
+    dnsPrefetch.rel = 'dns-prefetch';
+    dnsPrefetch.href = '//media.flixfacts.com';
+    if (!document.querySelector('link[href="//media.flixfacts.com"]')) {
+      document.head.appendChild(dnsPrefetch);
+    }
+
+    // Preconnect
+    const preconnect = document.createElement('link');
+    preconnect.rel = 'preconnect';
+    preconnect.href = 'https://media.flixfacts.com';
+    preconnect.crossOrigin = 'anonymous';
+    if (!document.querySelector('link[href="https://media.flixfacts.com"]')) {
+      document.head.appendChild(preconnect);
+    }
+
+    // Preload del script
+    const preload = document.createElement('link');
+    preload.rel = 'preload';
+    preload.as = 'script';
+    preload.href = '//media.flixfacts.com/js/loader.js';
+    if (!document.querySelector('link[href="//media.flixfacts.com/js/loader.js"]')) {
+      document.head.appendChild(preload);
+    }
+  }, []);
+}
+
 function FlixmediaPlayerComponent({
   mpn,
   ean,
@@ -55,6 +91,9 @@ function FlixmediaPlayerComponent({
   const router = useRouter();
   const [containerId] = useState(() => `flix-inpage-${Date.now()}`);
   const [hasContent, setHasContent] = useState<boolean | null>(null);
+
+  // Precargar recursos de Flixmedia temprano
+  useFlixmediaPreload();
 
   // Refs para mantener valores actuales (evitar stale closures)
   const segmentoRef = useRef(segmento);
@@ -132,7 +171,6 @@ function FlixmediaPlayerComponent({
       ? `/productos/viewpremium/${currentProductId}`
       : `/productos/view/${currentProductId}`;
 
-    console.log(`[FLIXMEDIA] ➡️ Redirigiendo a: ${route} (segmento: ${isPremiumSegment}, contenido: ${hasPremium})`);
     router.replace(route);
   }, [router, hasPremiumContent]); // Sin dependencias de props directas
 
@@ -154,12 +192,9 @@ function FlixmediaPlayerComponent({
       }
 
       if (!targetMpn && !targetEan) {
-        console.warn('[FLIXMEDIA] ⚠️ No MPN o EAN disponible');
         redirectToView();
         return;
       }
-
-      console.log(`[FLIXMEDIA] 🔍 Verificando contenido para: ${targetMpn || targetEan}`);
 
       // 1. PRIMERO: Verificar si hay contenido con la API de Match
       try {
@@ -173,7 +208,6 @@ function FlixmediaPlayerComponent({
 
         if (!response.ok) {
           // 404 = no hay contenido
-          console.log('[FLIXMEDIA] ❌ No hay contenido (matchmiss)');
           setHasContent(false);
           redirectToView();
           return;
@@ -182,14 +216,15 @@ function FlixmediaPlayerComponent({
         const data = await response.json();
 
         if (data.event === 'matchmiss') {
-          console.log('[FLIXMEDIA] ❌ No hay contenido (matchmiss)');
           setHasContent(false);
           redirectToView();
           return;
         }
 
-        console.log('[FLIXMEDIA] ✅ Contenido disponible (matchhit)');
         setHasContent(true);
+
+        // Esperar un momento para que React renderice el contenedor
+        await new Promise(resolve => setTimeout(resolve, 10));
 
         // 2. DESPUÉS: Cargar el player solo si hay contenido
         const container = document.getElementById(containerId);
@@ -202,7 +237,7 @@ function FlixmediaPlayerComponent({
         const oldScripts = document.querySelectorAll('script[data-flix-inpage]');
         oldScripts.forEach(s => s.remove());
 
-        // Configurar callbacks
+        // Configurar callbacks ANTES de cargar el script
         if (!window.flixJsCallbacks) {
           window.flixJsCallbacks = {
             setLoadCallback: () => { },
@@ -210,30 +245,24 @@ function FlixmediaPlayerComponent({
           };
         }
 
-        // Agregar función flixCartClick que Flixmedia espera para el botón "Comprar"
+        // Agregar función flixCartClick
         (window as typeof window & { flixJsCallbacks: { flixCartClick?: () => void } }).flixJsCallbacks.flixCartClick = () => {
-          console.log('[FLIXMEDIA] 🛒 Cart click - Redirigiendo a página de producto');
-          // Usar refs para obtener valores actuales
           const currentSegmento = segmentoRef.current;
           const currentProductId = productIdRef.current;
-          // Verificar segmento premium
           const isPremiumSegment = currentSegmento && (Array.isArray(currentSegmento) ? currentSegmento[0] : currentSegmento)?.toUpperCase() === 'PREMIUM';
-          // Verificar contenido premium
           const hasPremium = hasPremiumContent();
-          // Usar viewpremium si tiene segmento premium O contenido premium
           const route = (isPremiumSegment || hasPremium)
             ? `/productos/viewpremium/${currentProductId}`
             : `/productos/view/${currentProductId}`;
-          console.log(`[FLIXMEDIA] ➡️ Redirigiendo a: ${route} (segmento: ${isPremiumSegment}, contenido: ${hasPremium})`);
           router.push(route);
         };
-
+        
+        // Configurar callback de renderizado
         window.flixJsCallbacks.setLoadCallback(() => {
-          console.log('[FLIXMEDIA] ✅ Contenido renderizado');
           applyStyles();
         }, "inpage");
 
-        // Crear script
+        // Crear script siguiendo el método del PDF (Sección 1b - Alternative Implementation)
         const script = document.createElement("script");
         script.type = "text/javascript";
         script.async = true;
@@ -247,7 +276,6 @@ function FlixmediaPlayerComponent({
         script.setAttribute("data-flix-price", "");
 
         script.onload = () => {
-          console.log('[FLIXMEDIA] ✅ Script cargado');
           applyStyles();
         };
 
@@ -270,16 +298,14 @@ function FlixmediaPlayerComponent({
       const scripts = document.querySelectorAll(`script[data-flix-inpage="${containerId}"]`);
       scripts.forEach(s => s.remove());
     };
-  }, [mpn, ean, containerId, applyStyles, redirectToView]);
+  }, [mpn, ean, containerId, applyStyles, redirectToView, router, hasPremiumContent]);
 
   if (!mpn && !ean) return null;
 
-  // Mientras verifica, no mostrar nada (muy rápido)
+  // Mientras verifica, mostrar div vacío (sin skeleton para cargar más rápido)
   if (hasContent === null) {
     return (
-      <div className={`${className} w-full min-h-[200px] relative px-4 md:px-6 lg:px-8`}>
-        <div id={containerId} className="w-full" />
-      </div>
+      <div className={`${className} w-full min-h-[200px] relative px-4 md:px-6 lg:px-8`} />
     );
   }
 
@@ -290,7 +316,10 @@ function FlixmediaPlayerComponent({
 
   return (
     <div className={`${className} w-full min-h-[200px] relative px-4 md:px-6 lg:px-8`}>
-      <div id={containerId} className="w-full" />
+      <div 
+        id={containerId} 
+        className="w-full"
+      />
     </div>
   );
 }

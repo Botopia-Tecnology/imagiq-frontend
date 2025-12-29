@@ -275,7 +275,6 @@ export default function ViewProduct({
           product={productCard}
           flix={flix}
           selectedSku={productSelection?.selectedSku || undefined}
-          selectedEan={productSelection?.selectedVariant?.ean || undefined}
         />
       </div>
     </div>

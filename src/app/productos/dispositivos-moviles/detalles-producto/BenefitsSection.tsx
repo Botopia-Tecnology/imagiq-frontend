@@ -80,7 +80,7 @@ const BenefitsSection: React.FC = () => {
   const duplicated = [...benefits, ...benefits, ...benefits];
 
   return (
-    <section className="w-full pt-4 md:pt-6 pb-8 md:pb-12 bg-[#fafbfc]">
+    <section className="w-full pt-4 md:pt-6 pb-2 md:pb-3 bg-[#fafbfc]">
       <style jsx>{`
         @keyframes scroll { to { transform: translateX(calc(-100% / 3)); } }
         .carousel { animation: scroll 15s linear infinite; }

@@ -20,8 +20,8 @@ import React, { useEffect, useState } from "react";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 
 import { productsMock } from "../components/productsMock";
-import Specifications from "@/app/productos/dispositivos-moviles/detalles-producto/Specifications";
 import BenefitsSection from "./detalles-producto/BenefitsSection";
+import Specifications from "./detalles-producto/Specifications";
 
 // Tipo auxiliar para producto de entrada (raw)
 type RawProduct = {
@@ -211,7 +211,7 @@ export default function ViewProduct({
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col mt-0 pt-0">
+    <div className="w-full flex flex-col mt-0 pt-0">
       {/* Feedback UX al añadir al carrito */}
       {cartFeedback && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-fadeInContent font-bold text-lg">
@@ -266,16 +266,14 @@ export default function ViewProduct({
         `,
         }}
       />
-      <div className="h-[1px] w-full" />
       <BenefitsSection />
-      {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}
-
-      <div className="relative flex items-center justify-center w-full min-h-[100px] py-0">
+      
+      {/* Especificaciones y Flix Media - Solo se muestra si hay contenido */}
+      <div className="relative flex items-center justify-center w-full py-0 -mt-8">
         <Specifications
           product={productCard}
           flix={flix}
           selectedSku={productSelection?.selectedSku || undefined}
-          selectedEan={productSelection?.selectedVariant?.ean || undefined}
         />
       </div>
     </div>

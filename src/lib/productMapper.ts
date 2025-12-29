@@ -428,6 +428,12 @@ function calculatePricingFromArray(apiProduct: ProductApiData) {
  * Para procesar bundles, usar mapApiProductsAndBundles
  */
 export function mapApiProductsToFrontend(apiProducts: ProductOrBundleApiData[]): ProductCardProps[] {
+  // Validación de seguridad
+  if (!apiProducts || !Array.isArray(apiProducts)) {
+    console.warn('[mapApiProductsToFrontend] Recibido valor inválido:', apiProducts);
+    return [];
+  }
+  
   return apiProducts
     .filter((item): item is ProductApiData => !isBundle(item))
     .map(mapApiProductToFrontend);

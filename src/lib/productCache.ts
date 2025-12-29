@@ -360,12 +360,19 @@ class ProductCache {
 
   /**
    * Almacena un producto individual en el caché
+   * Solo guarda si la respuesta tiene productos válidos
    */
   setSingleProduct(
     productId: string,
     data: ApiResponse<ProductApiResponse>,
     ttl?: number
   ): void {
+    // Validar que la respuesta tenga productos antes de guardar
+    if (!data?.data?.products || !Array.isArray(data.data.products) || data.data.products.length === 0) {
+      console.warn('[ProductCache] No se guardó en cache - respuesta sin productos válidos:', productId);
+      return;
+    }
+
     const key = `product:${productId}`;
     const entry: SingleProductCacheEntry = {
       data,

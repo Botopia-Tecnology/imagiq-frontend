@@ -144,8 +144,11 @@ export default function RootLayout({
       }
     >
       <head>
-        {/* Optimización Flixmedia: Preconectar y precargar script */}
-        <link rel="preconnect" href="//media.flixfacts.com" crossOrigin="" />
+        {/* Optimización Flixmedia: DNS prefetch, preconnect y preload para carga ultra-rápida */}
+        <link rel="dns-prefetch" href="//media.flixfacts.com" />
+        <link rel="dns-prefetch" href="//media.flixcar.com" />
+        <link rel="preconnect" href="https://media.flixfacts.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://media.flixcar.com" crossOrigin="anonymous" />
         <link rel="preload" href="//media.flixfacts.com/js/loader.js" as="script" />
       </head>
       <body className="antialiased">

@@ -39,26 +39,25 @@ export function FlixmediaEmptyState({ className = "" }: StateCardProps) {
 
 export function FlixmediaLoadingState({ className = "" }: StateCardProps) {
   return (
-    <div className={`bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-12 text-center min-h-[400px] flex items-center justify-center ${className}`}>
-      <div className="max-w-md">
-        {/* Spinner animado */}
-        <div className="relative mb-6">
-          <div className="w-16 h-16 mx-auto border-4 border-gray-200 border-t-[#0066CC] rounded-full animate-spin" />
-          <div className="absolute inset-0 w-16 h-16 mx-auto border-4 border-transparent border-b-blue-300 rounded-full animate-spin animation-delay-150" />
+    <div className={`bg-white border border-gray-200 rounded-lg p-8 min-h-[400px] ${className}`}>
+      {/* Skeleton estático - SIN animaciones de loading */}
+      <div className="space-y-6">
+        {/* Header skeleton */}
+        <div className="h-8 bg-gray-100 rounded w-3/4" />
+        
+        {/* Content blocks */}
+        <div className="space-y-4">
+          <div className="h-64 bg-gray-100 rounded" />
+          <div className="h-4 bg-gray-100 rounded w-full" />
+          <div className="h-4 bg-gray-100 rounded w-5/6" />
+          <div className="h-4 bg-gray-100 rounded w-4/5" />
         </div>
         
-        {/* Placeholders de texto */}
-        <div className="space-y-3 mb-6">
-          <div className="h-4 bg-gray-200 rounded w-48 mx-auto animate-pulse" />
-          <div className="h-3 bg-gray-200 rounded w-64 mx-auto animate-pulse" />
+        {/* Bottom section */}
+        <div className="grid grid-cols-2 gap-4 mt-6">
+          <div className="h-32 bg-gray-100 rounded" />
+          <div className="h-32 bg-gray-100 rounded" />
         </div>
-        
-        {/* Barra de progreso indeterminada */}
-        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full animate-pulse" style={{ width: '60%' }} />
-        </div>
-        
-        <div className="h-2 bg-gray-200 rounded w-32 mx-auto mt-4 animate-pulse" />
       </div>
     </div>
   );
@@ -88,6 +87,44 @@ export function FlixmediaNotFoundState({ className = "" }: StateCardProps) {
       <p className="text-gray-400 text-xs mt-1">
         Este producto no tiene multimedia en Flixmedia
       </p>
+    </div>
+  );
+}
+
+export function FlixmediaSpecsSkeleton({ className = "" }: StateCardProps) {
+  return (
+    <div className={`w-full ${className}`}>
+      {/* Header skeleton - ESTÁTICO */}
+      <div className="border border-gray-200 rounded-lg bg-white p-6 mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="h-7 bg-gray-100 rounded w-64" />
+          <div className="h-10 bg-gray-100 rounded w-40" />
+        </div>
+      </div>
+
+      {/* Key features skeleton - ESTÁTICO */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-12 h-12 bg-gray-100 rounded" />
+              <div className="h-4 bg-gray-100 rounded w-24" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Specs table skeleton - ESTÁTICO */}
+      <div className="border border-gray-200 rounded-lg bg-white p-6">
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex justify-between items-center py-3 border-b border-gray-100 last:border-0">
+              <div className="h-4 bg-gray-100 rounded w-32" />
+              <div className="h-4 bg-gray-100 rounded w-48" />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

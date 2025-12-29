@@ -13,7 +13,6 @@ import {
 import type {
   ProductVariant,
   ColorOption,
-  UseProductSelectionReturn,
 } from "@/hooks/useProductSelection";
 import DetailsProductSection from "@/app/productos/dispositivos-moviles/detalles-producto/DetailsProductSection";
 import ProductDetailSkeleton from "@/app/productos/dispositivos-moviles/detalles-producto/ProductDetailSkeleton";
@@ -166,7 +165,12 @@ function ProductContentWithVariants({
         onVariantsReady={onVariantsReady}
         onProductSelectionChange={onProductSelectionChange}
       />
-      <ViewProduct product={convertedProduct} flix={product} productSelection={productSelection} />
+      <ViewProduct 
+        product={convertedProduct} 
+        flix={product}
+        productSelection={productSelection}
+      />
+
       <AddToCartButton
         product={product}
         productSelection={productSelection}

@@ -33,7 +33,7 @@ export async function checkFlixmediaAvailability(
     } else {
       return { available: false };
     }
-  } catch (error) {
+  } catch {
     return { available: false };
   }
 }
@@ -56,7 +56,7 @@ export async function checkFlixmediaAvailabilityByEan(
     } else {
       return { available: false };
     }
-  } catch (error) {
+  } catch {
     return { available: false };
   }
 }
@@ -81,7 +81,7 @@ export async function findAvailableSku(skus: string[]): Promise<string | null> {
     // Todas las peticiones se hacen en paralelo, reduciendo el tiempo total
     const availableSku = await Promise.any(promises);
     return availableSku;
-  } catch (error) {
+  } catch {
     // Solo llega aquí si TODOS los SKUs fallaron (AggregateError)
     return null;
   }
@@ -107,7 +107,7 @@ export async function findAvailableEan(eans: string[]): Promise<string | null> {
     // Todas las peticiones se hacen en paralelo, reduciendo el tiempo total
     const availableEan = await Promise.any(promises);
     return availableEan;
-  } catch (error) {
+  } catch {
     // Solo llega aquí si TODOS los EANs fallaron (AggregateError)
     return null;
   }
@@ -125,6 +125,34 @@ export function buildFlixmediaUrl(
 }
 
 /**
+ * Genera variantes del MPN para probar con Flixmedia
+ * Algunos productos usan formato con guiones/barras y otros sin ellos
+ */
+export function generateMpnVariants(mpn: string): string[] {
+  const variants: string[] = [mpn]; // Original primero
+  
+  // Variante sin caracteres especiales (guiones, barras, espacios)
+  const normalized = mpn.replace(/[-\/\s]/g, '');
+  if (normalized !== mpn) {
+    variants.push(normalized);
+  }
+  
+  // Variante con guiones convertidos a barras
+  const withSlash = mpn.replace(/-/g, '/');
+  if (withSlash !== mpn && !variants.includes(withSlash)) {
+    variants.push(withSlash);
+  }
+  
+  // Variante con barras convertidas a guiones
+  const withDash = mpn.replace(/\//g, '-');
+  if (withDash !== mpn && !variants.includes(withDash)) {
+    variants.push(withDash);
+  }
+  
+  return variants;
+}
+
+/**
  * Procesa una cadena de SKUs (separados por comas) y devuelve un array
  */
 export function parseSkuString(skuString: string): string[] {
@@ -136,7 +164,7 @@ export function parseSkuString(skuString: string): string[] {
 
 /**
  * Prefetch del script de Flixmedia para mejorar la velocidad de carga
- * Se debe llamar en eventos como hover o focus
+ * Se debe llamar en eventos como hover o focus, o al inicio de la página
  */
 export function prefetchFlixmediaScript() {
   if (typeof window === 'undefined') return;
@@ -156,4 +184,30 @@ export function prefetchFlixmediaScript() {
   document.head.appendChild(link);
 
   console.log('🚀 [Flixmedia] Script prefetching initiated');
+}
+
+/**
+ * Precarga el script de Flixmedia INMEDIATAMENTE al cargar la página
+ * Esto reduce significativamente el tiempo de carga del contenido multimedia
+ * Según la guía de Flixmedia, esto mejora la percepción de velocidad
+ */
+export function preloadFlixmediaScriptEarly() {
+  if (typeof window === 'undefined') return;
+
+  // Usar dns-prefetch y preconnect para optimizar la conexión
+  const dnsPrefetch = document.createElement('link');
+  dnsPrefetch.rel = 'dns-prefetch';
+  dnsPrefetch.href = '//media.flixfacts.com';
+  document.head.appendChild(dnsPrefetch);
+
+  const preconnect = document.createElement('link');
+  preconnect.rel = 'preconnect';
+  preconnect.href = 'https://media.flixfacts.com';
+  preconnect.crossOrigin = 'anonymous';
+  document.head.appendChild(preconnect);
+
+  // Precargar el script de loader
+  prefetchFlixmediaScript();
+
+  console.log('🚀 [Flixmedia] Early preload + DNS prefetch + preconnect initialized');
 }

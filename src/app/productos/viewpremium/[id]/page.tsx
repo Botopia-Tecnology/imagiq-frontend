@@ -470,8 +470,8 @@ export default function ProductViewPage({ params }) {
       {/* Beneficios imagiq - Banner que ocupa el ancho */}
       <BenefitsSection />
 
-      {/* Especificaciones y Flix Media */}
-      <div className="relative flex items-center justify-center w-full min-h-[100px] py-0 -mt-8">
+      {/* Especificaciones y Flix Media - Solo se muestra si hay contenido */}
+      <div className="relative flex items-center justify-center w-full py-0 -mt-8">
         <Specifications
           product={productToUse}
           flix={productToUse}

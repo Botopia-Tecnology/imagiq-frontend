@@ -247,6 +247,7 @@ function FlixmediaDetailsComponent({
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
     let targetMpn: string | null = null;
     let targetEan: string | null = null;
 
@@ -258,7 +259,10 @@ function FlixmediaDetailsComponent({
       const eans = parseSkuString(ean);
       if (eans.length > 0) targetEan = eans[0];
     }
-    if (!targetMpn && !targetEan) return;
+    if (!targetMpn && !targetEan) {
+      setIsLoading(false);
+      return;
+    }
 
     const productKey = targetMpn || targetEan || '';
 
@@ -318,13 +322,13 @@ function FlixmediaDetailsComponent({
         if (typeof window.flixJsCallbacks === "object") {
           window.flixJsCallbacks.setLoadCallback(function () {
             applyStyles();
-            setIsLoading(false);
+            if (isMounted) setIsLoading(false);
           }, 'inpage');
         }
         
-        // Timeout fallback más largo
+        // Timeout fallback
         setTimeout(() => {
-          setIsLoading(false);
+          if (isMounted) setIsLoading(false);
         }, 3000);
       };
 
@@ -332,25 +336,26 @@ function FlixmediaDetailsComponent({
       flixScript.src = '//media.flixfacts.com/js/loader.js';
     };
 
+    // Cargar el script directamente (Specifications ya verificó que hay contenido)
     waitForContainer()
       .then(loadScript)
       .catch(err => {
         console.error('[FLIXMEDIA DETAILS] Error:', err);
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       });
 
     return () => {
+      isMounted = false;
       const scripts = document.querySelectorAll(`script[data-flix-inpage="${uniqueId}"]`);
       scripts.forEach(s => s.remove());
       currentMpnRef.current = null;
-      setIsLoading(true);
     };
   }, [mpn, ean, applyStyles, uniqueId]);
 
   if (!mpn && !ean) return null;
 
   return (
-    <div ref={containerRef} className={`${className} w-full min-h-[200px] relative`}>
+    <div ref={containerRef} className={`${className} w-full relative`}>
       {isLoading && (
         <div className="absolute inset-0 z-10 bg-white">
           <FlixmediaSpecsSkeleton />

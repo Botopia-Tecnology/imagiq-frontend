@@ -213,16 +213,6 @@ export default function MultimediaPage({
     : (product?.skuflixmedia || product?.apiProduct?.skuflixmedia?.[0] || 
        selectedProductData?.sku || allSkus[0] || null);
 
-  // Log temporal para debug
-  console.log('[MULTIMEDIA DEBUG] SKU para Flixmedia:', {
-    productSku,
-    selectedSkuflixmedia: selectedProductData?.skuflixmedia,
-    productSkuflixmedia: product?.skuflixmedia,
-    apiSkuflixmedia: product?.apiProduct?.skuflixmedia,
-    selectedSku: selectedProductData?.sku,
-    allSkus
-  });
-
   // EAN solo como respaldo si hay skuflixmedia pero se necesita EAN
   const productEan = productSku ? (allEans.length > 0 ? allEans[0] : null) : null;
 

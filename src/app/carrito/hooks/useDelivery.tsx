@@ -135,6 +135,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   const lastAddressChangeProcessedTimeRef = useRef<number>(0); // Timestamp del último cambio de dirección procesado
   const retry429CountRef = useRef(0); // Contador de reintentos por error 429
   const allowFetchOnAddressChangeRef = useRef(false); // Flag para permitir peticiones cuando cambia dirección (aunque onlyReadCache=true)
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timeout para reintentar peticiones bloqueadas
 
   // Flag global compartido para evitar procesar el mismo cambio desde múltiples listeners
   // Se usa en window para que sea compartido entre todos los componentes
@@ -438,6 +439,12 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       __imagiqIsFetching?: boolean;
     };
 
+    // Limpiar timeout de reintento pendiente si entra una nueva ejecución explícita
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+
     // Prevenir llamadas múltiples simultáneas (GLOBAL)
     if (globalState.__imagiqIsFetching) {
       // VERIFICACIÓN DE SEGURIDAD: Si el lock lleva más de 10 segundos activo, probablemente se quedó pegado
@@ -447,12 +454,19 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         globalState.__imagiqIsFetching = false;
         // No retornamos, permitimos que continúe la ejecución
       } else {
-        console.log('❌ Abortando: __imagiqIsFetching global = true (ya hay una petición en curso en otra instancia)');
+        console.log('❌ Abortando: __imagiqIsFetching global = true. Reintentando en 500ms...');
         if (isFetchingRef.current) {
           // Si esta instancia cree que está haciendo fetch, apagar su flag
           isFetchingRef.current = false;
           setStoresLoading(false);
         }
+
+        // REINTENTO: Programar reintento para asegurar que se procese la última actualización
+        retryTimeoutRef.current = setTimeout(() => {
+          console.log('🔄 Reintentando fetchCandidateStores tras bloqueo por lock global...');
+          fetchCandidateStores();
+        }, 500);
+
         return;
       }
     }
@@ -463,14 +477,22 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       return;
     }
 
-    // Prevenir llamadas muy frecuentes (debounce global de 2000ms)
+    // Prevenir llamadas muy frecuentes (debounce global de 500ms)
+    // Reducido de 2000ms a 500ms para mejorar respuesta en UI
     const now = Date.now();
     const lastGlobalFetch = globalState.__imagiqLastFetchTime || 0;
 
-    if (now - lastGlobalFetch < 2000) {
-      console.log('⏸️ Debounce GLOBAL activo: esperando antes de hacer otra petición');
-      console.log(`   Tiempo desde última petición global: ${now - lastGlobalFetch}ms (necesita >= 2000ms)`);
+    if (now - lastGlobalFetch < 500) {
+      console.log('⏸️ Debounce GLOBAL activo. Reintentando en 500ms...');
+      console.log(`   Tiempo desde última petición global: ${now - lastGlobalFetch}ms (necesita >= 500ms)`);
       setStoresLoading(false);
+
+      // REINTENTO: Programar reintento para después del debounce
+      retryTimeoutRef.current = setTimeout(() => {
+        console.log('🔄 Reintentando fetchCandidateStores tras debounce...');
+        fetchCandidateStores();
+      }, 500);
+
       return;
     }
 

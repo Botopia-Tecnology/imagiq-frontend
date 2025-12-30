@@ -20,6 +20,7 @@ import { encryptionService } from "@/lib/encryption";
 import CardBrandLogo from "@/components/ui/CardBrandLogo";
 import { payWithAddi, payWithCard, payWithPse, fetchBanks } from "./utils";
 import { useCart } from "@/hooks/useCart";
+import { useCardsCache } from "./hooks/useCardsCache";
 import {
   validateTradeInProducts,
   getTradeInValidationMessage,
@@ -138,6 +139,9 @@ export default function Step7({ onBack }: Step7Props) {
   const [isLoadingShippingMethod, setIsLoadingShippingMethod] = useState(false);
   // NUEVO: Estado separado para skeleton (solo espera canPickUp) y botón (espera cálculo de envío)
   const [isLoadingCanPickUp, setIsLoadingCanPickUp] = useState(false);
+
+  // Utilizar caché de tarjetas para optimizar carga
+  const { loadSavedCards } = useCardsCache();
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
   // Estado para guardar el código de bodega de candidate-stores
   const [candidateWarehouseCode, setCandidateWarehouseCode] = useState<string | undefined>();
@@ -227,29 +231,9 @@ export default function Step7({ onBack }: Step7Props) {
         const userId = authContext.user?.id || loggedUser?.id;
         if (savedCardId && userId) {
           try {
-            const encryptedCards =
-              await profileService.getUserPaymentMethodsEncrypted(userId);
-
-            const decryptedCards: DBCard[] = encryptedCards
-              .map((encCard) => {
-                const decrypted =
-                  encryptionService.decryptJSON<DecryptedCardData>(
-                    encCard.encryptedData
-                  );
-                if (!decrypted) return null;
-
-                return {
-                  id: decrypted.cardId as unknown as string,
-                  ultimos_dijitos: decrypted.last4Digits,
-                  marca: decrypted.brand?.toLowerCase() || undefined,
-                  banco: decrypted.banco || undefined,
-                  tipo_tarjeta: decrypted.tipo || undefined,
-                  es_predeterminada: false,
-                  activa: true,
-                  nombre_titular: decrypted.cardHolderName || undefined,
-                } as DBCard;
-              })
-              .filter((card): card is DBCard => card !== null);
+            // USAR CACHÉ: En lugar de llamar a la API directamente, usar la caché compartida
+            // Esto aprovecha los datos cargados en paso 4 si existen
+            const decryptedCards = await loadSavedCards();
 
             savedCard = decryptedCards.find(
               (card) => String(card.id) === savedCardId
@@ -469,7 +453,8 @@ export default function Step7({ onBack }: Step7Props) {
         console.error("Error parsing Trade-In data:", error);
       }
     }
-  }, [authContext.user?.id, loggedUser?.id]);
+
+  }, [authContext.user?.id, loggedUser?.id, loadSavedCards]);
 
   // Handle Trade-In removal
   const handleRemoveTradeIn = () => {

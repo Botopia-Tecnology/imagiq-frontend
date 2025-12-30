@@ -371,7 +371,7 @@ export const productEndpoints = {
     apiClient.delete<void>(
       `/api/products/remove-from-favorites/${id}?productSKU=${productSKU}`
     ),
-  getCandidateStores: (data: { products: { sku: string; quantity: number }[]; user_id: string; cities?: string[] }) =>
+  getCandidateStores: (data: { products: { sku: string; quantity: number }[]; user_id: string; cities?: string[]; addressId?: string }) =>
     apiClient.post<CandidateStoresResponse>('/api/products/candidate-stores', data),
 
   // Bundle-specific endpoints
@@ -392,7 +392,7 @@ export const productEndpoints = {
     }
 
     const BATCH_SIZE = 100;
-    
+
     // Si hay más de 100 queries, dividir en múltiples batches
     if (queries.length > BATCH_SIZE) {
       const batches: ProductFilterParams[][] = [];
@@ -401,12 +401,12 @@ export const productEndpoints = {
       }
 
       // Ejecutar todos los batches en paralelo
-      const batchPromises = batches.map(batch => 
+      const batchPromises = batches.map(batch =>
         apiClient.post<BatchProductResponse>('/api/products/v2/batch', { queries: batch })
       );
 
       const responses = await Promise.allSettled(batchPromises);
-      
+
       // Combinar todos los resultados
       const allResults: BatchProductResult[] = [];
       let currentIndex = 0;

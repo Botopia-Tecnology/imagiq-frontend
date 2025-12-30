@@ -19,6 +19,7 @@ import { safeGetLocalStorage } from "@/lib/localStorage";
 import { CartBundleGroup } from "./components/CartBundleGroup";
 import { useTradeInPrefetch } from "@/hooks/useTradeInPrefetch";
 import { useDelivery } from "./hooks/useDelivery";
+import { useTradeInVerification } from "@/hooks/useTradeInVerification";
 
 /**
  * Paso 1 del carrito de compras
@@ -113,8 +114,7 @@ export default function Step1({
       setLastAddressChange(Date.now());
 
       // Limpiar caches de verificación para forzar nueva verificación
-      verifiedSkusRef.current.clear();
-      failedSkusRef.current.clear();
+
 
       // Mostrar skeleton inmediatamente para todos los productos
       if (cartProducts.length > 0) {
@@ -133,7 +133,7 @@ export default function Step1({
     const handleTradeInRemoved = (event: CustomEvent<{ sku: string }>) => {
       const removedSku = event.detail.sku;
       //console.log("🔄 Step1: Trade-in eliminado para SKU:", removedSku);
-      
+
       // Actualizar el estado del trade-in eliminando el SKU
       setTradeInData(prev => {
         const newState = { ...prev };
@@ -161,7 +161,7 @@ export default function Step1({
       }
 
       const parsed = JSON.parse(storedTradeIn);
-      
+
       // Verificar si es el formato nuevo (objeto de objetos) o antiguo
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
         // Si tiene deviceName directamente, es el formato antiguo
@@ -169,7 +169,7 @@ export default function Step1({
           // Formato antiguo: convertir al nuevo formato cuando haya productos
           if (cartProducts.length > 0) {
             const newTradeInData: Record<string, typeof parsed> = {};
-            
+
             // Buscar el primer producto o bundle
             for (const product of cartProducts) {
               if (product.bundleInfo?.productSku) {
@@ -182,7 +182,7 @@ export default function Step1({
                 break;
               }
             }
-            
+
             if (Object.keys(newTradeInData).length > 0) {
               // Guardar en el formato nuevo
               const tradeInString = JSON.stringify(newTradeInData);
@@ -268,7 +268,7 @@ export default function Step1({
 
     try {
       const parsed = JSON.parse(storedTradeIn);
-      
+
       // Solo validar si es formato nuevo (objeto de objetos)
       if (parsed && typeof parsed === 'object' && !('deviceName' in parsed) && !Array.isArray(parsed)) {
         const validTradeIns: Record<string, {
@@ -278,7 +278,7 @@ export default function Step1({
           detalles?: unknown;
         }> = {};
         const allSkus = new Set<string>();
-        
+
         // Obtener todos los SKUs válidos (productos individuales y bundles)
         cartProducts.forEach(product => {
           if (product.bundleInfo?.productSku) {
@@ -289,7 +289,7 @@ export default function Step1({
             allSkus.add(product.sku);
           }
         });
-        
+
         // Filtrar Trade-Ins que correspondan a productos en el carrito
         Object.entries(parsed).forEach(([sku, tradeInData]) => {
           if (allSkus.has(sku)) {
@@ -300,11 +300,11 @@ export default function Step1({
               completed?: boolean;
               detalles?: unknown;
             };
-            
-            if (tradeIn && typeof tradeIn === 'object' && 
-                tradeIn.deviceName && 
-                typeof tradeIn.value === 'number' && 
-                typeof tradeIn.completed === 'boolean') {
+
+            if (tradeIn && typeof tradeIn === 'object' &&
+              tradeIn.deviceName &&
+              typeof tradeIn.value === 'number' &&
+              typeof tradeIn.completed === 'boolean') {
               validTradeIns[sku] = {
                 deviceName: tradeIn.deviceName,
                 value: tradeIn.value,
@@ -314,18 +314,18 @@ export default function Step1({
             }
           }
         });
-        
+
         // Actualizar estado si hay cambios o si el estado está vacío pero hay Trade-Ins válidos
         const currentTradeInsString = JSON.stringify(tradeInData);
         const validTradeInsString = JSON.stringify(validTradeIns);
-        
+
         if (currentTradeInsString !== validTradeInsString) {
           if (Object.keys(validTradeIns).length > 0) {
             setTradeInData(validTradeIns);
             // Guardar de nuevo para asegurar que esté sincronizado y persistente
             const tradeInString = JSON.stringify(validTradeIns);
             localStorage.setItem("imagiq_trade_in", tradeInString);
-            
+
             // Verificar que se guardó correctamente
             const verifySave = localStorage.getItem("imagiq_trade_in");
             if (!verifySave || verifySave !== tradeInString) {
@@ -335,7 +335,7 @@ export default function Step1({
             } else {
               console.log("✅ Trade-Ins sincronizados y guardados correctamente:", Object.keys(validTradeIns));
             }
-            
+
             // Disparar eventos de storage
             try {
               globalThis.dispatchEvent(new CustomEvent("localStorageChange", {
@@ -412,186 +412,44 @@ export default function Step1({
 
   // El canPickUp global se calcula en Step4OrderSummary con todos los productos del carrito
 
-  // Ref para rastrear SKUs que ya fueron verificados (evita loops infinitos)
-  const verifiedSkusRef = useRef<Set<string>>(new Set());
-  // Ref para rastrear SKUs que fallaron (evita reintentos de peticiones fallidas)
-  const failedSkusRef = useRef<Set<string>>(new Set());
+  // =========================================================================================
+  // OPTIMIZACIÓN: NUEVA LÓGICA DE VERIFICACIÓN CENTRALIZADA CON CACHÉ (useTradeInVerification)
+  // Reemplaza la lógica anterior lenta y secuencial
+  // =========================================================================================
 
-  // Verificar indRetoma para cada producto único en el carrito Y para bundles
+  const { loadingSkus: loadingIndRetomaHook, forceVerify } = useTradeInVerification({
+    products: cartProducts
+  });
+
+  // Sincronizar el estado del hook con el estado local para loading
   useEffect(() => {
-    if (cartProducts.length === 0) return;
-
-    const verifyTradeIn = async () => {
-      // Obtener SKUs únicos de productos individuales (sin duplicados)
-      const uniqueSkus = Array.from(new Set(cartProducts.map((p) => p.sku)));
-
-      // Obtener productSku únicos de bundles (sin duplicados)
-      const uniqueBundleSkus = Array.from(
-        new Set(
-          cartProducts
-            .filter((p) => p.bundleInfo?.productSku)
-            .map((p) => p.bundleInfo!.productSku)
-        )
-      );
-
-      // Filtrar productos individuales que necesitan verificación
-      const productsToVerify = uniqueSkus.filter((sku) => {
-        const product = cartProducts.find((p) => p.sku === sku);
-        const needsVerification = product && product.indRetoma === undefined;
-        const notVerifiedYet = !verifiedSkusRef.current.has(sku);
-        const notFailedBefore = !failedSkusRef.current.has(sku);
-        return needsVerification && notVerifiedYet && notFailedBefore;
-      });
-
-      // Filtrar bundles que necesitan verificación (usando productSku)
-      const bundlesToVerify = uniqueBundleSkus.filter((productSku) => {
-        // Verificar si el bundle tiene ind_entre_estre definido
-        const bundleProduct = cartProducts.find(
-          (p) => p.bundleInfo?.productSku === productSku
-        );
-        const needsVerification =
-          bundleProduct &&
-          bundleProduct.bundleInfo?.ind_entre_estre === undefined;
-        const notVerifiedYet = !verifiedSkusRef.current.has(productSku);
-        const notFailedBefore = !failedSkusRef.current.has(productSku);
-        return needsVerification && notVerifiedYet && notFailedBefore;
-      });
-
-      // Combinar todos los SKUs a verificar (productos individuales + bundles)
-      const allSkusToVerify = [...productsToVerify, ...bundlesToVerify];
-
-      if (allSkusToVerify.length === 0) return;
-
-      // Marcar productos como cargando
-      setLoadingIndRetoma(new Set(allSkusToVerify));
-
-      // Verificar cada SKU único (productos individuales y bundles)
-      const results: Array<{
-        sku: string;
-        indRetoma: number;
-        isBundle?: boolean; // Indicar si es un bundle
-      } | null> = [];
-
-      for (let i = 0; i < allSkusToVerify.length; i++) {
-        const sku = allSkusToVerify[i];
-        const isBundle = bundlesToVerify.includes(sku);
-
-        // PROTECCIÓN: Verificar si este SKU ya falló antes (ANTES del delay y try)
-        if (failedSkusRef.current.has(sku)) {
-          console.error(
-            `🚫 SKU ${sku} ya falló anteriormente. NO se reintentará para evitar sobrecargar la base de datos.`
-          );
-          results.push(null);
-          verifiedSkusRef.current.add(sku); // Marcar como verificado para no intentar de nuevo
-          setLoadingIndRetoma((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(sku);
-            return newSet;
-          });
-          continue; // Saltar este SKU
-        }
-
-        // Agregar delay entre peticiones (excepto la primera)
-        if (i > 0) {
-          await new Promise((resolve) => setTimeout(resolve, 200));
-        }
-
-        try {
-          const response = await tradeInEndpoints.checkSkuForTradeIn({ sku });
-          if (response.success && response.data) {
-            const result = response.data;
-            const indRetoma = result.indRetoma ?? (result.aplica ? 1 : 0);
-            results.push({
-              sku,
-              indRetoma,
-              isBundle,
-            });
-
-            // Si es un bundle, actualizar el bundleInfo con ind_entre_estre
-            if (isBundle) {
-              const storedProducts = JSON.parse(
-                localStorage.getItem("cart-items") || "[]"
-              ) as Array<Record<string, unknown>>;
-              const updatedProducts = storedProducts.map((p) => {
-                if (p.bundleInfo && (p.bundleInfo as BundleInfo).productSku === sku) {
-                  return {
-                    ...p,
-                    bundleInfo: {
-                      ...(p.bundleInfo as BundleInfo),
-                      ind_entre_estre: indRetoma,
-                    },
-                  };
-                }
-                return p;
-              });
-              localStorage.setItem("cart-items", JSON.stringify(updatedProducts));
-            }
-
-            // Marcar SKU como verificado cuando tiene éxito
-            verifiedSkusRef.current.add(sku);
-            // Limpiar de fallos si existía
-            failedSkusRef.current.delete(sku);
-          } else {
-            // Si falla la petición, marcar como fallido
-            failedSkusRef.current.add(sku);
-            console.error(
-              `🚫 Petición falló para SKU ${sku}. NO se reintentará automáticamente para proteger la base de datos.`
-            );
-            results.push(null);
-            // También marcar como verificado en caso de error para no reintentar infinitamente
-            verifiedSkusRef.current.add(sku);
-          }
-        } catch (error) {
-          // Si hay un error en el catch, también marcar como fallido
-          failedSkusRef.current.add(sku);
-          console.error(
-            `🚫 Error al verificar trade-in para SKU ${sku} - Petición bloqueada para evitar sobrecargar BD:`,
-            error
-          );
-          console.error(`🚫 SKU ${sku} NO se reintentará automáticamente.`);
-          results.push(null);
-          // También marcar como verificado en caso de error para no reintentar infinitamente
-          verifiedSkusRef.current.add(sku);
-        } finally {
-          // Remover de loading cuando termine
-          setLoadingIndRetoma((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(sku);
-            return newSet;
-          });
-        }
-      }
-
-      // Actualizar localStorage con los resultados (solo para productos individuales, bundles ya se actualizaron arriba)
-      const storedProducts = JSON.parse(
-        localStorage.getItem("cart-items") || "[]"
-      ) as Array<Record<string, unknown>>;
-      const updatedProducts = storedProducts.map((p) => {
-        // Actualizar productos individuales
-        const result = results.find((r) => r && r.sku === p.sku && !r.isBundle);
-        if (result) {
-          return {
-            ...p,
-            indRetoma: result.indRetoma,
-          };
-        }
-        return p;
-      });
-      localStorage.setItem("cart-items", JSON.stringify(updatedProducts));
-
-      // Disparar evento storage para sincronizar
-      const customEvent = new CustomEvent("localStorageChange", {
-        detail: { key: "cart-items" },
-      });
-      globalThis.dispatchEvent(customEvent);
-      globalThis.dispatchEvent(new Event("storage"));
-
-      // Limpiar todos los loading después de actualizar
+    if (loadingIndRetomaHook.size > 0 || cartProducts.length === 0) {
+      // Si hay SKUs cargando o no hay productos, actualizar
+      setLoadingIndRetoma(loadingIndRetomaHook);
+    } else {
+      // Si terminó de cargar, limpiar
       setLoadingIndRetoma(new Set());
+    }
+  }, [loadingIndRetomaHook, cartProducts.length]);
+
+  // Escuchar cambios de dirección desde el header para re-verificar
+  useEffect(() => {
+    const handleAddressChange = () => {
+      console.log("🔄 Step1: Detectado cambio de dirección, re-verificando trade-in (optimizado)...");
+      setLastAddressChange(Date.now());
+      // Forzar verificación
+      forceVerify();
     };
 
-    verifyTradeIn();
-  }, [cartProducts, lastAddressChange]);
+    window.addEventListener('address-changed', handleAddressChange);
+    return () => {
+      window.removeEventListener('address-changed', handleAddressChange);
+    };
+  }, [forceVerify]);
+
+  // =========================================================================================
+  // FIN LÓGICA DE VERIFICACIÓN CENTRALIZADA
+  // =========================================================================================
 
   // Usar cálculos del hook centralizado
   const total = calculations.total;
@@ -792,8 +650,7 @@ export default function Step1({
     // Si el producto aplica (indRetoma === 1), mostrar el banner guía SIEMPRE
     // Sin importar canPickUp o si el usuario está logueado
     // Limpiar caches de verificación para este SKU para forzar un chequeo fresco
-    verifiedSkusRef.current.delete(skuToRemove);
-    failedSkusRef.current.delete(skuToRemove);
+
 
     // Si el SKU eliminado es el que se estaba editando, limpiarlo
     if (currentTradeInSku === skuToRemove) {
@@ -878,10 +735,10 @@ export default function Step1({
             // Ignorar errores de parseo
           }
         }
-        
+
         const tradeInString = JSON.stringify(tradeIns);
         localStorage.setItem("imagiq_trade_in", tradeInString);
-        
+
         // Verificar que se guardó correctamente
         const verifySave = localStorage.getItem("imagiq_trade_in");
         if (!verifySave || verifySave !== tradeInString) {
@@ -891,7 +748,7 @@ export default function Step1({
         } else {
           console.log("✅ Trade-In guardado correctamente en Step1 para SKU:", currentTradeInSku);
         }
-        
+
         // Disparar eventos de storage para sincronizar
         try {
           globalThis.dispatchEvent(new CustomEvent("localStorageChange", {
@@ -1065,10 +922,10 @@ export default function Step1({
       </div>
       {/* Sugerencias: fila completa debajo del grid principal */}
       <div className="max-w-6xl mx-auto mt-4 mb-4 md:mb-0">
-        <Sugerencias 
-          key={`sugerencias-${cartProducts.map(p => p.sku).join('-')}`} 
-          onAdd={handleAddSugerencia} 
-          cartProducts={cartProducts} 
+        <Sugerencias
+          key={`sugerencias-${cartProducts.map(p => p.sku).join('-')}`}
+          onAdd={handleAddSugerencia}
+          cartProducts={cartProducts}
         />
       </div>
 

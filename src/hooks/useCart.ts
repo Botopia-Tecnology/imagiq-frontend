@@ -480,14 +480,8 @@ export function useCart(): UseCartReturn {
       }
       addProductTimeoutRef.current[productId] = now;
 
-      // Limpiar caché de candidate-stores cuando se agrega un producto
-      try {
-        const { clearGlobalCanPickUpCache } = await import("@/app/carrito/utils/globalCanPickUpCache");
-        clearGlobalCanPickUpCache();
-        console.log('🗑️ [addProduct] Caché limpiado después de agregar producto');
-      } catch (error) {
-        console.error('Error al limpiar caché:', error);
-      }
+      // IMPORTANTE: NO limpiar caché aquí - useDelivery lo maneja automáticamente
+      // cuando detecta cambios en los productos. Limpiar aquí causa race conditions.
 
       // Obtener userId automáticamente si no se proporciona
       const effectiveUserId = userId || getUserId();
@@ -662,13 +656,8 @@ export function useCart(): UseCartReturn {
 
       const productName = productToRemove.name;
 
-      // Limpiar caché de candidate-stores cuando se elimina un producto
-      import("@/app/carrito/utils/globalCanPickUpCache").then(({ clearGlobalCanPickUpCache }) => {
-        clearGlobalCanPickUpCache();
-        console.log('🗑️ [removeProduct] Caché limpiado después de eliminar producto');
-      }).catch((error) => {
-        console.error('Error al limpiar caché:', error);
-      });
+      // IMPORTANTE: NO limpiar caché aquí - useDelivery lo maneja automáticamente
+      // cuando detecta cambios en los productos. Limpiar aquí causa race conditions.
 
       // ✅ Eliminar trade-in del cache si existe para este SKU
       try {
@@ -755,13 +744,10 @@ export function useCart(): UseCartReturn {
         return;
       }
 
-      // Limpiar caché de candidate-stores cuando se actualiza cantidad
-      import("@/app/carrito/utils/globalCanPickUpCache").then(({ clearGlobalCanPickUpCache }) => {
-        clearGlobalCanPickUpCache();
-        console.log('🗑️ [updateQuantity] Caché limpiado después de actualizar cantidad');
-      }).catch((error) => {
-        console.error('Error al limpiar caché:', error);
-      });
+      // NOTA: NO limpiar caché aquí - useDelivery lo detecta automáticamente
+      // y limpia el caché cuando los productos cambian. Limpiar aquí causa
+      // condiciones de carrera donde Step4 lee null antes de que useDelivery
+      // escriba el nuevo valor.
 
       // Actualizar productos localmente
       const newProducts = products.map((p) =>

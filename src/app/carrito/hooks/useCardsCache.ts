@@ -80,22 +80,22 @@ export function useCardsCache() {
   }, [getUserId]);
 
   // Cargar tarjetas (con o sin caché)
-  const loadSavedCards = useCallback(async (forceReload = false) => {
+  const loadSavedCards = useCallback(async (forceReload = false): Promise<DBCard[]> => {
     const userId = getUserId();
     if (!userId) {
       setSavedCards([]);
-      return;
+      return [];
     }
 
     // Si el caché es válido y no se fuerza la recarga, usar caché
     if (!forceReload && isCacheValid() && cardsCache.data) {
-      
+
       setSavedCards(cardsCache.data);
-      return;
+      return cardsCache.data;
     }
 
     try {
-      
+
       setIsLoadingCards(true);
       const encryptedCards =
         await profileService.getUserPaymentMethodsEncrypted(userId);
@@ -128,11 +128,13 @@ export function useCardsCache() {
       };
 
       setSavedCards(decryptedCards);
-    
+      return decryptedCards;
+
     } catch (error) {
-      
+
       setSavedCards([]);
       // No actualizar caché en caso de error
+      return [];
     } finally {
       setIsLoadingCards(false);
     }
@@ -145,12 +147,12 @@ export function useCardsCache() {
 
     // Si ya hay caché válido, no hacer nada
     if (isCacheValid() && cardsCache.data) {
-      
+
       return;
     }
 
     try {
-     
+
       const encryptedCards =
         await profileService.getUserPaymentMethodsEncrypted(userId);
 
@@ -181,9 +183,9 @@ export function useCardsCache() {
         userId: userId,
       };
 
-     
+
     } catch (error) {
-      
+
     }
   }, [getUserId, isCacheValid]);
 
@@ -237,13 +239,13 @@ export function useCardsCache() {
 
       // Si el caché es válido y no se fuerza la recarga, usar caché
       if (!forceReload && isZeroInterestCacheValid(cardIds, productSkus, totalAmount) && zeroInterestCache.data) {
-     
+
         setZeroInterestData(zeroInterestCache.data);
         return;
       }
 
       try {
-       
+
         setIsLoadingZeroInterest(true);
         const result = await checkZeroInterest({
           userId,
@@ -262,9 +264,9 @@ export function useCardsCache() {
         };
 
         setZeroInterestData(result);
-  
+
       } catch (error) {
-        
+
         setZeroInterestData(null);
       } finally {
         setIsLoadingZeroInterest(false);
@@ -281,12 +283,12 @@ export function useCardsCache() {
 
       // Si ya hay caché válido, no hacer nada
       if (isZeroInterestCacheValid(cardIds, productSkus, totalAmount) && zeroInterestCache.data) {
-     
+
         return;
       }
 
       try {
-       
+
         const result = await checkZeroInterest({
           userId,
           cardIds,
@@ -303,9 +305,9 @@ export function useCardsCache() {
           cacheKey,
         };
 
-    
+
       } catch (error) {
-  
+
       }
     },
     [getUserId, isZeroInterestCacheValid, generateZeroInterestCacheKey]

@@ -61,9 +61,10 @@ export default function Step3({
     availableCities,
     availableStoresWhenCanPickUpFalse,
     lastResponse,
+    setAddresses, // New function from useDelivery
   } = useDelivery({
     canFetchFromEndpoint: true, // Permitir llamadas cuando cambia dirección
-    onlyReadCache: true, // Por defecto solo leer del caché (si viene de paso anterior)
+    onlyReadCache: false, // MODIFICADO: Permitir fetch si no hay datos (ej: volver de otro paso con otra dirección)
   });
 
   // Hook para precarga de tarjetas y zero interest
@@ -773,6 +774,19 @@ export default function Step3({
     }
   }, [isInitialTradeInLoading]);
 
+  // PROTECCIÓN: Timeout de seguridad para isRecalculatingPickup
+  React.useEffect(() => {
+    if (isRecalculatingPickup) {
+      // Timeout de seguridad de 10 segundos para evitar skeleton infinito al cambiar dirección
+      const safetyTimer = setTimeout(() => {
+        console.warn('⚠️ [Step3] isRecalculatingPickup estancado detectado (>10s) - Forzando ocultar skeleton');
+        setIsRecalculatingPickup(false);
+      }, 10000);
+
+      return () => clearTimeout(safetyTimer);
+    }
+  }, [isRecalculatingPickup]);
+
   // También forzar recarga cuando el usuario selecciona "Recoger en tienda" y (canPickUp es true O hay Trade In activo)
   // IMPORTANTE: Solo cargar cuando se CAMBIA A tienda, NO cuando se cambia DE tienda a domicilio
   React.useEffect(() => {
@@ -982,6 +996,8 @@ export default function Step3({
     }
   };
   const handleAddressChange = async (newAddress: Address) => {
+    console.log('📍 [Step3] handleAddressChange invocada:', newAddress);
+
     // IMPORTANTE: Si cambió la dirección, marcar que estamos recalculando INMEDIATAMENTE
     // Esto asegura que el skeleton se muestre antes de que se oculte el contenido anterior
     if (newAddress.id && newAddress.id !== lastAddressIdRef.current) {
@@ -995,8 +1011,34 @@ export default function Step3({
     // Actualizar estado local inmediatamente para mejor UX
     setAddress(newAddress);
 
+    // OPTIMISTIC UI: Actualizar la lista de direcciones para mover el "chulito" (checkmark)
+    // inmediatamente, sin esperar al refresco del backend
+    // OPTIMISTIC UI: Actualizar la lista de direcciones para mover el "chulito" (checkmark)
+    // inmediatamente, sin esperar al refresco del backend
+    // FIX: Usar functional update (prev => ...) para evitar usar una lista de direcciones obsoleta
+    // (stale closure) si addAddress acaba de actualizar el estado pero el componente no ha hecho re-render.
+    if (newAddress.id) {
+      setAddresses(currentAddresses => {
+        let addressesList = currentAddresses || [];
+
+        // Safety check: asegurar que la nueva dirección esté en la lista
+        // (por si acaso addAddress no hubiera terminado de actualizar el estado por race condition)
+        const exists = addressesList.some(a => a.id === newAddress.id);
+        if (!exists) {
+          console.log('⚠️ [Step3] Adding missing new address to state in handleAddressChange');
+          addressesList = [newAddress, ...addressesList];
+        }
+
+        return addressesList.map(addr => ({
+          ...addr,
+          esPredeterminada: addr.id === newAddress.id
+        }));
+      });
+    }
+
     // Si la dirección tiene id, sincronizar con el backend y otros componentes
     if (newAddress.id) {
+      console.log('🔄 [Step3] Sincronizando dirección con backend:', newAddress.id);
       try {
         // Usar utility centralizada para sincronizar dirección
         await syncAddress({
@@ -1006,11 +1048,21 @@ export default function Step3({
           loginFn: login,
           fromHeader: false, // Viene del checkout
         });
+        console.log('✅ [Step3] Dirección sincronizada correctamente');
       } catch (error) {
-        console.error('⚠️ Error al sincronizar dirección predeterminada:', error);
+        console.error('⚠️ Error al sincronizar dirección predeterminada en Step3:', error);
         // No bloquear el flujo si falla la sincronización
-        // Guardar al menos en localStorage
+        // Guardar al menos en localStorage (ambas claves)
         localStorage.setItem("checkout-address", JSON.stringify(newAddress));
+
+        // También intentar guardar como default para consistencia local
+        try {
+          const { addressToDireccion } = await import("@/lib/addressSync");
+          const direccion = addressToDireccion(newAddress, user?.email);
+          localStorage.setItem("imagiq_default_address", JSON.stringify(direccion));
+        } catch (e) {
+          console.error("Error updating imagiq_default_address in fallback:", e);
+        }
       }
     } else {
       // Si no tiene id, solo guardar en localStorage (nueva dirección no guardada)
@@ -1076,10 +1128,15 @@ export default function Step3({
   // CRÍTICO: NO mostrar skeleton cuando solo se elimina trade-in
   // Solo mostrar skeleton cuando realmente se está recalculando canPickUp (cambio de dirección)
   // isInitialTradeInLoading solo se usa para la primera carga con trade-in, pero si hay datos en caché no debe mostrar skeleton
+
+  // MODIFICADO: Mostrar skeleton durante recálculo (cambio de dirección) para dar feedback visual claro.
+  // El usuario reportó que "se debe ver el skeleton mejor" y que parecía que no actualizaba.
   const shouldShowSkeleton = (isLoadingCanPickUp && !hasCanPickUpValue) ||
-    (storesLoading && !hasCanPickUpValue && isRecalculatingPickup) || // Solo mostrar skeleton si está recalculando (cambio de dirección)
-    isRecalculatingPickup ||
-    (!hasCanPickUpValue && isInitialTradeInLoading && storesLoading); // Solo mostrar skeleton si realmente está cargando Y no hay datos en caché
+    isRecalculatingPickup || // Mostrar skeleton SIEMPRE que se esté recalculando por cambio de dirección
+    (!hasCanPickUpValue && isInitialTradeInLoading && storesLoading); // Mostrar en carga inicial con trade-in
+
+  // NOTE: REMOVED isRecalculatingPickup conditions to keep UI visible.
+  // The loading state is now handled by individual components via isLoading prop.
 
   // Callback estable para recibir el estado de canPickUp desde Step4OrderSummary
   const handleCanPickUpReady = React.useCallback((canPickUpValue: boolean, isLoading: boolean) => {
@@ -1179,7 +1236,7 @@ export default function Step3({
                       deliveryMethod={deliveryMethod}
                       onMethodChange={handleDeliveryMethodChange}
                       disabled={!effectiveCanPickUp && !hasActiveTradeIn}
-                      isLoading={storesLoading || addressLoading}
+                      isLoading={storesLoading || addressLoading || isRecalculatingPickup}
                       availableStoresWhenCanPickUpFalse={availableStoresWhenCanPickUpFalse}
                       hasActiveTradeIn={hasActiveTradeIn}
                       canPickUp={effectiveCanPickUp}
@@ -1331,8 +1388,8 @@ export default function Step3({
           {/* Botón continuar */}
           <button
             className={`w - full font - bold py - 3 rounded - lg text - base transition text - white ${!canContinue || !tradeInValidation.isValid || isWaitingForCanPickUp
-                ? "bg-gray-400 cursor-not-allowed opacity-70"
-                : "bg-[#222] hover:bg-[#333] cursor-pointer"
+              ? "bg-gray-400 cursor-not-allowed opacity-70"
+              : "bg-[#222] hover:bg-[#333] cursor-pointer"
               } `}
             onClick={handleContinue}
             disabled={!canContinue || !tradeInValidation.isValid || isWaitingForCanPickUp}

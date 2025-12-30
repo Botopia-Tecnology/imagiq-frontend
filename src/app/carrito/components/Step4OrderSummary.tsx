@@ -369,11 +369,9 @@ export default function Step4OrderSummary({
         return;
       }
 
-      // Ya no filtramos por path, si el componente está montado y no tiene datos, los necesita.
-      console.log('🔄 [Step4OrderSummary] Sin caché - Iniciando fetch de respaldo...');
+      console.log('🔄 [Step4OrderSummary] Sin caché - Iniciando fetch de respaldo inmediato...');
 
-      // Hacer la petición asíncronamente sin bloquear
-      // CORRECCIÓN: Pasar addressId para asegurar consistencia
+      // Hacer la petición inmediatamente sin debounce para máxima fluidez
       productEndpoints.getCandidateStores({
         products: productsToCheck,
         user_id: userId,
@@ -382,12 +380,8 @@ export default function Step4OrderSummary({
         .then((response) => {
           if (response.data) {
             console.log('✅ [Step4OrderSummary] Fetch de respaldo exitoso');
-            // Guardar en caché y notificar
-            // Esto disparará el evento canPickUpCache-updated que el listener capturará
             setGlobalCanPickUpCache(cacheKey, response.data.canPickUp, response.data, addressId);
 
-            // Si estábamos en modo silencioso (Step 7), actualizar el estado local manualmente
-            // porque el listener podría no activarse o tener delay
             if (!shouldCalculateCanPickUp) {
               setGlobalCanPickUp(response.data.canPickUp);
             }
@@ -395,13 +389,12 @@ export default function Step4OrderSummary({
         })
         .catch((error) => {
           console.error('❌ [Step4OrderSummary] Error en fetch de respaldo:', error);
-          // Si falla, asegurarnos de quitar loading
           if (shouldCalculateCanPickUp) {
             setIsLoadingCanPickUp(false);
           }
         });
     }
-  }, [products, shouldCalculateCanPickUp]);
+  }, [products, shouldCalculateCanPickUp, isStep1]);
 
   // OPTIMIZACIÓN: En Steps 4-7, NO recalcular automáticamente
   // SOLO recalcular cuando se cambia la dirección desde el navbar
@@ -431,8 +424,9 @@ export default function Step4OrderSummary({
         products.every(p => p.sku && p.sku.trim() !== "");
 
       // Si no hay productos válidos, esperar más tiempo
-      const baseDelay = isFromTradeIn ? 300 : 100;
-      const delay = hasValidProducts ? baseDelay : baseDelay + 200;
+      // Reducido a mínimos absolutos por solicitud de cero latencia
+      const baseDelay = isFromTradeIn ? 50 : 0;
+      const delay = hasValidProducts ? baseDelay : baseDelay + 100;
 
       // Esperar un delay para asegurar que los productos estén completamente cargados
       // especialmente cuando se viene desde "Entrego y Estreno" (los productos se agregan justo antes de navegar)
@@ -476,14 +470,9 @@ export default function Step4OrderSummary({
   // Escuchar cuando el caché se actualiza para volver a leer
   React.useEffect(() => {
     const handleCacheUpdate = () => {
-      console.log('🔔 [Step4OrderSummary] Caché actualizado, volviendo a leer');
-      // Agregar un delay para asegurar que la dirección esté guardada en localStorage
-      // antes de leer del caché (especialmente cuando se agrega una dirección nueva)
-      // El delay más largo asegura que la dirección esté completamente guardada y sincronizada
-      setTimeout(() => {
-        console.log('🔄 [Step4OrderSummary] Ejecutando fetchGlobalCanPickUp después de actualización del caché');
-        fetchGlobalCanPickUp();
-      }, 500);
+      console.log('🔔 [Step4OrderSummary] Caché actualizado, volviendo a leer inmediatamente');
+      // Ejecutar inmediatamente para máxima fluidez
+      fetchGlobalCanPickUp();
     };
 
     if (typeof window !== 'undefined') {
@@ -511,32 +500,10 @@ export default function Step4OrderSummary({
     }
   }, [isLoadingCanPickUp, userClickedWhileLoading]);
 
-  // Verificar periódicamente si el caché se actualizó cuando isLoadingCanPickUp es true
-  // Esto asegura que si el evento canPickUpCache-updated se dispara pero la clave no coincide,
-  // el sistema seguirá verificando hasta que encuentre el valor correcto
-  React.useEffect(() => {
-    if (!isLoadingCanPickUp || !shouldCalculateCanPickUp) {
-      return;
-    }
-
-    console.log('⏳ [Step4OrderSummary] isLoadingCanPickUp es true, iniciando verificación periódica del caché');
-
-    const intervalId = setInterval(() => {
-      console.log('🔄 [Step4OrderSummary] Verificando caché periódicamente...');
-      fetchGlobalCanPickUp();
-    }, 1000); // Verificar cada segundo
-
-    // Limpiar el intervalo después de 30 segundos para evitar bucles infinitos
-    const timeoutId = setTimeout(() => {
-      console.log('⏰ [Step4OrderSummary] Timeout de verificación periódica alcanzado, limpiando intervalo');
-      clearInterval(intervalId);
-    }, 30000);
-
-    return () => {
-      clearInterval(intervalId);
-      clearTimeout(timeoutId);
-    };
-  }, [isLoadingCanPickUp, shouldCalculateCanPickUp, fetchGlobalCanPickUp]);
+  // REMOVED: Polling periódico eliminado - los event listeners son suficientes
+  // El polling cada segundo causaba bucles infinitos y llamadas excesivas
+  // Los event listeners 'canPickUpCache-updated' manejan las actualizaciones del caché
+  // Si después de 30 segundos no hay caché, el fallback fetch en fetchGlobalCanPickUp ya lo maneja
 
   // Notificar cuando canPickUp está listo (no está cargando)
   // IMPORTANTE: Notificar en todos los pasos, no solo en Step1, para que Step3 pueda usar el valor
@@ -619,11 +586,8 @@ export default function Step4OrderSummary({
       // useDelivery.tsx es el encargado de gestionar el ciclo de vida del caché.
       // Si useDelivery decide hacer fetch, limpiará el caché. Si no (debounce),
       // el caché actual sigue siendo válido y evitamos el loop infinito.
-      // Agregar un delay para asegurar que la dirección esté guardada en localStorage
-      // antes de leer del caché (especialmente cuando se agrega una dirección nueva)
-      setTimeout(() => {
-        fetchGlobalCanPickUp();
-      }, 200);
+      // Ejecutar inmediatamente para máxima fluidez
+      fetchGlobalCanPickUp();
     };
 
     globalThis.window.addEventListener("address-changed", handleAddressChange as EventListener);

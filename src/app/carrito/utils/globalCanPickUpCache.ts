@@ -128,6 +128,10 @@ export function getFullCandidateStoresResponseFromCache(key: string): CandidateS
   return cache.fullResponse;
 }
 
+// Throttle para eventos de cache update
+let lastEventTime = 0;
+const MIN_EVENT_INTERVAL = 50; // ms - casi instantáneo pero protege contra bucles infinitos muy cerrados
+
 export function setGlobalCanPickUpCache(
   key: string,
   value: boolean,
@@ -147,11 +151,23 @@ export function setGlobalCanPickUpCache(
 
   // console.log('✅ [Cache] Guardado en caché (memoria + localStorage):', { key: key.substring(0, 50), addressId, canPickUp: value });
 
-  // Disparar evento para notificar que el caché se actualizó
+  // Disparar evento con throttle para evitar bursts
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('canPickUpCache-updated', {
-      detail: { key, value, addressId }
-    }));
+    const now = Date.now();
+    if (now - lastEventTime >= MIN_EVENT_INTERVAL) {
+      lastEventTime = now;
+      window.dispatchEvent(new CustomEvent('canPickUpCache-updated', {
+        detail: { key, value, addressId }
+      }));
+    } else {
+      // Si el intervalo es muy corto, agendar el evento para después
+      setTimeout(() => {
+        lastEventTime = Date.now();
+        window.dispatchEvent(new CustomEvent('canPickUpCache-updated', {
+          detail: { key, value, addressId }
+        }));
+      }, MIN_EVENT_INTERVAL - (now - lastEventTime));
+    }
   }
 }
 

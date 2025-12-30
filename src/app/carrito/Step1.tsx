@@ -530,7 +530,9 @@ export default function Step1({
   // Solo actualiza el estado, el avance automático se maneja en Step4OrderSummary
   const handleCanPickUpReady = React.useCallback(
     (isReady: boolean, isLoading: boolean) => {
+      console.log('🔔 [Step1] handleCanPickUpReady called:', { isReady, isLoading });
       setIsLoadingCanPickUpGlobal(isLoading);
+      console.log('🔔 [Step1] isLoadingCanPickUpGlobal set to:', isLoading);
       // El avance automático ahora se maneja en Step4OrderSummary con userClickedWhileLoading
     },
     []

@@ -1133,7 +1133,8 @@ export default function Step3({
   // El usuario reportó que "se debe ver el skeleton mejor" y que parecía que no actualizaba.
   const shouldShowSkeleton = (isLoadingCanPickUp && !hasCanPickUpValue) ||
     isRecalculatingPickup || // Mostrar skeleton SIEMPRE que se esté recalculando por cambio de dirección
-    (!hasCanPickUpValue && isInitialTradeInLoading && storesLoading); // Mostrar en carga inicial con trade-in
+    (!hasCanPickUpValue && isInitialTradeInLoading && storesLoading) || // Mostrar en carga inicial con trade-in
+    (storesLoading && !hasLoadedPickupOnceRef.current); // FIX: Mostrar skeleton cuando se regresa al paso y está cargando stores
 
   // NOTE: REMOVED isRecalculatingPickup conditions to keep UI visible.
   // The loading state is now handled by individual components via isLoading prop.

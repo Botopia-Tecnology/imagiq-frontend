@@ -15,6 +15,7 @@ import type { Address } from "@/types/address";
 import { useAnalyticsWithUser } from "@/lib/analytics";
 import { tradeInEndpoints } from "@/lib/api";
 import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
+import { useTradeInVerification } from "@/hooks/useTradeInVerification";
 import { toast } from "sonner";
 import { useCardsCache } from "./hooks/useCardsCache";
 import { useAuthContext } from "@/features/auth/context";
@@ -60,9 +61,10 @@ export default function Step3({
     availableCities,
     availableStoresWhenCanPickUpFalse,
     lastResponse,
+    setAddresses, // New function from useDelivery
   } = useDelivery({
     canFetchFromEndpoint: true, // Permitir llamadas cuando cambia dirección
-    onlyReadCache: true, // Por defecto solo leer del caché (si viene de paso anterior)
+    onlyReadCache: false, // MODIFICADO: Permitir fetch si no hay datos (ej: volver de otro paso con otra dirección)
   });
 
   // Hook para precarga de tarjetas y zero interest
@@ -174,14 +176,14 @@ export default function Step3({
       // Actualizar localStorage con el formato correcto
       const tradeInString = JSON.stringify(newMap);
       localStorage.setItem("imagiq_trade_in", tradeInString);
-      
+
       // Verificar que se guardó correctamente
       const verifySave = localStorage.getItem("imagiq_trade_in");
       if (!verifySave || verifySave !== tradeInString) {
         console.error("❌ ERROR: Trade-In NO se guardó correctamente en Step3 (conversión formato)");
         localStorage.setItem("imagiq_trade_in", tradeInString);
       }
-      
+
       // Disparar eventos de storage
       try {
         globalThis.dispatchEvent(new CustomEvent("localStorageChange", {
@@ -236,7 +238,7 @@ export default function Step3({
         "checkout-address",
         null
       );
-      
+
       // Si es invitado sin dirección y el método de entrega es domicilio, redirigir a Step2
       if (!savedAddress && deliveryMethod === "domicilio" && userRole === 3) {
         console.log("⚠️ Usuario invitado sin dirección, redirigiendo a Step2");
@@ -244,7 +246,7 @@ export default function Step3({
         router.push("/carrito/step2");
         return;
       }
-      
+
       // También verificar el estado de address del hook useDelivery (solo para invitados)
       if (!address && deliveryMethod === "domicilio" && hasCompletedInitialLoadRef.current && userRole === 3) {
         console.log("⚠️ Usuario invitado sin dirección en useDelivery, redirigiendo a Step2");
@@ -284,14 +286,14 @@ export default function Step3({
       if (Object.keys(updatedMap).length > 0) {
         const tradeInString = JSON.stringify(updatedMap);
         localStorage.setItem("imagiq_trade_in", tradeInString);
-        
+
         // Verificar que se guardó correctamente
         const verifySave = localStorage.getItem("imagiq_trade_in");
         if (!verifySave || verifySave !== tradeInString) {
           console.error("❌ ERROR: Trade-In NO se guardó correctamente en Step3 (remove)");
           localStorage.setItem("imagiq_trade_in", tradeInString);
         }
-        
+
         // Disparar eventos de storage
         try {
           globalThis.dispatchEvent(new CustomEvent("localStorageChange", {
@@ -303,7 +305,7 @@ export default function Step3({
         }
       } else {
         localStorage.removeItem("imagiq_trade_in");
-        
+
         // Disparar eventos de storage
         try {
           globalThis.dispatchEvent(new CustomEvent("localStorageChange", {
@@ -369,14 +371,8 @@ export default function Step3({
   const hasActiveTradeIn = productsWithTradeIn.length > 0;
 
   // DEBUG: Log para verificar el estado de hasActiveTradeIn
-  React.useEffect(() => {
-    console.log('🔍 DEBUG hasActiveTradeIn:', {
-      hasActiveTradeIn,
-      productsWithTradeInCount: productsWithTradeIn.length,
-      productsWithTradeIn: productsWithTradeIn.map(p => p.sku),
-      totalProducts: products.length,
-    });
-  }, [hasActiveTradeIn, productsWithTradeIn, products]);
+  // React.useEffect(() => {
+  // }, [hasActiveTradeIn, productsWithTradeIn, products]);
 
 
   // Verificar si TODOS los productos con trade-in pueden ser recogidos en tienda
@@ -446,12 +442,10 @@ export default function Step3({
     // Si effectiveCanPickUp global es true, SIEMPRE permitir seleccionar tienda
     // El canPickUp global tiene prioridad sobre el canPickUp individual de cada producto
     if (effectiveCanPickUp === true) {
-      console.log('✅ canPickUp global es true - permitir tienda independientemente de productos individuales');
       return;
     }
 
     if (!hasActiveTradeIn && hasProductWithoutPickup && deliveryMethod === "tienda") {
-      console.log('⚠️ Hay productos sin pickup y método es tienda - cambiando a domicilio');
       // setDeliveryMethod ya guarda automáticamente en localStorage
       setDeliveryMethod("domicilio");
     }
@@ -507,167 +501,24 @@ export default function Step3({
         tradeInStoresLoadedRef.current = true;
         // NO activar isInitialTradeInLoading aquí - forceRefreshStores lo manejará si es necesario
         // Si hay datos en caché, forceRefreshStores los usará inmediatamente sin skeleton
+
         forceRefreshStores();
       }
     }
   }, [hasActiveTradeIn, deliveryMethod, setDeliveryMethod, storesLoading, forceRefreshStores, isInitialTradeInLoading, stores.length, availableStoresWhenCanPickUpFalse.length]);
 
-  // Ref para rastrear SKUs que ya fueron verificados (evita loops infinitos)
-  const verifiedSkusRef = React.useRef<Set<string>>(new Set());
-  // Ref para rastrear SKUs que fallaron (evita reintentos de peticiones fallidas)
-  const failedSkusRef = React.useRef<Set<string>>(new Set());
+  // =========================================================================================
+  // OPTIMIZACIÓN: NUEVA LÓGICA DE VERIFICACIÓN CENTRALIZADA CON CACHÉ (useTradeInVerification)
+  // =========================================================================================
 
-  // Función auxiliar para verificar si un SKU necesita verificación (solo productos individuales)
-  const shouldVerifySku = React.useCallback((sku: string, productList: typeof products): boolean => {
-    const product = productList.find((p) => p.sku === sku);
-    // Solo productos sin bundleInfo y sin indRetoma definido
-    const needsVerification = Boolean(
-      product && 
-      !product.bundleInfo && 
-      product.indRetoma === undefined
-    );
-    const notVerifiedYet = !verifiedSkusRef.current.has(sku);
-    const notFailedBefore = !failedSkusRef.current.has(sku);
-    return needsVerification && notVerifiedYet && notFailedBefore;
-  }, []);
+  // Usar el hook para verificar en segundo plano
+  useTradeInVerification({
+    products
+  });
 
-  // Función auxiliar para actualizar localStorage con el resultado de trade-in
-  const updateProductIndRetoma = React.useCallback((sku: string, indRetoma: number, isBundle: boolean = false) => {
-    const storedProducts = JSON.parse(
-      localStorage.getItem("cart-items") || "[]"
-    ) as Array<Record<string, unknown>>;
-
-    if (isBundle) {
-      // Si es bundle, actualizar bundleInfo.ind_entre_estre
-      const updatedProducts = storedProducts.map((p) => {
-        if (p.bundleInfo && (p.bundleInfo as BundleInfo).productSku === sku) {
-          return {
-            ...p,
-            bundleInfo: {
-              ...(p.bundleInfo as BundleInfo),
-              ind_entre_estre: indRetoma,
-            },
-          };
-        }
-        return p;
-      });
-      localStorage.setItem("cart-items", JSON.stringify(updatedProducts));
-    } else {
-      // Si es producto normal, actualizar indRetoma
-      const updatedProducts = storedProducts.map((p) => {
-        if (p.sku === sku) {
-          return { ...p, indRetoma };
-        }
-        return p;
-      });
-      localStorage.setItem("cart-items", JSON.stringify(updatedProducts));
-    }
-
-    // Disparar evento storage para sincronizar
-    const customEvent = new CustomEvent("localStorageChange", {
-      detail: { key: "cart-items" },
-    });
-    globalThis.dispatchEvent(customEvent);
-    globalThis.dispatchEvent(new Event("storage"));
-  }, []);
-
-  // Función auxiliar para procesar un SKU individual
-  const processSkuVerification = React.useCallback(async (sku: string, isBundle: boolean = false) => {
-    // PROTECCIÓN: Verificar si este SKU ya falló antes
-    if (failedSkusRef.current.has(sku)) {
-      console.error(`🚫 SKU ${sku} ya falló anteriormente. NO se reintentará para evitar sobrecargar la base de datos.`);
-      verifiedSkusRef.current.add(sku);
-      return;
-    }
-
-    try {
-      // Para bundles, usar productSku; para productos normales, usar sku
-      const skuToCheck = isBundle ? sku : sku; // sku ya es productSku si es bundle
-      const response = await tradeInEndpoints.checkSkuForTradeIn({ sku: skuToCheck });
-      if (!response.success || !response.data) {
-        failedSkusRef.current.add(sku);
-        console.error(`🚫 Petición falló para SKU ${skuToCheck}. NO se reintentará automáticamente para proteger la base de datos.`);
-        verifiedSkusRef.current.add(sku);
-        return;
-      }
-
-      const result = response.data;
-      const indRetoma = result.indRetoma ?? (result.aplica ? 1 : 0);
-
-      // Marcar SKU como verificado ANTES de actualizar localStorage (evita loop)
-      verifiedSkusRef.current.add(sku);
-      failedSkusRef.current.delete(sku);
-
-      updateProductIndRetoma(sku, indRetoma, isBundle);
-    } catch (error) {
-      failedSkusRef.current.add(sku);
-      console.error(
-        `🚫 Error al verificar trade-in para SKU ${sku} - Petición bloqueada para evitar sobrecargar BD:`,
-        error
-      );
-      console.error(`🚫 SKU ${sku} NO se reintentará automáticamente.`);
-      verifiedSkusRef.current.add(sku);
-    }
-  }, [updateProductIndRetoma]);
-
-  // Verificar indRetoma para cada producto único en segundo plano (sin mostrar nada en UI)
-  React.useEffect(() => {
-    if (products.length === 0) return;
-
-    const verifyTradeIn = async () => {
-      // Obtener SKUs únicos de productos individuales (sin duplicados)
-      const uniqueSkus = Array.from(
-        new Set(products.map((p) => p.sku))
-      );
-
-      // Obtener productSku únicos de bundles (sin duplicados)
-      const uniqueBundleSkus = Array.from(
-        new Set(
-          products
-            .filter((p) => p.bundleInfo?.productSku)
-            .map((p) => p.bundleInfo!.productSku)
-        )
-      );
-
-      // Filtrar productos individuales que necesitan verificación
-      const productsToVerify = uniqueSkus.filter((sku) => shouldVerifySku(sku, products));
-
-      // Filtrar bundles que necesitan verificación (usando productSku)
-      const bundlesToVerify = uniqueBundleSkus.filter((productSku) => {
-        const bundleProduct = products.find(
-          (p) => p.bundleInfo?.productSku === productSku
-        );
-        const needsVerification =
-          bundleProduct &&
-          bundleProduct.bundleInfo?.ind_entre_estre === undefined;
-        const notVerifiedYet = !verifiedSkusRef.current.has(productSku);
-        const notFailedBefore = !failedSkusRef.current.has(productSku);
-        return needsVerification && notVerifiedYet && notFailedBefore;
-      });
-
-      // Combinar todos los SKUs a verificar (productos individuales + bundles)
-      const allSkusToVerify = [
-        ...productsToVerify.map((sku) => ({ sku, isBundle: false })),
-        ...bundlesToVerify.map((sku) => ({ sku, isBundle: true })),
-      ];
-
-      if (allSkusToVerify.length === 0) return;
-
-      // Verificar cada SKU único en segundo plano
-      for (let i = 0; i < allSkusToVerify.length; i++) {
-        const { sku, isBundle } = allSkusToVerify[i];
-
-        // Agregar delay entre peticiones (excepto la primera)
-        if (i > 0) {
-          await new Promise((resolve) => setTimeout(resolve, 200));
-        }
-
-        await processSkuVerification(sku, isBundle);
-      }
-    };
-
-    verifyTradeIn();
-  }, [products, shouldVerifySku, processSkuVerification]);
+  // =========================================================================================
+  // FIN LÓGICA DE VERIFICACIÓN CENTRALIZADA
+  // =========================================================================================
 
   // Estado para controlar el loading manual cuando se espera canPickUp
   const [isWaitingForCanPickUp, setIsWaitingForCanPickUp] = React.useState(false);
@@ -915,6 +766,19 @@ export default function Step3({
     }
   }, [isInitialTradeInLoading]);
 
+  // PROTECCIÓN: Timeout de seguridad para isRecalculatingPickup
+  React.useEffect(() => {
+    if (isRecalculatingPickup) {
+      // Timeout de seguridad de 10 segundos para evitar skeleton infinito al cambiar dirección
+      const safetyTimer = setTimeout(() => {
+        console.warn('⚠️ [Step3] isRecalculatingPickup estancado detectado (>10s) - Forzando ocultar skeleton');
+        setIsRecalculatingPickup(false);
+      }, 10000);
+
+      return () => clearTimeout(safetyTimer);
+    }
+  }, [isRecalculatingPickup]);
+
   // También forzar recarga cuando el usuario selecciona "Recoger en tienda" y (canPickUp es true O hay Trade In activo)
   // IMPORTANTE: Solo cargar cuando se CAMBIA A tienda, NO cuando se cambia DE tienda a domicilio
   React.useEffect(() => {
@@ -1124,6 +988,8 @@ export default function Step3({
     }
   };
   const handleAddressChange = async (newAddress: Address) => {
+    console.log('📍 [Step3] handleAddressChange invocada:', newAddress);
+
     // IMPORTANTE: Si cambió la dirección, marcar que estamos recalculando INMEDIATAMENTE
     // Esto asegura que el skeleton se muestre antes de que se oculte el contenido anterior
     if (newAddress.id && newAddress.id !== lastAddressIdRef.current) {
@@ -1137,8 +1003,34 @@ export default function Step3({
     // Actualizar estado local inmediatamente para mejor UX
     setAddress(newAddress);
 
+    // OPTIMISTIC UI: Actualizar la lista de direcciones para mover el "chulito" (checkmark)
+    // inmediatamente, sin esperar al refresco del backend
+    // OPTIMISTIC UI: Actualizar la lista de direcciones para mover el "chulito" (checkmark)
+    // inmediatamente, sin esperar al refresco del backend
+    // FIX: Usar functional update (prev => ...) para evitar usar una lista de direcciones obsoleta
+    // (stale closure) si addAddress acaba de actualizar el estado pero el componente no ha hecho re-render.
+    if (newAddress.id) {
+      setAddresses(currentAddresses => {
+        let addressesList = currentAddresses || [];
+
+        // Safety check: asegurar que la nueva dirección esté en la lista
+        // (por si acaso addAddress no hubiera terminado de actualizar el estado por race condition)
+        const exists = addressesList.some(a => a.id === newAddress.id);
+        if (!exists) {
+          console.log('⚠️ [Step3] Adding missing new address to state in handleAddressChange');
+          addressesList = [newAddress, ...addressesList];
+        }
+
+        return addressesList.map(addr => ({
+          ...addr,
+          esPredeterminada: addr.id === newAddress.id
+        }));
+      });
+    }
+
     // Si la dirección tiene id, sincronizar con el backend y otros componentes
     if (newAddress.id) {
+      console.log('🔄 [Step3] Sincronizando dirección con backend:', newAddress.id);
       try {
         // Usar utility centralizada para sincronizar dirección
         await syncAddress({
@@ -1148,11 +1040,21 @@ export default function Step3({
           loginFn: login,
           fromHeader: false, // Viene del checkout
         });
+        console.log('✅ [Step3] Dirección sincronizada correctamente');
       } catch (error) {
-        console.error('⚠️ Error al sincronizar dirección predeterminada:', error);
+        console.error('⚠️ Error al sincronizar dirección predeterminada en Step3:', error);
         // No bloquear el flujo si falla la sincronización
-        // Guardar al menos en localStorage
+        // Guardar al menos en localStorage (ambas claves)
         localStorage.setItem("checkout-address", JSON.stringify(newAddress));
+
+        // También intentar guardar como default para consistencia local
+        try {
+          const { addressToDireccion } = await import("@/lib/addressSync");
+          const direccion = addressToDireccion(newAddress, user?.email);
+          localStorage.setItem("imagiq_default_address", JSON.stringify(direccion));
+        } catch (e) {
+          console.error("Error updating imagiq_default_address in fallback:", e);
+        }
       }
     } else {
       // Si no tiene id, solo guardar en localStorage (nueva dirección no guardada)
@@ -1218,10 +1120,16 @@ export default function Step3({
   // CRÍTICO: NO mostrar skeleton cuando solo se elimina trade-in
   // Solo mostrar skeleton cuando realmente se está recalculando canPickUp (cambio de dirección)
   // isInitialTradeInLoading solo se usa para la primera carga con trade-in, pero si hay datos en caché no debe mostrar skeleton
+
+  // MODIFICADO: Mostrar skeleton durante recálculo (cambio de dirección) para dar feedback visual claro.
+  // El usuario reportó que "se debe ver el skeleton mejor" y que parecía que no actualizaba.
   const shouldShowSkeleton = (isLoadingCanPickUp && !hasCanPickUpValue) ||
-    (storesLoading && !hasCanPickUpValue && isRecalculatingPickup) || // Solo mostrar skeleton si está recalculando (cambio de dirección)
-    isRecalculatingPickup ||
-    (!hasCanPickUpValue && isInitialTradeInLoading && storesLoading); // Solo mostrar skeleton si realmente está cargando Y no hay datos en caché
+    isRecalculatingPickup || // Mostrar skeleton SIEMPRE que se esté recalculando por cambio de dirección
+    (!hasCanPickUpValue && isInitialTradeInLoading && storesLoading) || // Mostrar en carga inicial con trade-in
+    (storesLoading && !hasLoadedPickupOnceRef.current); // FIX: Mostrar skeleton cuando se regresa al paso y está cargando stores
+
+  // NOTE: REMOVED isRecalculatingPickup conditions to keep UI visible.
+  // The loading state is now handled by individual components via isLoading prop.
 
   // Callback estable para recibir el estado de canPickUp desde Step4OrderSummary
   const handleCanPickUpReady = React.useCallback((canPickUpValue: boolean, isLoading: boolean) => {
@@ -1321,7 +1229,7 @@ export default function Step3({
                       deliveryMethod={deliveryMethod}
                       onMethodChange={handleDeliveryMethodChange}
                       disabled={!effectiveCanPickUp && !hasActiveTradeIn}
-                      isLoading={storesLoading || addressLoading}
+                      isLoading={storesLoading || addressLoading || isRecalculatingPickup}
                       availableStoresWhenCanPickUpFalse={availableStoresWhenCanPickUpFalse}
                       hasActiveTradeIn={hasActiveTradeIn}
                       canPickUp={effectiveCanPickUp}
@@ -1472,10 +1380,10 @@ export default function Step3({
 
           {/* Botón continuar */}
           <button
-            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${!canContinue || !tradeInValidation.isValid || isWaitingForCanPickUp
+            className={`w - full font - bold py - 3 rounded - lg text - base transition text - white ${!canContinue || !tradeInValidation.isValid || isWaitingForCanPickUp
               ? "bg-gray-400 cursor-not-allowed opacity-70"
               : "bg-[#222] hover:bg-[#333] cursor-pointer"
-              }`}
+              } `}
             onClick={handleContinue}
             disabled={!canContinue || !tradeInValidation.isValid || isWaitingForCanPickUp}
           >

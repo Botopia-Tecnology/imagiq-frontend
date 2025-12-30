@@ -178,11 +178,14 @@ export default function Step4OrderSummary({
     onFinishPaymentRef.current = onFinishPayment;
   }, [onFinishPayment]);
 
-  // OPTIMIZACIÓN: SOLO leer del caché, NO hacer llamadas al endpoint
-  // useDelivery en Step1 es el único que hace llamadas y llena el caché
-  // Este componente solo consume el caché para mostrar el valor
+  // Ref estable para fetchGlobalCanPickUp (evita stale closures en event listener)
+  const fetchGlobalCanPickUpRef = React.useRef<(() => Promise<void>) | null>(null);
+
+  // Función para leer el valor de `canPickUp` desde el caché (solo lectura, no fetching)
+  // Se ejecuta cuando el componente se monta Y cuando el caché se actualiza desde useDelivery
+  // IMPORTANTE: Esta función SOLO lee del caché, NO hace llamadas al endpoint
   const fetchGlobalCanPickUp = React.useCallback(async () => {
-    // console.log('📖 [Step4OrderSummary] fetchGlobalCanPickUp - SOLO leyendo del caché');
+
 
     // IMPORTANTE: Siempre intentar leer del caché, incluso cuando shouldCalculateCanPickUp es false
     // Esto es necesario para Step7 que debe mostrar el valor de canPickUp del caché
@@ -200,9 +203,11 @@ export default function Step4OrderSummary({
 
     // Si shouldFetch es false, solo leer del caché sin establecer loading
     // Esto permite que Step7 muestre el valor del caché sin hacer peticiones
-    if (!shouldFetch) {
-      console.log('📖 [Step4OrderSummary] shouldCalculateCanPickUp=false, solo leyendo del caché (Step7)');
-    }
+
+
+    // CORRECCIÓN CRÍTICA: Si estamos en Step1, NUNCA hacer fetch desde aquí
+    // useDelivery.tsx se encarga de todo el ciclo de vida en Step1
+
 
     // IMPORTANTE: Obtener userId de forma consistente usando la utilidad centralizada
     const { getUserId } = await import('@/app/carrito/utils/getUserId');
@@ -215,7 +220,7 @@ export default function Step4OrderSummary({
       return;
     }
 
-    console.log('✅ [Step4OrderSummary] UserId obtenido:', userId);
+
 
     // Preparar TODOS los productos del carrito para construir la clave del caché
     // IMPORTANTE: Usar SKU regular (NO skuPostback) para coincidir con useDelivery
@@ -231,35 +236,24 @@ export default function Step4OrderSummary({
     if (typeof globalThis.window !== "undefined") {
       try {
         let savedAddress = globalThis.window.localStorage.getItem("checkout-address");
-        console.log('🔍 [Step4OrderSummary] checkout-address raw:', savedAddress);
-        
-        // Si no hay checkout-address, intentar usar imagiq_default_address como fallback
-        if (!savedAddress || savedAddress === "null" || savedAddress === "undefined") {
-          console.log('⚠️ [Step4OrderSummary] No hay checkout-address, intentando con imagiq_default_address...');
+        if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
           const defaultAddress = globalThis.window.localStorage.getItem("imagiq_default_address");
           if (defaultAddress && defaultAddress !== "null" && defaultAddress !== "undefined") {
             // Copiar imagiq_default_address a checkout-address para mantener consistencia
             globalThis.window.localStorage.setItem("checkout-address", defaultAddress);
             savedAddress = defaultAddress;
-            console.log('✅ [Step4OrderSummary] imagiq_default_address copiado a checkout-address');
           }
         }
-        
+
         if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
           const parsed = JSON.parse(savedAddress) as { id?: string; ciudad?: string; linea_uno?: string };
-          console.log('🔍 [Step4OrderSummary] checkout-address parsed:', { ciudad: parsed.ciudad, linea_uno: parsed.linea_uno, id: parsed.id });
           // Verificar que la dirección tenga al menos los campos mínimos (ciudad y línea_uno)
           if (parsed.ciudad && parsed.linea_uno) {
             hasValidAddress = true;
             if (parsed?.id) {
               addressId = parsed.id;
             }
-            console.log('✅ [Step4OrderSummary] Dirección válida encontrada');
-          } else {
-            console.log('⚠️ [Step4OrderSummary] Dirección sin ciudad o linea_uno');
           }
-        } else {
-          console.log('⚠️ [Step4OrderSummary] No hay checkout-address válido');
         }
       } catch (error) {
         console.error(
@@ -271,7 +265,7 @@ export default function Step4OrderSummary({
 
     // Si no hay dirección válida, no mostrar loading, solo mostrar null
     if (!hasValidAddress) {
-      console.log('❌ [Step4OrderSummary] No hay dirección válida, retornando null');
+
       setGlobalCanPickUp(null);
       setIsLoadingCanPickUp(false);
       return;
@@ -284,110 +278,104 @@ export default function Step4OrderSummary({
       addressId,
     });
 
-    console.log('🔑 [Step4OrderSummary] Buscando en caché con clave:', {
-      userId,
-      addressId,
-      productsCount: productsToCheck.length,
-      cacheKey: cacheKey.substring(0, 100) + '...'
-    });
-
-    // DEBUG: Mostrar TODA la información del caché
-    console.log('🔍 [Step4OrderSummary] DEBUG COMPLETO DEL CACHÉ:');
-    console.log('  - userId:', userId);
-    console.log('  - addressId:', addressId);
-    console.log('  - productsToCheck:', productsToCheck);
-    console.log('  - cacheKey completa:', cacheKey);
-
-    // Verificar si hay algo en localStorage
-    if (typeof window !== 'undefined') {
-      const stored = window.localStorage.getItem('imagiq_candidate_stores_cache');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          console.log('📦 [Step4OrderSummary] Caché encontrado en localStorage:');
-          console.log('  - key en caché:', parsed.key);
-          console.log('  - addressId en caché:', parsed.addressId);
-          console.log('  - canPickUp en caché:', parsed.value);
-          console.log('  - timestamp:', new Date(parsed.timestamp).toLocaleString());
-          console.log('  - ¿Las claves coinciden?', parsed.key === cacheKey);
-        } catch (e) {
-          console.error('  - Error parseando caché:', e);
-        }
-      } else {
-        console.log('📦 [Step4OrderSummary] NO hay caché en localStorage');
-      }
-    }
-
     const cachedValue = getGlobalCanPickUpFromCache(cacheKey);
 
     if (cachedValue !== null) {
-      console.log('✅ [Step4OrderSummary] Valor encontrado en caché:', cachedValue);
       setGlobalCanPickUp(cachedValue);
       setIsLoadingCanPickUp(false);
-      console.log('✅ [Step4OrderSummary] isLoadingCanPickUp establecido en false');
       return;
     }
 
-    console.log('⚠️ [Step4OrderSummary] No hay valor en caché para esta clave');
-    console.log('🔍 [Step4OrderSummary] Detalles de la búsqueda:', {
-      cacheKey: cacheKey.substring(0, 100) + '...',
-      addressId,
-      userId,
-      productsCount: productsToCheck.length,
-      shouldFetch
-    });
-    
     // Si no hay caché disponible:
     // - Si shouldCalculateCanPickUp es true (Steps 1-6): establecer loading=true
     // - Si solo es por debug (Step 7): establecer null sin loading para no bloquear la UI
     setGlobalCanPickUp(null);
-    
+
     // CORRECCIÓN: Si no hay datos en caché, SIEMPRE intentar hacer fetch de respaldo
     // Si shouldCalculateCanPickUp es true, mostramos loading.
     // Si es false (Step 7), hacemos fetch silencioso.
-    
+
     if (shouldCalculateCanPickUp) {
       setIsLoadingCanPickUp(true);
-      console.log('⏳ [Step4OrderSummary] isLoadingCanPickUp establecido en true (esperando caché o fetch respaldo)');
     } else {
       setIsLoadingCanPickUp(false);
-      console.log('📖 [Step4OrderSummary] Modo pasivo/debug (Step 7), fetch silencioso iniciado');
     }
 
     // Intentar hacer fetch de respaldo siempre que no haya caché
     // Esto soluciona el problema de que el caché no se llena tras un refresh en steps 4-7
     if (typeof window !== 'undefined') {
-       // Ya no filtramos por path, si el componente está montado y no tiene datos, los necesita.
-        console.log('🔄 [Step4OrderSummary] Sin caché - Iniciando fetch de respaldo...');
-        
-        // Hacer la petición asíncronamente sin bloquear
-        productEndpoints.getCandidateStores({
-          products: productsToCheck,
-          user_id: userId
-        })
+      // Si es Step1, NO hacer fetch de respaldo (ya lo hace useDelivery)
+      if (isStep1) {
+        return;
+      }
+
+
+
+      // Hacer la petición inmediatamente sin debounce para máxima fluidez
+      productEndpoints.getCandidateStores({
+        products: productsToCheck,
+        user_id: userId,
+        addressId: addressId || undefined
+      })
         .then((response) => {
           if (response.data) {
-            console.log('✅ [Step4OrderSummary] Fetch de respaldo exitoso');
-            // Guardar en caché y notificar
-            // Esto disparará el evento canPickUpCache-updated que el listener capturará
+
             setGlobalCanPickUpCache(cacheKey, response.data.canPickUp, response.data, addressId);
-            
-            // Si estábamos en modo silencioso (Step 7), actualizar el estado local manualmente
-            // porque el listener podría no activarse o tener delay
+
             if (!shouldCalculateCanPickUp) {
-               setGlobalCanPickUp(response.data.canPickUp);
+              setGlobalCanPickUp(response.data.canPickUp);
             }
           }
         })
         .catch((error) => {
           console.error('❌ [Step4OrderSummary] Error en fetch de respaldo:', error);
-          // Si falla, asegurarnos de quitar loading
           if (shouldCalculateCanPickUp) {
             setIsLoadingCanPickUp(false);
           }
         });
     }
-  }, [products, shouldCalculateCanPickUp]);
+  }, [products, shouldCalculateCanPickUp, isStep1]);
+
+  // Safety timeout para evitar que se quede cargando indefinidamente
+  // IMPORTANTE: Solo detener el loading, NO cambiar el valor de canPickUp
+  // Si el endpoint ya respondió con un valor, ese valor debe prevalecer
+  React.useEffect(() => {
+    if (isLoadingCanPickUp) {
+      const timer = setTimeout(() => {
+        if (isLoadingCanPickUp) {
+          console.warn('⚠️ [Step4OrderSummary] Safety timeout triggered - Forcing stop loading');
+          setIsLoadingCanPickUp(false);
+          // NO cambiar globalCanPickUp - si el endpoint respondió, su valor debe mantenerse
+        }
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoadingCanPickUp]);
+
+  // Actualizar la ref cada vez que cambie la función
+  React.useEffect(() => {
+    fetchGlobalCanPickUpRef.current = fetchGlobalCanPickUp;
+  }, [fetchGlobalCanPickUp]);
+
+  // Escuchar actualizaciones del caché de canPickUp (disparadas por useDelivery)
+  // Esto es CRÍTICO para que Step4 se actualice cuando useDelivery termina de cargar (Step 1)
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleCacheUpdate = async (event: Event) => {
+      // Usar la ref para evitar stale closures
+      if (fetchGlobalCanPickUpRef.current) {
+        await fetchGlobalCanPickUpRef.current();
+      }
+    };
+
+    window.addEventListener('canPickUpCache-updated', handleCacheUpdate);
+
+    return () => {
+      window.removeEventListener('canPickUpCache-updated', handleCacheUpdate);
+    };
+  }, []); // ✅ Sin dependencias, listener estable
+
 
   // OPTIMIZACIÓN: En Steps 4-7, NO recalcular automáticamente
   // SOLO recalcular cuando se cambia la dirección desde el navbar
@@ -399,7 +387,7 @@ export default function Step4OrderSummary({
     if (!shouldCalculateCanPickUp) {
       // Ejecutar fetchGlobalCanPickUp para leer del caché (no hará peticiones porque shouldFetch será false)
       if (products.length > 0) {
-        console.log('📖 [Step4OrderSummary] Step7: Leyendo canPickUp del caché');
+
         fetchGlobalCanPickUp();
       }
       return;
@@ -417,8 +405,9 @@ export default function Step4OrderSummary({
         products.every(p => p.sku && p.sku.trim() !== "");
 
       // Si no hay productos válidos, esperar más tiempo
-      const baseDelay = isFromTradeIn ? 300 : 100;
-      const delay = hasValidProducts ? baseDelay : baseDelay + 200;
+      // Reducido a mínimos absolutos por solicitud de cero latencia
+      const baseDelay = isFromTradeIn ? 50 : 0;
+      const delay = hasValidProducts ? baseDelay : baseDelay + 100;
 
       // Esperar un delay para asegurar que los productos estén completamente cargados
       // especialmente cuando se viene desde "Entrego y Estreno" (los productos se agregan justo antes de navegar)
@@ -431,13 +420,10 @@ export default function Step4OrderSummary({
           if (allProductsValid) {
             // NO resetear userClickedWhileLoading aquí - solo cuando cambian los productos o shouldCalculateCanPickUp
             // Llamar a fetch (la lógica de si debe ejecutarse está dentro de fetchGlobalCanPickUp)
-            // console.log("🔄 [canPickUp] Calculando canPickUp global con", products.length, "productos válidos");
             fetchGlobalCanPickUp();
-          } else {
-            console.log("⚠️ [canPickUp] Esperando productos válidos (algunos productos no tienen SKU)");
           }
         } else {
-          console.log("⚠️ [canPickUp] No hay productos para calcular canPickUp");
+
         }
       }, delay);
 
@@ -446,8 +432,13 @@ export default function Step4OrderSummary({
 
     // Si NO es Step1 (Steps 4-7), SOLO leer del caché inmediatamente
     // NO esperar delays, NO recalcular automáticamente
-    // console.log("📖 [Step4-7] Solo leyendo del caché, NO recalculando automáticamente");
-    fetchGlobalCanPickUp();
+
+    // CRÍTICO: En Step1, NO leer el caché aquí porque useDelivery maneja todo el flujo
+    // y disparará el evento 'canPickUpCache-updated' cuando esté listo.
+    // Leer aquí causaría un race condition donde leemos null antes de que se escriba.
+    if (!isStep1) {
+      fetchGlobalCanPickUp();
+    }
   }, [
     fetchGlobalCanPickUp,
     isStep1,
@@ -462,14 +453,9 @@ export default function Step4OrderSummary({
   // Escuchar cuando el caché se actualiza para volver a leer
   React.useEffect(() => {
     const handleCacheUpdate = () => {
-      console.log('🔔 [Step4OrderSummary] Caché actualizado, volviendo a leer');
-      // Agregar un delay para asegurar que la dirección esté guardada en localStorage
-      // antes de leer del caché (especialmente cuando se agrega una dirección nueva)
-      // El delay más largo asegura que la dirección esté completamente guardada y sincronizada
-      setTimeout(() => {
-        console.log('🔄 [Step4OrderSummary] Ejecutando fetchGlobalCanPickUp después de actualización del caché');
-        fetchGlobalCanPickUp();
-      }, 500);
+
+      // Ejecutar inmediatamente para máxima fluidez
+      fetchGlobalCanPickUp();
     };
 
     if (typeof window !== 'undefined') {
@@ -497,41 +483,25 @@ export default function Step4OrderSummary({
     }
   }, [isLoadingCanPickUp, userClickedWhileLoading]);
 
-  // Verificar periódicamente si el caché se actualizó cuando isLoadingCanPickUp es true
-  // Esto asegura que si el evento canPickUpCache-updated se dispara pero la clave no coincide,
-  // el sistema seguirá verificando hasta que encuentre el valor correcto
-  React.useEffect(() => {
-    if (!isLoadingCanPickUp || !shouldCalculateCanPickUp) {
-      return;
-    }
-
-    console.log('⏳ [Step4OrderSummary] isLoadingCanPickUp es true, iniciando verificación periódica del caché');
-    
-    const intervalId = setInterval(() => {
-      console.log('🔄 [Step4OrderSummary] Verificando caché periódicamente...');
-      fetchGlobalCanPickUp();
-    }, 1000); // Verificar cada segundo
-
-    // Limpiar el intervalo después de 30 segundos para evitar bucles infinitos
-    const timeoutId = setTimeout(() => {
-      console.log('⏰ [Step4OrderSummary] Timeout de verificación periódica alcanzado, limpiando intervalo');
-      clearInterval(intervalId);
-    }, 30000);
-
-    return () => {
-      clearInterval(intervalId);
-      clearTimeout(timeoutId);
-    };
-  }, [isLoadingCanPickUp, shouldCalculateCanPickUp, fetchGlobalCanPickUp]);
+  // REMOVED: Polling periódico eliminado - los event listeners son suficientes
+  // El polling cada segundo causaba bucles infinitos y llamadas excesivas
+  // Los event listeners 'canPickUpCache-updated' manejan las actualizaciones del caché
+  // Si después de 30 segundos no hay caché, el fallback fetch en fetchGlobalCanPickUp ya lo maneja
 
   // Notificar cuando canPickUp está listo (no está cargando)
   // IMPORTANTE: Notificar en todos los pasos, no solo en Step1, para que Step3 pueda usar el valor
   React.useEffect(() => {
     if (onCanPickUpReady) {
-      // Pasar el valor real de globalCanPickUp (o false si es null)
-      // IMPORTANTE: Notificar tanto cuando está cargando como cuando terminó
-      const canPickUpValue = globalCanPickUp ?? false;
-      onCanPickUpReady(canPickUpValue, isLoadingCanPickUp);
+      // Solo notificar si tenemos un valor concreto (true/false) o si está cargando
+      if (globalCanPickUp !== null) {
+        // Tenemos un valor concreto, notificar
+        onCanPickUpReady(globalCanPickUp, isLoadingCanPickUp);
+      } else if (isLoadingCanPickUp) {
+        // Si está cargando y globalCanPickUp es null, sí notificar (para mostrar loading)
+        onCanPickUpReady(false, isLoadingCanPickUp);
+      }
+      // Si globalCanPickUp es null y NO está cargando (timeout), NO notificar
+      // para evitar sobrescribir un valor previo válido con false
     }
   }, [globalCanPickUp, isLoadingCanPickUp, onCanPickUpReady]);
 
@@ -569,16 +539,14 @@ export default function Step4OrderSummary({
       const fromHeader = customEvent.detail?.fromHeader;
 
       // En Steps 4-7 (cuando NO es Step1), SOLO recalcular si viene del navbar
-      if (!isStep1 && !fromHeader) {
-        // console.log('📖 [Step4-7] Cambio de dirección NO viene del navbar, ignorando');
+      // CORRECCIÓN: Usar shouldCalculateCanPickUp para determinar si debemos recalcular
+      // Esto permite que Step3 (que tiene shouldCalculateCanPickUp=true) procese cambios de dirección locales
+      if (!isStep1 && !shouldCalculateCanPickUp && !fromHeader) {
+        // console.log('📖 [Step4-7] Cambio de dirección NO viene del navbar y no se requiere cálculo, ignorando');
         return;
       }
 
-      // En Step1 o cuando viene del navbar, recalcular
-      // console.log('🔄 [Step4OrderSummary] Recalculando canPickUp por cambio de dirección', {
-      //   isStep1,
-      //   fromHeader
-      // });
+      // En Step1, Steps 2-3 (shouldCalculateCanPickUp=true), o cuando viene del navbar, recalcular
 
       // Invalidar caché antes de recalcular (usando import dinámico)
       // Intentar obtener el nuevo addressId del evento
@@ -602,11 +570,8 @@ export default function Step4OrderSummary({
       // useDelivery.tsx es el encargado de gestionar el ciclo de vida del caché.
       // Si useDelivery decide hacer fetch, limpiará el caché. Si no (debounce),
       // el caché actual sigue siendo válido y evitamos el loop infinito.
-      // Agregar un delay para asegurar que la dirección esté guardada en localStorage
-      // antes de leer del caché (especialmente cuando se agrega una dirección nueva)
-      setTimeout(() => {
-        fetchGlobalCanPickUp();
-      }, 200);
+      // Ejecutar inmediatamente para máxima fluidez
+      fetchGlobalCanPickUp();
     };
 
     globalThis.window.addEventListener("address-changed", handleAddressChange as EventListener);
@@ -618,7 +583,7 @@ export default function Step4OrderSummary({
         // Los eventos storage no tienen detail, así que no sabemos si vienen del header
         // En Steps 4-7, NO recalcular automáticamente por eventos storage
         if (!isStep1) {
-          console.log('📖 [Step4-7] Cambio en localStorage, ignorando (no es Step1)');
+
           return;
         }
 
@@ -629,7 +594,7 @@ export default function Step4OrderSummary({
 
     // Escuchar cambios en el caché de candidate stores
     const handleCacheUpdate = (e: Event) => {
-      console.log('🔄 [Step4OrderSummary] Caché global actualizado, recalculando...');
+
       fetchGlobalCanPickUp();
     };
     globalThis.window.addEventListener("canPickUpCache-updated", handleCacheUpdate);

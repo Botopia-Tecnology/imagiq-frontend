@@ -108,6 +108,27 @@ export function useDefaultAddress(tipo: TipoUsoDireccion = 'ENVIO'): UseDefaultA
     };
   }, [fetchAddress]);
 
+  // Escuchar eventos globales de cambio de dirección para mantener sincronizada la UI (Navbar)
+  useEffect(() => {
+    const handleAddressChange = () => {
+      // console.log('[useDefaultAddress] 🔄 Evento de cambio de dirección detectado, invalidando caché...');
+      invalidate();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('address-changed', handleAddressChange);
+      window.addEventListener('checkout-address-changed', handleAddressChange);
+      // Evento genérico que también podría dispararse
+      window.addEventListener('address-updated', handleAddressChange);
+
+      return () => {
+        window.removeEventListener('address-changed', handleAddressChange);
+        window.removeEventListener('checkout-address-changed', handleAddressChange);
+        window.removeEventListener('address-updated', handleAddressChange);
+      };
+    }
+  }, [invalidate]);
+
   return {
     address,
     isLoading,

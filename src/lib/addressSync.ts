@@ -122,6 +122,7 @@ export async function syncAddress(options: SyncAddressOptions): Promise<void> {
     console.log('🔔 Disparando eventos de sincronización...');
 
     // Evento genérico de cambio de dirección
+    console.log('🚨🚨🚨 [syncAddress] A PUNTO DE DISPARAR address-changed event', { address, fromHeader });
     window.dispatchEvent(new CustomEvent('address-changed', {
       detail: {
         address,
@@ -129,6 +130,7 @@ export async function syncAddress(options: SyncAddressOptions): Promise<void> {
         fromCheckout: !fromHeader
       }
     }));
+    console.log('✅ [syncAddress] Evento address-changed DISPARADO exitosamente');
 
     // Evento específico de checkout
     window.dispatchEvent(new CustomEvent('checkout-address-changed', {

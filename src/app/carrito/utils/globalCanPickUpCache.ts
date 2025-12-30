@@ -149,7 +149,7 @@ export function setGlobalCanPickUpCache(
   // Persistir en localStorage
   saveToLocalStorage();
 
-  // console.log('✅ [Cache] Guardado en caché (memoria + localStorage):', { key: key.substring(0, 50), addressId, canPickUp: value });
+  console.log('✅ [Cache] Guardado en caché (memoria + localStorage):', { key: key.substring(0, 50), addressId, canPickUp: value });
 
   // Disparar evento con throttle para evitar bursts
   if (typeof window !== 'undefined') {

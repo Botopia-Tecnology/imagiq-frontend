@@ -464,6 +464,10 @@ export default function Step1({
 
       apiPut(`/api/cart/items/${product.sku}`, {
         quantity: cantidad,
+      }).catch(err => {
+        console.error('❌ Error actualizando cantidad en backend:', err);
+        // Opcional: Revertir cantidad si falla
+        // updateQuantity(product.sku, product.quantity); 
       });
     }
   };
@@ -522,17 +526,17 @@ export default function Step1({
     }
   }, [cartProducts, tradeInData]);
 
-  // Estado para saber si canPickUp global está cargando
+  // Estado para saber si canPickUp global está cargando y su valor
   const [isLoadingCanPickUpGlobal, setIsLoadingCanPickUpGlobal] =
     React.useState(false);
+  const [canPickUpGlobalValue, setCanPickUpGlobalValue] = React.useState<boolean | null>(null);
 
   // Callback para recibir el estado de canPickUp desde Step4OrderSummary
-  // Solo actualiza el estado, el avance automático se maneja en Step4OrderSummary
+  // Guarda tanto el valor como el estado de loading
   const handleCanPickUpReady = React.useCallback(
     (isReady: boolean, isLoading: boolean) => {
-      console.log('🔔 [Step1] handleCanPickUpReady called:', { isReady, isLoading });
       setIsLoadingCanPickUpGlobal(isLoading);
-      console.log('🔔 [Step1] isLoadingCanPickUpGlobal set to:', isLoading);
+      setCanPickUpGlobalValue(isReady); // Guardar el valor de canPickUp
       // El avance automático ahora se maneja en Step4OrderSummary con userClickedWhileLoading
     },
     []

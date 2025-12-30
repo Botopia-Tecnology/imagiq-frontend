@@ -371,14 +371,8 @@ export default function Step3({
   const hasActiveTradeIn = productsWithTradeIn.length > 0;
 
   // DEBUG: Log para verificar el estado de hasActiveTradeIn
-  React.useEffect(() => {
-    console.log('🔍 DEBUG hasActiveTradeIn:', {
-      hasActiveTradeIn,
-      productsWithTradeInCount: productsWithTradeIn.length,
-      productsWithTradeIn: productsWithTradeIn.map(p => p.sku),
-      totalProducts: products.length,
-    });
-  }, [hasActiveTradeIn, productsWithTradeIn, products]);
+  // React.useEffect(() => {
+  // }, [hasActiveTradeIn, productsWithTradeIn, products]);
 
 
   // Verificar si TODOS los productos con trade-in pueden ser recogidos en tienda
@@ -448,12 +442,10 @@ export default function Step3({
     // Si effectiveCanPickUp global es true, SIEMPRE permitir seleccionar tienda
     // El canPickUp global tiene prioridad sobre el canPickUp individual de cada producto
     if (effectiveCanPickUp === true) {
-      console.log('✅ canPickUp global es true - permitir tienda independientemente de productos individuales');
       return;
     }
 
     if (!hasActiveTradeIn && hasProductWithoutPickup && deliveryMethod === "tienda") {
-      console.log('⚠️ Hay productos sin pickup y método es tienda - cambiando a domicilio');
       // setDeliveryMethod ya guarda automáticamente en localStorage
       setDeliveryMethod("domicilio");
     }

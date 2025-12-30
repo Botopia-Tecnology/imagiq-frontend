@@ -149,7 +149,7 @@ export function setGlobalCanPickUpCache(
   // Persistir en localStorage
   saveToLocalStorage();
 
-  console.log('✅ [Cache] Guardado en caché (memoria + localStorage):', { key: key.substring(0, 50), addressId, canPickUp: value });
+
 
   // Disparar evento con throttle para evitar bursts
   if (typeof window !== 'undefined') {
@@ -172,7 +172,7 @@ export function setGlobalCanPickUpCache(
 }
 
 export function clearGlobalCanPickUpCache(): void {
-  console.log('🗑️ [Cache] Limpiando caché completo (memoria + localStorage)');
+
   cache = null;
   if (typeof window !== "undefined") {
     window.localStorage.removeItem(LOCAL_STORAGE_KEY);
@@ -217,10 +217,7 @@ export function invalidateCacheOnAddressChange(newAddressId: string | null): boo
 
   // Si la dirección cambió, invalidar caché
   if (cache.addressId !== newAddressId) {
-    console.log('🔄 [Cache] Invalidando caché por cambio de dirección:', {
-      old: cache.addressId,
-      new: newAddressId
-    });
+
     cache = null;
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(LOCAL_STORAGE_KEY);

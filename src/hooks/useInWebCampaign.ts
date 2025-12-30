@@ -69,7 +69,7 @@ export function useInWebCampaign(
 ) {
   const { channelName = "inweb" } = options;
   const pathname = usePathname();
-  console.log(pathname)
+
   const [activeCampaigns, setActiveCampaigns] = useState<CampaignWithId[]>([]);
   const [pendingCampaigns, setPendingCampaigns] = useState<CampaignWithId[]>([]);
 

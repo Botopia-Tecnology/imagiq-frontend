@@ -110,7 +110,7 @@ export default function Step1({
   // Escuchar cambios de dirección desde el header
   useEffect(() => {
     const handleAddressChange = () => {
-      console.log("🔄 Step1: Detectado cambio de dirección, re-verificando trade-in...");
+
       setLastAddressChange(Date.now());
 
       // Limpiar caches de verificación para forzar nueva verificación
@@ -132,7 +132,7 @@ export default function Step1({
   useEffect(() => {
     const handleTradeInRemoved = (event: CustomEvent<{ sku: string }>) => {
       const removedSku = event.detail.sku;
-      //console.log("🔄 Step1: Trade-in eliminado para SKU:", removedSku);
+
 
       // Actualizar el estado del trade-in eliminando el SKU
       setTradeInData(prev => {
@@ -188,13 +188,13 @@ export default function Step1({
               const tradeInString = JSON.stringify(newTradeInData);
               localStorage.setItem("imagiq_trade_in", tradeInString);
               setTradeInData(newTradeInData);
-              console.log("✅ Trade-In convertido del formato antiguo al nuevo");
+
             }
           }
         } else {
           // Formato nuevo: cargar directamente
           setTradeInData(parsed);
-          console.log("✅ Trade-Ins cargados desde localStorage (formato nuevo):", Object.keys(parsed));
+
         }
       }
     } catch (error) {
@@ -215,7 +215,7 @@ export default function Step1({
           if (!('deviceName' in parsed)) {
             // Formato nuevo: cargar directamente
             setTradeInData(parsed);
-            console.log("✅ Trade-Ins cargados inmediatamente desde localStorage:", Object.keys(parsed));
+
           }
         }
       }
@@ -333,7 +333,7 @@ export default function Step1({
               // Reintentar
               localStorage.setItem("imagiq_trade_in", tradeInString);
             } else {
-              console.log("✅ Trade-Ins sincronizados y guardados correctamente:", Object.keys(validTradeIns));
+
             }
 
             // Disparar eventos de storage
@@ -347,7 +347,7 @@ export default function Step1({
             }
           } else {
             // No hay Trade-Ins válidos, pero no los eliminamos automáticamente
-            console.log("⚠️ No se encontraron Trade-Ins válidos para los productos actuales, pero se mantienen en localStorage");
+
           }
         }
       }
@@ -435,7 +435,7 @@ export default function Step1({
   // Escuchar cambios de dirección desde el header para re-verificar
   useEffect(() => {
     const handleAddressChange = () => {
-      console.log("🔄 Step1: Detectado cambio de dirección, re-verificando trade-in (optimizado)...");
+
       setLastAddressChange(Date.now());
       // Forzar verificación
       forceVerify();
@@ -647,9 +647,7 @@ export default function Step1({
           })
         );
         globalThis.window.dispatchEvent(new Event("storage"));
-        console.log(
-          "✅ Método de entrega cambiado a 'domicilio' después de eliminar trade-in"
-        );
+
       }
     }
 
@@ -752,7 +750,7 @@ export default function Step1({
           // Reintentar
           localStorage.setItem("imagiq_trade_in", tradeInString);
         } else {
-          console.log("✅ Trade-In guardado correctamente en Step1 para SKU:", currentTradeInSku);
+
         }
 
         // Disparar eventos de storage para sincronizar

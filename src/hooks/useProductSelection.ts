@@ -368,13 +368,29 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
   }, [allVariants, selection.selectedColor, activeCapacityFilter]);
 
   // Función auxiliar para encontrar la variante exacta que coincida con los parámetros
+  // Si hay múltiples variantes que coinciden, selecciona la que tenga mayor stockTotal
   const findVariant = useCallback((color: string, capacity?: string | null, memoriaram?: string | null) => {
-    return allVariants.find((variant) => {
+    const matchingVariants = allVariants.filter((variant) => {
       const matchesColor = variant.color === color;
       const matchesCapacity = !capacity || capacity === '' || variant.capacity === capacity;
       const matchesMemoriaram = !memoriaram || memoriaram === '' || variant.memoriaram === memoriaram;
 
       return matchesColor && matchesCapacity && matchesMemoriaram;
+    });
+
+    // Si no hay coincidencias, retornar undefined
+    if (matchingVariants.length === 0) {
+      return undefined;
+    }
+
+    // Si hay una sola coincidencia, retornarla
+    if (matchingVariants.length === 1) {
+      return matchingVariants[0];
+    }
+
+    // Si hay múltiples coincidencias, seleccionar la que tenga mayor stockTotal
+    return matchingVariants.reduce((best, current) => {
+      return current.stockTotal > best.stockTotal ? current : best;
     });
   }, [allVariants]);
 
@@ -393,7 +409,8 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
     }
 
     // Fallback: Buscar variante que coincida con los campos que SÍ tienen valores
-    return allVariants.find(variant => {
+    // Si hay múltiples variantes que coinciden, seleccionar la que tenga mayor stockTotal
+    const matchingVariants = allVariants.filter(variant => {
       const matchesColor = variant.color === selection.selectedColor;
 
       // Solo verificar capacity si está definida en la selección y no es vacía/null
@@ -407,7 +424,16 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
         variant.memoriaram === selection.selectedMemoriaram;
 
       return matchesColor && matchesCapacity && matchesMemoriaram;
-    }) || null;
+    });
+
+    if (matchingVariants.length === 0) {
+      return null;
+    }
+
+    // Si hay múltiples coincidencias, seleccionar la que tenga mayor stockTotal
+    return matchingVariants.reduce((best, current) => {
+      return current.stockTotal > best.stockTotal ? current : best;
+    });
   }, [allVariants, selection.selectedColor, selection.selectedCapacity, selection.selectedMemoriaram, selection.selectedVariant]);
 
   // Información del producto seleccionado
@@ -434,8 +460,12 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
       });
     } else {
       // Si no hay coincidencia con los filtros, buscar cualquier variante de ese color
-      const anyVariant = allVariants.find((v) => v.color === color);
-      if (anyVariant) {
+      // Si hay múltiples variantes con ese color, seleccionar la que tenga mayor stockTotal
+      const colorVariants = allVariants.filter((v) => v.color === color);
+      if (colorVariants.length > 0) {
+        const anyVariant = colorVariants.reduce((best, current) => {
+          return current.stockTotal > best.stockTotal ? current : best;
+        });
         setSelection({
           selectedColor: anyVariant.color,
           selectedCapacity: anyVariant.capacity,

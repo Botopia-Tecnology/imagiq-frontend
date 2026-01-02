@@ -707,7 +707,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         setStoresLoading(false);
         isFetchingRef.current = false;
         setLastResponse({ success: true, data: cachedResponse });
-        console.log(`📦 [CACHÉ] Usando respuesta CACHEADA. canPickUp=${globalCanPickUp} (NO del endpoint)`);
+        // console.log(`📦 [CACHÉ] Usando respuesta CACHEADA. canPickUp=${globalCanPickUp} (NO del endpoint)`);
       }
       return; // Salir sin hacer petición al endpoint
     }
@@ -766,12 +766,12 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         const responseData = response.data;
 
         // DEBUG SOLICITADO POR USUARIO: Ver respuesta exacta del endpoint
-        console.log('🔥🔥🔥 [candidate-stores] RESPUESTA EXACTA DEL SERVIDOR:', {
+        /* console.log('🔥🔥🔥 [candidate-stores] RESPUESTA EXACTA DEL SERVIDOR:', {
           canPickUp: responseData.canPickUp,
           canPickUpType: typeof responseData.canPickUp,
           stores: responseData.stores,
           fullResponse: responseData
-        });
+        }); */
 
 
 
@@ -1021,7 +1021,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   useEffect(() => {
     // Si no hay productos, no hacer nada
     if (products.length === 0) {
-      console.log('⏭️ [useDelivery] No hay productos, saltando fetchCandidateStores');
+      // console.log('⏭️ [useDelivery] No hay productos, saltando fetchCandidateStores');
       return;
     }
 

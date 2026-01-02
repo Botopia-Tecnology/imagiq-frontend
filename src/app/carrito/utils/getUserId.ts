@@ -11,15 +11,15 @@ if (typeof window !== 'undefined') {
   
   localStorage.setItem = function(key: string, value: string) {
     if (key === 'imagiq_user') {
-      console.log('🔄 [DEBUG] imagiq_user siendo ESTABLECIDO:', value?.substring(0, 100) + '...');
+      // console.log('🔄 [DEBUG] imagiq_user siendo ESTABLECIDO:', value?.substring(0, 100) + '...');
     }
     return originalSetItem.call(this, key, value);
   };
   
   localStorage.removeItem = function(key: string) {
     if (key === 'imagiq_user') {
-      console.log('🚨 [DEBUG] imagiq_user siendo ELIMINADO!');
-      console.trace('🔍 [DEBUG] Stack trace de eliminación:');
+      // console.log('🚨 [DEBUG] imagiq_user siendo ELIMINADO!');
+      // console.trace('🔍 [DEBUG] Stack trace de eliminación:');
     }
     return originalRemoveItem.call(this, key);
   };
@@ -37,7 +37,7 @@ if (typeof window !== 'undefined') {
 export function getUserId(): string | null {
   if (typeof window === 'undefined') return null;
 
-  console.log('🔍 [getUserId] Buscando userId en localStorage...');
+  // console.log('🔍 [getUserId] Buscando userId en localStorage...');
 
   try {
     // CRÍTICO: Verificar token primero - sin token no hay usuario válido
@@ -45,24 +45,24 @@ export function getUserId(): string | null {
     const hasValidToken = token && token !== 'null' && token !== 'undefined' && token.length > 0;
     
     if (!hasValidToken) {
-      console.warn('⚠️ [getUserId] No hay token válido - no se puede obtener userId');
+      // console.warn('⚠️ [getUserId] No hay token válido - no se puede obtener userId');
       return null;
     }
 
     // 1. Intentar obtener de imagiq_user (prioridad más alta) + token válido
     const userStr = localStorage.getItem('imagiq_user');
-    console.log('  📦 imagiq_user raw:', userStr ? userStr.substring(0, 100) + '...' : 'null');
+    // console.log('  📦 imagiq_user raw:', userStr ? userStr.substring(0, 100) + '...' : 'null');
     
     if (userStr && userStr !== 'null' && userStr !== 'undefined') {
       const user = JSON.parse(userStr);
-      console.log('  📦 imagiq_user parsed:', { id: user?.id, user_id: user?.user_id, email: user?.email });
+      // console.log('  📦 imagiq_user parsed:', { id: user?.id, user_id: user?.user_id, email: user?.email });
       
       if (user?.id) {
-        console.log('✅ [getUserId] UserId encontrado en imagiq_user:', user.id);
+        // console.log('✅ [getUserId] UserId encontrado en imagiq_user:', user.id);
         return user.id;
       }
       if (user?.user_id) {
-        console.log('✅ [getUserId] UserId encontrado en imagiq_user (user_id):', user.user_id);
+        // console.log('✅ [getUserId] UserId encontrado en imagiq_user (user_id):', user.user_id);
         return user.user_id;
       }
     }

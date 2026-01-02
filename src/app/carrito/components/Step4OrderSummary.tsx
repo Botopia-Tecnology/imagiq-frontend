@@ -204,7 +204,7 @@ export default function Step4OrderSummary({
         const requiresCalculation = userRole === 2 || userRole === 3;
         setIsUserLoggedIn(requiresCalculation);
         
-        console.log(`👤 [Step4OrderSummary] User check: userId=${!!userId}, role=${userRole}, requiresCalculation=${requiresCalculation}`);
+        // console.log(`👤 [Step4OrderSummary] User check: userId=${!!userId}, role=${userRole}, requiresCalculation=${requiresCalculation}`);
       } catch (error) {
         console.error('Error checking user login status:', error);
         setIsUserLoggedIn(false);
@@ -249,7 +249,7 @@ export default function Step4OrderSummary({
       userId = getUserId();
       
       if (!userId) {
-        console.log('👤 [Step4OrderSummary] No userId found, skipping candidate stores calculation');
+        // console.log('👤 [Step4OrderSummary] No userId found, skipping candidate stores calculation');
         setIsLoadingCanPickUp(false);
         setGlobalCanPickUp(null);
         return;
@@ -264,9 +264,9 @@ export default function Step4OrderSummary({
           // Solo calcular para rol 2 (registrado) o rol 3 (invitado)
           if (userRole === 2 || userRole === 3) {
             shouldCalculateForUser = true;
-            console.log(`👤 [Step4OrderSummary] User with rol ${userRole}, will calculate candidate stores`);
+            // console.log(`👤 [Step4OrderSummary] User with rol ${userRole}, will calculate candidate stores`);
           } else {
-            console.log(`👤 [Step4OrderSummary] User with rol ${userRole}, skipping candidate stores calculation`);
+            // console.log(`👤 [Step4OrderSummary] User with rol ${userRole}, skipping candidate stores calculation`);
           }
         }
       }
@@ -275,7 +275,7 @@ export default function Step4OrderSummary({
     }
 
     if (!shouldCalculateForUser) {
-      console.log('⏭️ [Step4OrderSummary] User role does not require candidate stores calculation');
+      // console.log('⏭️ [Step4OrderSummary] User role does not require candidate stores calculation');
       setIsLoadingCanPickUp(false);
       setGlobalCanPickUp(null);
       return;
@@ -355,6 +355,7 @@ export default function Step4OrderSummary({
     const cachedValue = getGlobalCanPickUpFromCache(cacheKey);
 
     if (cachedValue !== null) {
+      console.log(`📦 [Step4OrderSummary] Usando respuesta CACHEADA. canPickUp=${cachedValue}`);
       setGlobalCanPickUp(cachedValue);
       setIsLoadingCanPickUp(false);
       return;
@@ -592,7 +593,7 @@ export default function Step4OrderSummary({
   // Ejecutar onFinishPayment automáticamente cuando termine de cargar canPickUp
   // y el usuario había hecho clic mientras estaba cargando
   React.useEffect(() => {
-    console.log(`🔍 [Step4OrderSummary] Auto-advance effect - userClickedWhileLoading: ${userClickedWhileLoading}, isLoadingCanPickUp: ${isLoadingCanPickUp}, globalCanPickUp: ${globalCanPickUp}, shouldCalculateCanPickUp: ${shouldCalculateCanPickUp}`);
+    // console.log(`🔍 [Step4OrderSummary] Auto-advance effect - userClickedWhileLoading: ${userClickedWhileLoading}, isLoadingCanPickUp: ${isLoadingCanPickUp}, globalCanPickUp: ${globalCanPickUp}, shouldCalculateCanPickUp: ${shouldCalculateCanPickUp}`);
     
     // Solo avanzar si:
     // 1. El usuario hizo clic mientras estaba cargando (userClickedWhileLoading === true)
@@ -604,7 +605,7 @@ export default function Step4OrderSummary({
                       (shouldCalculateCanPickUp ? (globalCanPickUp !== null || isUserLoggedIn === false) : true);
     
     if (canAdvance && !autoAdvanceTriggered.current) {
-      console.log(`🚀 [Step4OrderSummary] Auto-advancing! Conditions met - executing onFinishPayment`);
+      // console.log(`🚀 [Step4OrderSummary] Auto-advancing! Conditions met - executing onFinishPayment`);
       
       // Marcar como ejecutado para evitar múltiples llamadas
       autoAdvanceTriggered.current = true;
@@ -615,7 +616,7 @@ export default function Step4OrderSummary({
       // Ejecutar con pequeño delay para que la UI se actualice
       setTimeout(() => {
         try {
-          console.log(`🎯 [Step4OrderSummary] Executing onFinishPayment via auto-advance`);
+          // console.log(`🎯 [Step4OrderSummary] Executing onFinishPayment via auto-advance`);
           onFinishPaymentRef.current();
         } catch (error) {
           console.error('❌ Error al ejecutar onFinishPayment:', error);
@@ -836,7 +837,7 @@ export default function Step4OrderSummary({
           data-button-text={buttonText}
           aria-busy={isProcessing || userClickedWhileLoading}
           onClick={async () => {
-            console.log(`🎯 [Step4OrderSummary] Button clicked - isLoadingCanPickUp: ${isLoadingCanPickUp}, globalCanPickUp: ${globalCanPickUp}, shouldCalculateCanPickUp: ${shouldCalculateCanPickUp}, userClickedWhileLoading: ${userClickedWhileLoading}`);
+            // console.log(`🎯 [Step4OrderSummary] Button clicked - isLoadingCanPickUp: ${isLoadingCanPickUp}, globalCanPickUp: ${globalCanPickUp}, shouldCalculateCanPickUp: ${shouldCalculateCanPickUp}, userClickedWhileLoading: ${userClickedWhileLoading}`);
             
             // SIEMPRE mostrar loading inmediatamente al hacer clic para feedback visual
             setUserClickedWhileLoading(true);
@@ -852,7 +853,7 @@ export default function Step4OrderSummary({
               const userId = getUserId();
               
               if (!userId) {
-                console.log(`👤 [Step4OrderSummary] No user logged in, proceeding after short loading`);
+                // console.log(`👤 [Step4OrderSummary] No user logged in, proceeding after short loading`);
                 setTimeout(() => {
                   // setUserClickedWhileLoading(false);
                   onFinishPayment();
@@ -876,13 +877,13 @@ export default function Step4OrderSummary({
 
               // Si NO es rol 2 o 3, proceder después de mostrar loading
               if (userRole !== 2 && userRole !== 3) {
-                console.log(`👤 [Step4OrderSummary] User role ${userRole} does not need candidate stores, proceeding after short loading`);
+                // console.log(`👤 [Step4OrderSummary] User role ${userRole} does not need candidate stores, proceeding after short loading`);
                 setTimeout(() => onFinishPayment(), 300); // Mostrar loading por un momento
                 return;
               }
 
               // Solo si es rol 2/3, entonces sí esperar al cálculo real
-              console.log(`⏳ [Step4OrderSummary] User rol ${userRole} needs candidate stores and it's loading, waiting for real calculation...`);
+              // console.log(`⏳ [Step4OrderSummary] User rol ${userRole} needs candidate stores and it's loading, waiting for real calculation...`);
               return; // El useEffect de auto-advance se encargará
             }
             
@@ -890,7 +891,7 @@ export default function Step4OrderSummary({
             if (globalCanPickUp === null && shouldCalculateCanPickUp) {
               // Si ya sabemos que el usuario no está logueado, proceder después de mostrar loading
               if (isUserLoggedIn === false) {
-                console.log(`👤 [Step4OrderSummary] User not logged in (cached), proceeding after short loading`);
+                // console.log(`👤 [Step4OrderSummary] User not logged in (cached), proceeding after short loading`);
                 setTimeout(() => onFinishPayment(), 300);
                 return;
               }
@@ -900,7 +901,7 @@ export default function Step4OrderSummary({
               const userId = getUserId();
               
               if (!userId) {
-                console.log(`👤 [Step4OrderSummary] No user logged in (dynamic check), proceeding after short loading`);
+                // console.log(`👤 [Step4OrderSummary] No user logged in (dynamic check), proceeding after short loading`);
                 setIsUserLoggedIn(false); // Actualizar cache para próximas veces
                 setTimeout(() => onFinishPayment(), 300);
                 return;
@@ -922,23 +923,23 @@ export default function Step4OrderSummary({
 
               // Si no es rol 2 o 3, proceder después de mostrar loading
               if (userRole !== 2 && userRole !== 3) {
-                console.log(`👤 [Step4OrderSummary] User role ${userRole} does not require candidate stores, proceeding after short loading`);
+                // console.log(`👤 [Step4OrderSummary] User role ${userRole} does not require candidate stores, proceeding after short loading`);
                 setTimeout(() => onFinishPayment(), 300);
                 return;
               }
               
-              console.log(`⏳ [Step4OrderSummary] User logged in with rol ${userRole}, canPickUp is null, setting userClickedWhileLoading=true and triggering calculation...`);
+              // console.log(`⏳ [Step4OrderSummary] User logged in with rol ${userRole}, canPickUp is null, setting userClickedWhileLoading=true and triggering calculation...`);
               setUserClickedWhileLoading(true);
               // Forzar cálculo si no está ya cargando
               if (!isLoadingCanPickUp) {
-                console.log(`🔄 [Step4OrderSummary] Forcing fetchGlobalCanPickUp because canPickUp is null...`);
+                // console.log(`🔄 [Step4OrderSummary] Forcing fetchGlobalCanPickUp because canPickUp is null...`);
                 fetchGlobalCanPickUp();
               }
               return; // El useEffect de auto-advance se encargará cuando termine el cálculo
             }
             
             // CASO 3: Si llegamos aquí, podemos proceder después de mostrar loading brevemente
-            console.log(`✅ [Step4OrderSummary] Ready to proceed after short loading`);
+            // console.log(`✅ [Step4OrderSummary] Ready to proceed after short loading`);
             setTimeout(() => onFinishPayment(), 300);
           }}
         >

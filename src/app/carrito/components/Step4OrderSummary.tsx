@@ -355,7 +355,7 @@ export default function Step4OrderSummary({
     const cachedValue = getGlobalCanPickUpFromCache(cacheKey);
 
     if (cachedValue !== null) {
-      console.log(`📦 [Step4OrderSummary] Usando respuesta CACHEADA. canPickUp=${cachedValue}`);
+      // console.log(`📦 [Step4OrderSummary] Usando respuesta CACHEADA. canPickUp=${cachedValue}`);
       setGlobalCanPickUp(cachedValue);
       setIsLoadingCanPickUp(false);
       return;
@@ -378,7 +378,7 @@ export default function Step4OrderSummary({
         return;
       }
 
-      console.log('🔄 [Step4OrderSummary] No hay caché disponible, haciendo fetch obligatorio...');
+      // console.log('🔄 [Step4OrderSummary] No hay caché disponible, haciendo fetch obligatorio...');
 
       // Hacer la petición inmediatamente - CRÍTICO para Step7
       productEndpoints.getCandidateStores({
@@ -389,12 +389,12 @@ export default function Step4OrderSummary({
         .then((response) => {
           // Verificar race condition
           if (requestId !== lastRequestIdRef.current) {
-            console.log(`🚫 [Step4OrderSummary] Ignorando respuesta obsoleta (reqId: ${requestId}, last: ${lastRequestIdRef.current})`);
+            // console.log(`🚫 [Step4OrderSummary] Ignorando respuesta obsoleta (reqId: ${requestId}, last: ${lastRequestIdRef.current})`);
             return;
           }
 
           if (response.data) {
-            console.log('✅ [Step4OrderSummary] Fetch completado, canPickUp:', response.data.canPickUp);
+            // console.log('✅ [Step4OrderSummary] Fetch completado, canPickUp:', response.data.canPickUp);
 
             // Guardar en caché
             setGlobalCanPickUpCache(cacheKey, response.data.canPickUp, response.data, addressId);
@@ -403,19 +403,19 @@ export default function Step4OrderSummary({
             setGlobalCanPickUp(response.data.canPickUp ?? false);
             setIsLoadingCanPickUp(false);
           } else {
-            console.warn('⚠️ [Step4OrderSummary] Respuesta sin data, usando false por defecto');
+            // console.warn('⚠️ [Step4OrderSummary] Respuesta sin data, usando false por defecto');
             setGlobalCanPickUp(false);
             setIsLoadingCanPickUp(false);
           }
         })
-        .catch((error) => {
+        .catch(() => {
           // Verificar race condition
           if (requestId !== lastRequestIdRef.current) {
-            console.log(`🚫 [Step4OrderSummary] Ignorando error de solicitud obsoleta (reqId: ${requestId}, last: ${lastRequestIdRef.current})`);
+            // console.log(`🚫 [Step4OrderSummary] Ignorando error de solicitud obsoleta (reqId: ${requestId}, last: ${lastRequestIdRef.current})`);
             return;
           }
 
-          console.error('❌ [Step4OrderSummary] Error en fetch de respaldo:', error);
+          // console.error('❌ [Step4OrderSummary] Error en fetch de respaldo:', error);
           // CRÍTICO: Incluso en error, establecer un valor concreto (false) en lugar de null
           setGlobalCanPickUp(false);
           setIsLoadingCanPickUp(false);

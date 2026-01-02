@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useCart } from "@/hooks/useCart";
 import { productEndpoints } from "@/lib/api";
-import { safeGetLocalStorage } from "@/lib/localStorage";
 import {
   buildGlobalCanPickUpKey,
   getGlobalCanPickUpFromCache,
@@ -188,23 +187,12 @@ export default function Step4OrderSummary({
   // IMPORTANTE: Esta función SOLO lee del caché, NO hace llamadas al endpoint
   const fetchGlobalCanPickUp = React.useCallback(async () => {
 
-
-    // IMPORTANTE: Siempre intentar leer del caché, incluso cuando shouldCalculateCanPickUp es false
-    // Esto es necesario para Step7 que debe mostrar el valor de canPickUp del caché
-    // Solo calcular si shouldCalculateCanPickUp es true (Steps 1-6) o si la variable de debug está activa
-    const shouldFetch =
-      shouldCalculateCanPickUp ||
-      process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true";
-
     // Si no hay productos, no hacer nada
     if (products.length === 0) {
       setGlobalCanPickUp(null);
       setIsLoadingCanPickUp(false);
       return;
     }
-
-    // Si shouldFetch es false, solo leer del caché sin establecer loading
-    // Esto permite que Step7 muestre el valor del caché sin hacer peticiones
 
 
     // CORRECCIÓN CRÍTICA: Si estamos en Step1, NUNCA hacer fetch desde aquí
@@ -336,7 +324,7 @@ export default function Step4OrderSummary({
           setIsLoadingCanPickUp(false);
         });
     }
-  }, [products, shouldCalculateCanPickUp, isStep1]);
+  }, [products, isStep1]);
 
   // Safety timeout para evitar que se quede cargando indefinidamente
   // IMPORTANTE: Solo detener el loading, NO cambiar el valor de canPickUp
@@ -364,7 +352,7 @@ export default function Step4OrderSummary({
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const handleCacheUpdate = async (event: Event) => {
+    const handleCacheUpdate = async () => {
       // Usar la ref para evitar stale closures
       if (fetchGlobalCanPickUpRef.current) {
         await fetchGlobalCanPickUpRef.current();
@@ -445,11 +433,7 @@ export default function Step4OrderSummary({
     fetchGlobalCanPickUp,
     isStep1,
     shouldCalculateCanPickUp,
-    // Solo en Step1 depender de productos (usar sku regular para coincidir con useDelivery)
-    ...(isStep1 ? [
-      products.length,
-      products.map(p => `${p.sku || ""}-${p.quantity || 0}`).sort().join("|")
-    ] : [])
+    products,
   ]);
 
   // Escuchar cuando el caché se actualiza para volver a leer
@@ -515,23 +499,20 @@ export default function Step4OrderSummary({
     // 2. Ya terminó de cargar (isLoadingCanPickUp es false)
     // 3. shouldCalculateCanPickUp es true (pasos 1-6, no Step7)
     if (userClickedWhileLoading && !isLoadingCanPickUp && shouldCalculateCanPickUp) {
-      // Guardar el estado antes de resetearlo
-      const shouldExecute = userClickedWhileLoading;
-
+      console.log(`🚀 [Step4OrderSummary] Auto-advancing! canPickUp loading finished`);
+      
       // Resetear el estado inmediatamente para evitar ejecuciones múltiples
       setUserClickedWhileLoading(false);
 
-      // Ejecutar la función usando la ref para evitar problemas de dependencias
-      if (shouldExecute) {
-        // Ejecutar inmediatamente sin delay para forzar el avance
-        try {
-          onFinishPaymentRef.current();
-        } catch (error) {
-          console.error('❌ Error al ejecutar onFinishPayment:', error);
-        }
+      // Ejecutar la función
+      try {
+        console.log(`🎯 [Step4OrderSummary] Executing onFinishPayment now`);
+        onFinishPayment();
+      } catch (error) {
+        console.error('❌ Error al ejecutar onFinishPayment:', error);
       }
     }
-  }, [userClickedWhileLoading, isLoadingCanPickUp, shouldCalculateCanPickUp]);
+  }, [userClickedWhileLoading, isLoadingCanPickUp, shouldCalculateCanPickUp, onFinishPayment]);
 
   // Escuchar cambios en la dirección para recalcular canPickUp
   // IMPORTANTE: En Steps 4-7, SOLO recalcular cuando viene del navbar (fromHeader: true)
@@ -551,23 +532,8 @@ export default function Step4OrderSummary({
       // En Step1, Steps 2-3 (shouldCalculateCanPickUp=true), o cuando viene del navbar, recalcular
 
       // Invalidar caché antes de recalcular (usando import dinámico)
-      // Intentar obtener el nuevo addressId del evento
-      let newAddressId: string | null = null;
-      if (customEvent.detail?.address?.id) {
-        newAddressId = customEvent.detail.address.id;
-      } else {
-        // Intentar leer desde localStorage
-        try {
-          const saved = localStorage.getItem('checkout-address');
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            newAddressId = parsed.id || null;
-          }
-        } catch (error) {
-          console.error('Error leyendo dirección:', error);
-        }
-      }
-
+      // NOTE: No necesitamos usar addressId aquí ya que useDelivery maneja el ciclo de vida del caché
+      
       // NO invalidar caché manualmente aquí.
       // useDelivery.tsx es el encargado de gestionar el ciclo de vida del caché.
       // Si useDelivery decide hacer fetch, limpiará el caché. Si no (debounce),
@@ -595,8 +561,7 @@ export default function Step4OrderSummary({
     globalThis.window.addEventListener("storage", handleStorageChange);
 
     // Escuchar cambios en el caché de candidate stores
-    const handleCacheUpdate = (e: Event) => {
-
+    const handleCacheUpdate = () => {
       fetchGlobalCanPickUp();
     };
     globalThis.window.addEventListener("canPickUpCache-updated", handleCacheUpdate);
@@ -607,7 +572,7 @@ export default function Step4OrderSummary({
       globalThis.window.removeEventListener("storage", handleStorageChange);
       globalThis.window.removeEventListener("canPickUpCache-updated", handleCacheUpdate);
     };
-  }, [fetchGlobalCanPickUp, isStep1]);
+  }, [fetchGlobalCanPickUp, isStep1, shouldCalculateCanPickUp]);
 
   const baseContainerClasses =
     "bg-white rounded-2xl p-6 shadow flex flex-col gap-4 h-fit border border-[#E5E5E5]";
@@ -761,11 +726,13 @@ export default function Step4OrderSummary({
             // Si está cargando canPickUp cuando el usuario hace clic, marcar que hizo clic y esperar
             // Solo para pasos 1-6 donde shouldCalculateCanPickUp es true
             if (isLoadingCanPickUp && shouldCalculateCanPickUp) {
+              console.log(`⏳ [Step4OrderSummary] Waiting for canPickUp loading to finish...`);
               setUserClickedWhileLoading(true);
               return; // No ejecutar onFinishPayment todavía, el useEffect se encargará
             }
             // Si no está cargando o estamos en Step7 (no calcula canPickUp), ejecutar inmediatamente
             // Resetear userClickedWhileLoading por si acaso quedó en true
+            console.log(`✅ [Step4OrderSummary] Executing immediately`);
             setUserClickedWhileLoading(false);
             onFinishPayment();
           }}
@@ -795,7 +762,9 @@ export default function Step4OrderSummary({
                   d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                 />
               </svg>
-              <span className={buttonText === "Registrarse como invitado" ? "whitespace-normal text-center break-words" : ""}>{buttonText}</span>
+              <span className={buttonText === "Registrarse como invitado" ? "whitespace-normal text-center break-words" : ""}>
+                {buttonText}
+              </span>
             </span>
           ) : buttonText === "Registrarse como invitado" ? (
             <span className="whitespace-normal text-center break-words leading-tight">
@@ -919,13 +888,23 @@ export default function Step4OrderSummary({
                 <span>canPickUp (endpoint):</span>
                 <span className="font-mono font-bold">
                   {isLoadingCanPickUp ? (
-                    <span className="text-blue-600">⏳ loading...</span>
+                    <span className="text-blue-600 animate-pulse">⏳ calculando...</span>
                   ) : globalCanPickUp === null ? (
-                    <span className="text-gray-500">null</span>
+                    <span className="text-orange-600 animate-pulse">🔄 calculando...</span>
                   ) : globalCanPickUp ? (
                     <span className="text-green-600">✅ true</span>
                   ) : (
                     <span className="text-red-600">❌ false</span>
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>User clicked while loading:</span>
+                <span className="font-mono font-bold">
+                  {userClickedWhileLoading ? (
+                    <span className="text-orange-600 animate-pulse">🔄 esperando...</span>
+                  ) : (
+                    <span className="text-gray-400">-</span>
                   )}
                 </span>
               </div>

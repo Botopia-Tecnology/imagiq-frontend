@@ -44,9 +44,9 @@ export function TrackingTimeline({ events }: Readonly<TrackingTimelineProps>) {
                   {step.evento}
                 </div>
                 <div
-                  className={`text-sm ${
-                    isLast ? "text-gray-600 font-semibold" : "text-gray-600"
-                  } mt-1`}
+                  className={`text-sm mt-1 ${
+                    isLast ? "!text-black font-bold" : "text-gray-600"
+                  }`}
                 >
                   {new Date(step.time_stamp).toLocaleString("es-ES", {
                     year: "numeric",

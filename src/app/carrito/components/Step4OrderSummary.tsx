@@ -171,8 +171,54 @@ export default function Step4OrderSummary({
   const [isLoadingCanPickUp, setIsLoadingCanPickUp] = React.useState(false);
   // Estado para rastrear si el usuario hizo clic en el botón mientras está cargando
   const [userClickedWhileLoading, setUserClickedWhileLoading] = React.useState(false);
+  // Estado para saber si el usuario está logueado (para optimizar lógica del botón)
+  const [isUserLoggedIn, setIsUserLoggedIn] = React.useState<boolean | null>(null);
+  
+  // Verificar si el usuario está logueado y es rol 2/3 al montar el componente
+  React.useEffect(() => {
+    const checkUserLoggedIn = async () => {
+      try {
+        const { getUserId } = await import('@/app/carrito/utils/getUserId');
+        const userId = getUserId();
+        
+        if (!userId) {
+          setIsUserLoggedIn(false);
+          return;
+        }
+
+        // Verificar el rol del usuario
+        let userRole = null;
+        try {
+          if (typeof globalThis.window !== "undefined") {
+            const userDataStr = globalThis.window.localStorage.getItem("imagiq_user");
+            if (userDataStr && userDataStr !== "null" && userDataStr !== "undefined") {
+              const userData = JSON.parse(userDataStr);
+              userRole = userData?.role ?? userData?.rol;
+            }
+          }
+        } catch (error) {
+          console.error('Error checking user role:', error);
+        }
+
+        // Solo considerar "logueado" si es rol 2 o 3 (que necesitan candidate stores)
+        const requiresCalculation = userRole === 2 || userRole === 3;
+        setIsUserLoggedIn(requiresCalculation);
+        
+        console.log(`👤 [Step4OrderSummary] User check: userId=${!!userId}, role=${userRole}, requiresCalculation=${requiresCalculation}`);
+      } catch (error) {
+        console.error('Error checking user login status:', error);
+        setIsUserLoggedIn(false);
+      }
+    };
+    
+    checkUserLoggedIn();
+  }, []);
+  
   // Ref para guardar la función onFinishPayment y evitar ejecuciones múltiples
   const onFinishPaymentRef = React.useRef(onFinishPayment);
+  
+  // Ref para evitar múltiples ejecuciones del auto-advance
+  const autoAdvanceTriggered = React.useRef(false);
 
   // Actualizar la ref cuando cambie la función
   React.useEffect(() => {
@@ -186,6 +232,47 @@ export default function Step4OrderSummary({
   // Se ejecuta cuando el componente se monta Y cuando el caché se actualiza desde useDelivery
   // IMPORTANTE: Esta función SOLO lee del caché, NO hace llamadas al endpoint
   const fetchGlobalCanPickUp = React.useCallback(async () => {
+    // VERIFICACIÓN TEMPRANA: Solo proceder para usuarios rol 2 o 3
+    // Esta verificación debe ser lo PRIMERO para evitar cálculos innecesarios
+    let shouldCalculateForUser = false;
+    let userId = null;
+    
+    try {
+      const { getUserId } = await import('@/app/carrito/utils/getUserId');
+      userId = getUserId();
+      
+      if (!userId) {
+        console.log('👤 [Step4OrderSummary] No userId found, skipping candidate stores calculation');
+        setIsLoadingCanPickUp(false);
+        setGlobalCanPickUp(null);
+        return;
+      }
+
+      if (typeof globalThis.window !== "undefined") {
+        const userDataStr = globalThis.window.localStorage.getItem("imagiq_user");
+        if (userDataStr && userDataStr !== "null" && userDataStr !== "undefined") {
+          const userData = JSON.parse(userDataStr);
+          const userRole = userData?.role ?? userData?.rol;
+          
+          // Solo calcular para rol 2 (registrado) o rol 3 (invitado)
+          if (userRole === 2 || userRole === 3) {
+            shouldCalculateForUser = true;
+            console.log(`👤 [Step4OrderSummary] User with rol ${userRole}, will calculate candidate stores`);
+          } else {
+            console.log(`👤 [Step4OrderSummary] User with rol ${userRole}, skipping candidate stores calculation`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking user role in fetchGlobalCanPickUp:', error);
+    }
+
+    if (!shouldCalculateForUser) {
+      console.log('⏭️ [Step4OrderSummary] User role does not require candidate stores calculation');
+      setIsLoadingCanPickUp(false);
+      setGlobalCanPickUp(null);
+      return;
+    }
 
     // Si no hay productos, no hacer nada
     if (products.length === 0) {
@@ -194,21 +281,11 @@ export default function Step4OrderSummary({
       return;
     }
 
-
     // CORRECCIÓN CRÍTICA: Si estamos en Step1, NUNCA hacer fetch desde aquí
     // useDelivery.tsx se encarga de todo el ciclo de vida en Step1
 
-
     // IMPORTANTE: Obtener userId de forma consistente usando la utilidad centralizada
-    const { getUserId } = await import('@/app/carrito/utils/getUserId');
-    const userId = getUserId();
-
-    if (!userId) {
-      console.warn('⚠️ [Step4OrderSummary] No se encontró userId, no se puede buscar en caché');
-      setIsLoadingCanPickUp(false);
-      setGlobalCanPickUp(null);
-      return;
-    }
+    // (Ya lo tenemos de la verificación anterior)
 
 
 
@@ -263,7 +340,7 @@ export default function Step4OrderSummary({
 
     // OPTIMIZACIÓN: SOLO leer desde el caché, NO hacer petición al endpoint
     const cacheKey = buildGlobalCanPickUpKey({
-      userId,
+      userId: userId!, // Ya verificamos que no es null
       products: productsToCheck,
       addressId,
     });
@@ -298,7 +375,7 @@ export default function Step4OrderSummary({
       // Hacer la petición inmediatamente - CRÍTICO para Step7
       productEndpoints.getCandidateStores({
         products: productsToCheck,
-        user_id: userId,
+        user_id: userId!,  // El ! es seguro porque ya verificamos que no es null
         addressId: addressId || undefined
       })
         .then((response) => {
@@ -458,16 +535,18 @@ export default function Step4OrderSummary({
   // Resetear userClickedWhileLoading cuando cambian los productos, shouldCalculateCanPickUp, o cuando canPickUp termina de cargar
   React.useEffect(() => {
     setUserClickedWhileLoading(false);
+    autoAdvanceTriggered.current = false;
   }, [products.length, shouldCalculateCanPickUp]);
 
+  // COMENTADO: Este useEffect interfiere con nuestro loading visual inmediato
   // Resetear userClickedWhileLoading cuando canPickUp termina de cargar (para evitar bloqueos)
-  React.useEffect(() => {
-    if (!isLoadingCanPickUp && userClickedWhileLoading) {
-      // Si canPickUp ya terminó de cargar y userClickedWhileLoading está en true, resetearlo
-      // Esto permite que el usuario pueda hacer clic normalmente si canPickUp ya cargó
-      setUserClickedWhileLoading(false);
-    }
-  }, [isLoadingCanPickUp, userClickedWhileLoading]);
+  // React.useEffect(() => {
+  //   if (!isLoadingCanPickUp && userClickedWhileLoading) {
+  //     // Si canPickUp ya terminó de cargar y userClickedWhileLoading está en true, resetearlo
+  //     // Esto permite que el usuario pueda hacer clic normalmente si canPickUp ya cargó
+  //     setUserClickedWhileLoading(false);
+  //   }
+  // }, [isLoadingCanPickUp, userClickedWhileLoading]);
 
   // REMOVED: Polling periódico eliminado - los event listeners son suficientes
   // El polling cada segundo causaba bucles infinitos y llamadas excesivas
@@ -492,27 +571,42 @@ export default function Step4OrderSummary({
   }, [globalCanPickUp, isLoadingCanPickUp, onCanPickUpReady]);
 
   // Ejecutar onFinishPayment automáticamente cuando termine de cargar canPickUp
-  // y el usuario había hecho clic mientras estaba cargando (pasos 1-6)
+  // y el usuario había hecho clic mientras estaba cargando
   React.useEffect(() => {
+    console.log(`🔍 [Step4OrderSummary] Auto-advance effect - userClickedWhileLoading: ${userClickedWhileLoading}, isLoadingCanPickUp: ${isLoadingCanPickUp}, globalCanPickUp: ${globalCanPickUp}, shouldCalculateCanPickUp: ${shouldCalculateCanPickUp}`);
+    
     // Solo avanzar si:
-    // 1. El usuario hizo clic mientras estaba cargando
-    // 2. Ya terminó de cargar (isLoadingCanPickUp es false)
-    // 3. shouldCalculateCanPickUp es true (pasos 1-6, no Step7)
-    if (userClickedWhileLoading && !isLoadingCanPickUp && shouldCalculateCanPickUp) {
-      console.log(`🚀 [Step4OrderSummary] Auto-advancing! canPickUp loading finished`);
+    // 1. El usuario hizo clic mientras estaba cargando (userClickedWhileLoading === true)
+    // 2. Ya terminó de cargar (isLoadingCanPickUp === false)
+    // 3. En steps que calculan canPickUp: debe tener un valor concreto (globalCanPickUp !== null) O el usuario no está logueado
+    //    En steps que NO calculan: puede avanzar sin valor
+    const canAdvance = userClickedWhileLoading && 
+                      !isLoadingCanPickUp && 
+                      (shouldCalculateCanPickUp ? (globalCanPickUp !== null || isUserLoggedIn === false) : true);
+    
+    if (canAdvance && !autoAdvanceTriggered.current) {
+      console.log(`🚀 [Step4OrderSummary] Auto-advancing! Conditions met - executing onFinishPayment`);
       
-      // Resetear el estado inmediatamente para evitar ejecuciones múltiples
-      setUserClickedWhileLoading(false);
+      // Marcar como ejecutado para evitar múltiples llamadas
+      autoAdvanceTriggered.current = true;
+      
+      // NO resetear userClickedWhileLoading para mantener el spinner visible hasta que cambie la página
+      // setUserClickedWhileLoading(false);
 
-      // Ejecutar la función
-      try {
-        console.log(`🎯 [Step4OrderSummary] Executing onFinishPayment now`);
-        onFinishPayment();
-      } catch (error) {
-        console.error('❌ Error al ejecutar onFinishPayment:', error);
-      }
+      // Ejecutar con pequeño delay para que la UI se actualice
+      setTimeout(() => {
+        try {
+          console.log(`🎯 [Step4OrderSummary] Executing onFinishPayment via auto-advance`);
+          onFinishPaymentRef.current();
+        } catch (error) {
+          console.error('❌ Error al ejecutar onFinishPayment:', error);
+          // En caso de error, permitir reintentar y quitar loading
+          autoAdvanceTriggered.current = false;
+          setUserClickedWhileLoading(false);
+        }
+      }, 50); // Delay más corto que antes
     }
-  }, [userClickedWhileLoading, isLoadingCanPickUp, shouldCalculateCanPickUp, onFinishPayment]);
+  }, [userClickedWhileLoading, isLoadingCanPickUp, globalCanPickUp, shouldCalculateCanPickUp, isUserLoggedIn]);
 
   // Escuchar cambios en la dirección para recalcular canPickUp
   // IMPORTANTE: En Steps 4-7, SOLO recalcular cuando viene del navbar (fromHeader: true)
@@ -714,30 +808,122 @@ export default function Step4OrderSummary({
         <button
           type="button"
           className={`shrink-0 bg-black text-white font-bold py-3 px-6 rounded-lg text-sm hover:bg-gray-800 transition flex items-center justify-center ${buttonText === "Registrarse como invitado" ? "min-h-[4.5rem] whitespace-normal flex-wrap" : ""
-            } ${isProcessing || disabled || (userClickedWhileLoading && isLoadingCanPickUp)
+            } ${isProcessing || disabled || userClickedWhileLoading
               ? "opacity-70 cursor-not-allowed"
               : "cursor-pointer"
             }`}
-          disabled={isProcessing || disabled || (userClickedWhileLoading && isLoadingCanPickUp)}
+          disabled={isProcessing || disabled || userClickedWhileLoading}
           data-testid="checkout-finish-btn"
           data-button-text={buttonText}
-          aria-busy={isProcessing || (userClickedWhileLoading && isLoadingCanPickUp)}
-          onClick={() => {
-            // Si está cargando canPickUp cuando el usuario hace clic, marcar que hizo clic y esperar
-            // Solo para pasos 1-6 donde shouldCalculateCanPickUp es true
+          aria-busy={isProcessing || userClickedWhileLoading}
+          onClick={async () => {
+            console.log(`🎯 [Step4OrderSummary] Button clicked - isLoadingCanPickUp: ${isLoadingCanPickUp}, globalCanPickUp: ${globalCanPickUp}, shouldCalculateCanPickUp: ${shouldCalculateCanPickUp}, userClickedWhileLoading: ${userClickedWhileLoading}`);
+            
+            // SIEMPRE mostrar loading inmediatamente al hacer clic para feedback visual
+            setUserClickedWhileLoading(true);
+            
+            // Dar tiempo para que se vea el loading en la UI
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // CASO 1: Verificar si realmente necesitamos esperar al cálculo
+            // Solo esperar si es un usuario rol 2/3 Y está calculando
             if (isLoadingCanPickUp && shouldCalculateCanPickUp) {
-              console.log(`⏳ [Step4OrderSummary] Waiting for canPickUp loading to finish...`);
-              setUserClickedWhileLoading(true);
-              return; // No ejecutar onFinishPayment todavía, el useEffect se encargará
+              // Verificar si es un usuario que realmente necesita candidate stores
+              const { getUserId } = await import('@/app/carrito/utils/getUserId');
+              const userId = getUserId();
+              
+              if (!userId) {
+                console.log(`👤 [Step4OrderSummary] No user logged in, proceeding after short loading`);
+                setTimeout(() => {
+                  // setUserClickedWhileLoading(false);
+                  onFinishPayment();
+                }, 300);
+                return;
+              }
+
+              // Verificar el rol del usuario
+              let userRole = null;
+              try {
+                if (typeof globalThis.window !== "undefined") {
+                  const userDataStr = globalThis.window.localStorage.getItem("imagiq_user");
+                  if (userDataStr && userDataStr !== "null" && userDataStr !== "undefined") {
+                    const userData = JSON.parse(userDataStr);
+                    userRole = userData?.role ?? userData?.rol;
+                  }
+                }
+              } catch (error) {
+                console.error('Error checking user role in onClick:', error);
+              }
+
+              // Si NO es rol 2 o 3, proceder después de mostrar loading
+              if (userRole !== 2 && userRole !== 3) {
+                console.log(`👤 [Step4OrderSummary] User role ${userRole} does not need candidate stores, proceeding after short loading`);
+                setTimeout(() => onFinishPayment(), 300); // Mostrar loading por un momento
+                return;
+              }
+
+              // Solo si es rol 2/3, entonces sí esperar al cálculo real
+              console.log(`⏳ [Step4OrderSummary] User rol ${userRole} needs candidate stores and it's loading, waiting for real calculation...`);
+              return; // El useEffect de auto-advance se encargará
             }
-            // Si no está cargando o estamos en Step7 (no calcula canPickUp), ejecutar inmediatamente
-            // Resetear userClickedWhileLoading por si acaso quedó en true
-            console.log(`✅ [Step4OrderSummary] Executing immediately`);
-            setUserClickedWhileLoading(false);
-            onFinishPayment();
+            
+            // CASO 2: Si canPickUp es null y deberíamos calcularlo, verificar si el usuario está logueado y es rol 2/3
+            if (globalCanPickUp === null && shouldCalculateCanPickUp) {
+              // Si ya sabemos que el usuario no está logueado, proceder después de mostrar loading
+              if (isUserLoggedIn === false) {
+                console.log(`👤 [Step4OrderSummary] User not logged in (cached), proceeding after short loading`);
+                setTimeout(() => onFinishPayment(), 300);
+                return;
+              }
+              
+              // Si aún no sabemos o el usuario está logueado, verificar dinámicamente
+              const { getUserId } = await import('@/app/carrito/utils/getUserId');
+              const userId = getUserId();
+              
+              if (!userId) {
+                console.log(`👤 [Step4OrderSummary] No user logged in (dynamic check), proceeding after short loading`);
+                setIsUserLoggedIn(false); // Actualizar cache para próximas veces
+                setTimeout(() => onFinishPayment(), 300);
+                return;
+              }
+
+              // Verificar el rol del usuario
+              let userRole = null;
+              try {
+                if (typeof globalThis.window !== "undefined") {
+                  const userDataStr = globalThis.window.localStorage.getItem("imagiq_user");
+                  if (userDataStr && userDataStr !== "null" && userDataStr !== "undefined") {
+                    const userData = JSON.parse(userDataStr);
+                    userRole = userData?.role ?? userData?.rol;
+                  }
+                }
+              } catch (error) {
+                console.error('Error checking user role in onClick:', error);
+              }
+
+              // Si no es rol 2 o 3, proceder después de mostrar loading
+              if (userRole !== 2 && userRole !== 3) {
+                console.log(`👤 [Step4OrderSummary] User role ${userRole} does not require candidate stores, proceeding after short loading`);
+                setTimeout(() => onFinishPayment(), 300);
+                return;
+              }
+              
+              console.log(`⏳ [Step4OrderSummary] User logged in with rol ${userRole}, canPickUp is null, setting userClickedWhileLoading=true and triggering calculation...`);
+              setUserClickedWhileLoading(true);
+              // Forzar cálculo si no está ya cargando
+              if (!isLoadingCanPickUp) {
+                console.log(`🔄 [Step4OrderSummary] Forcing fetchGlobalCanPickUp because canPickUp is null...`);
+                fetchGlobalCanPickUp();
+              }
+              return; // El useEffect de auto-advance se encargará cuando termine el cálculo
+            }
+            
+            // CASO 3: Si llegamos aquí, podemos proceder después de mostrar loading brevemente
+            console.log(`✅ [Step4OrderSummary] Ready to proceed after short loading`);
+            setTimeout(() => onFinishPayment(), 300);
           }}
         >
-          {(isProcessing || (userClickedWhileLoading && isLoadingCanPickUp)) ? (
+          {(isProcessing || userClickedWhileLoading) ? (
             <span
               className={`flex gap-2 ${buttonText === "Registrarse como invitado" ? "flex-wrap items-center justify-center whitespace-normal text-center" : "items-center justify-center"
                 }`}
@@ -890,7 +1076,12 @@ export default function Step4OrderSummary({
                   {isLoadingCanPickUp ? (
                     <span className="text-blue-600 animate-pulse">⏳ calculando...</span>
                   ) : globalCanPickUp === null ? (
-                    <span className="text-orange-600 animate-pulse">🔄 calculando...</span>
+                    // Para usuarios que no necesitan candidate stores, mostrar "no aplica"
+                    isUserLoggedIn === false ? (
+                      <span className="text-gray-500">➖ no aplica</span>
+                    ) : (
+                      <span className="text-orange-600">🔄 calculando...</span>
+                    )
                   ) : globalCanPickUp ? (
                     <span className="text-green-600">✅ true</span>
                   ) : (
@@ -902,7 +1093,9 @@ export default function Step4OrderSummary({
                 <span>User clicked while loading:</span>
                 <span className="font-mono font-bold">
                   {userClickedWhileLoading ? (
-                    <span className="text-orange-600 animate-pulse">🔄 esperando...</span>
+                    <span className="text-orange-600 animate-pulse">
+                      🔄 esperando...
+                    </span>
                   ) : (
                     <span className="text-gray-400">-</span>
                   )}

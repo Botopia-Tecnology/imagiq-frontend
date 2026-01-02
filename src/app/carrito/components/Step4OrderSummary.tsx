@@ -220,6 +220,9 @@ export default function Step4OrderSummary({
   // Ref para evitar múltiples ejecuciones del auto-advance
   const autoAdvanceTriggered = React.useRef(false);
 
+  // Ref para controlar race conditions en fetchGlobalCanPickUp
+  const lastRequestIdRef = React.useRef<number>(0);
+
   // Actualizar la ref cuando cambie la función
   React.useEffect(() => {
     onFinishPaymentRef.current = onFinishPayment;
@@ -232,6 +235,10 @@ export default function Step4OrderSummary({
   // Se ejecuta cuando el componente se monta Y cuando el caché se actualiza desde useDelivery
   // IMPORTANTE: Esta función SOLO lee del caché, NO hace llamadas al endpoint
   const fetchGlobalCanPickUp = React.useCallback(async () => {
+    // Generar ID único para esta ejecución y actualizar ref para evitar race conditions
+    const requestId = Date.now();
+    lastRequestIdRef.current = requestId;
+
     // VERIFICACIÓN TEMPRANA: Solo proceder para usuarios rol 2 o 3
     // Esta verificación debe ser lo PRIMERO para evitar cálculos innecesarios
     let shouldCalculateForUser = false;
@@ -379,6 +386,12 @@ export default function Step4OrderSummary({
         addressId: addressId || undefined
       })
         .then((response) => {
+          // Verificar race condition
+          if (requestId !== lastRequestIdRef.current) {
+            console.log(`🚫 [Step4OrderSummary] Ignorando respuesta obsoleta (reqId: ${requestId}, last: ${lastRequestIdRef.current})`);
+            return;
+          }
+
           if (response.data) {
             console.log('✅ [Step4OrderSummary] Fetch completado, canPickUp:', response.data.canPickUp);
 
@@ -395,6 +408,12 @@ export default function Step4OrderSummary({
           }
         })
         .catch((error) => {
+          // Verificar race condition
+          if (requestId !== lastRequestIdRef.current) {
+            console.log(`🚫 [Step4OrderSummary] Ignorando error de solicitud obsoleta (reqId: ${requestId}, last: ${lastRequestIdRef.current})`);
+            return;
+          }
+
           console.error('❌ [Step4OrderSummary] Error en fetch de respaldo:', error);
           // CRÍTICO: Incluso en error, establecer un valor concreto (false) en lugar de null
           setGlobalCanPickUp(false);

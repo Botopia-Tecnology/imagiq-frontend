@@ -40,14 +40,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Check for existing session on mount
   useEffect(() => {
     const loadSession = async () => {
+      console.log('🔄 [AuthContext] loadSession iniciado...');
       const savedUser = localStorage.getItem("imagiq_user");
       const savedToken = localStorage.getItem("imagiq_token");
+
+      console.log('🔍 [AuthContext] loadSession datos:', {
+        hasUser: !!savedUser,
+        hasToken: !!savedToken,
+        tokenLength: savedToken?.length || 0
+      });
 
       // Validar token: debe existir, no estar vacío, y tener formato JWT (3 partes separadas por punto)
       const isTokenValid =
         savedToken &&
         typeof savedToken === "string" &&
         savedToken.split(".").length === 3;
+
+      console.log('🔐 [AuthContext] Token validation:', { isTokenValid });
 
       if (savedUser && isTokenValid) {
         try {
@@ -101,15 +110,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } catch (error) {
           console.error("Error parsing saved user data:", error);
+          console.log('🗑️ [AuthContext] Limpiando token por error de parsing');
           localStorage.removeItem("imagiq_token");
           setUser(null);
         }
       } else {
         // Si el token no es válido, limpiar sesión
+        console.log('🗑️ [AuthContext] Limpiando sesión - token inválido o usuario faltante');
         localStorage.removeItem("imagiq_token");
         setUser(null);
       }
       setIsLoading(false);
+      console.log('✅ [AuthContext] loadSession completado');
     };
 
     loadSession();
@@ -117,8 +129,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Login function
   const login = async (userData: User) => {
+    // CRÍTICO: Limpiar datos del usuario anterior ANTES de guardar el nuevo
+    try {
+      const { clearPreviousUserData } = await import('@/app/carrito/utils/getUserId');
+      console.log('🧹 [AuthContext] Limpiando datos de usuario anterior...');
+      clearPreviousUserData();
+      console.log('✅ [AuthContext] Datos anteriores limpiados');
+    } catch (error) {
+      console.error('❌ [AuthContext] Error limpiando datos anteriores:', error);
+    }
+
     setUser(userData);
     localStorage.setItem("imagiq_user", JSON.stringify(userData));
+
+    // IMPORTANTE: Guardar userId de forma consistente
+    try {
+      const { saveUserId } = await import('@/app/carrito/utils/getUserId');
+      saveUserId(userData.id, userData.email, false); // false = no limpiar de nuevo
+      console.log('✅ [AuthContext] UserId guardado de forma consistente:', userData.id);
+    } catch (error) {
+      console.error('❌ [AuthContext] Error guardando userId:', error);
+    }
 
     // Set token in API client if available
     const token = localStorage.getItem("imagiq_token");
@@ -126,43 +157,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       apiClient.setAuthToken(token);
     }
 
-    // CRÍTICO: Si es usuario regular (rol 2), limpiar caché de candidate stores
-    // Esto asegura que se recalculen los stores con el nuevo userId
+    // Disparar evento para que los componentes recalculen con el nuevo userId
     const userRole = userData.role ?? (userData as User & { rol?: number }).rol;
-    if (userRole === 2) {
-      console.log('🔄 [AuthContext] Usuario regular (rol 2) iniciando sesión - limpiando caché...');
-      
-      // Limpiar caché de candidate stores
-      try {
-        // Limpiar cualquier caché relacionado con el usuario anterior (invitado)
-        const keysToRemove = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && (
-            key.startsWith('canPickUp_') ||
-            key.includes('candidate_stores') ||
-            key.includes('imagiq_guest_id')
-          )) {
-            keysToRemove.push(key);
-          }
-        }
-        
-        keysToRemove.forEach(key => {
-          localStorage.removeItem(key);
-          console.log(`🗑️ [AuthContext] Caché eliminado: ${key}`);
-        });
-        
-        console.log('✅ [AuthContext] Caché de candidate stores limpiado completamente');
-      } catch (error) {
-        console.error('❌ [AuthContext] Error limpiando caché:', error);
-      }
-      
-      // Disparar evento para que los componentes recalculen con el nuevo userId
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('user-changed', {
-          detail: { userId: userData.id, role: userRole }
-        }));
-      }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('user-changed', {
+        detail: { userId: userData.id, role: userRole, email: userData.email }
+      }));
+      console.log('📡 [AuthContext] Evento user-changed disparado:', { userId: userData.id, role: userRole });
     }
 
     // ✅ NUEVO: Cargar dirección predeterminada del usuario
@@ -211,35 +212,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Logout function
   const logout = () => {
+    console.log('🚪 [AuthContext] Cerrando sesión...');
     setUser(null);
 
-    // Limpiar todo el localStorage EXCEPTO datos críticos que deben persistir
+    // CRÍTICO: Usar función especializada para logout que limpia TODO
+    try {
+      import('@/app/carrito/utils/getUserId').then(({ clearAllUserData }) => {
+        clearAllUserData();
+      });
+    } catch (error) {
+      console.error('❌ [AuthContext] Error importando clearAllUserData:', error);
+    }
+
+    // IMPORTANTE: Preservar solo datos que NO son específicos del usuario
     const VERSION_KEY = "app_version";
     const CONSENT_KEY = "imagiq_consent";
     const LOCATION_PERMISSION_KEY = "imagiq_location_permission";
+    const CART_KEY = "cart-items"; // ← Carrito debe persistir entre usuarios
+    const FAVORITES_KEY = "imagiq_favorites"; // ← Favoritos deben persistir
 
+    // Guardar datos que deben persistir
     const appVersion = localStorage.getItem(VERSION_KEY);
     const userConsent = localStorage.getItem(CONSENT_KEY);
     const locationPermission = localStorage.getItem(LOCATION_PERMISSION_KEY);
+    const cartItems = localStorage.getItem(CART_KEY);
+    const favorites = localStorage.getItem(FAVORITES_KEY);
 
+    // Limpiar COMPLETAMENTE localStorage
+    console.log('🗑️ [AuthContext] Limpieza completa de localStorage...');
     localStorage.clear();
 
-    // Restaurar datos que deben persistir entre sesiones
-    if (appVersion) {
-      localStorage.setItem(VERSION_KEY, appVersion);
+    // Restaurar solo datos que deben persistir
+    if (appVersion) localStorage.setItem(VERSION_KEY, appVersion);
+    if (userConsent) localStorage.setItem(CONSENT_KEY, userConsent);
+    if (locationPermission) localStorage.setItem(LOCATION_PERMISSION_KEY, locationPermission);
+    if (cartItems) {
+      localStorage.setItem(CART_KEY, cartItems);
+      console.log('✅ [AuthContext] Carrito preservado');
     }
-    if (userConsent) {
-      localStorage.setItem(CONSENT_KEY, userConsent);
-    }
-    if (locationPermission) {
-      localStorage.setItem(LOCATION_PERMISSION_KEY, locationPermission);
+    if (favorites) {
+      localStorage.setItem(FAVORITES_KEY, favorites);
+      console.log('✅ [AuthContext] Favoritos preservados');
     }
 
     apiClient.removeAuthToken();
 
-    // Disparar evento para que otros componentes se enteren del cambio
+    console.log('✅ [AuthContext] Logout completo - usuario deslogueado, direcciones limpiadas, carrito preservado');
+
+    // Disparar eventos para que componentes se actualicen
     window.dispatchEvent(new Event("storage"));
     window.dispatchEvent(new Event("localStorageChange"));
+    window.dispatchEvent(new CustomEvent('user-logout', {
+      detail: { timestamp: Date.now() }
+    }));
+    console.log('📡 [AuthContext] Eventos de logout disparados');
   };
 
   // Role checking utilities

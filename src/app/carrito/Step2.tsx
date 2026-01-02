@@ -434,6 +434,16 @@ export default function Step2({
         // Preservar el carrito antes de guardar el usuario
         const currentCart = localStorage.getItem("cart-items");
 
+        // CRÍTICO: Limpiar datos de usuario anterior ANTES de guardar invitado
+        try {
+          const { clearPreviousUserData } = await import('@/app/carrito/utils/getUserId');
+          console.log('🧹 [Step2] Limpiando datos de usuario anterior...');
+          clearPreviousUserData();
+          console.log('✅ [Step2] Datos anteriores limpiados');
+        } catch (error) {
+          console.error('❌ [Step2] Error limpiando datos anteriores:', error);
+        }
+
         // Asegurar que el usuario tenga el rol de invitado explícitamente
         const userWithRole = {
           ...result.user,
@@ -447,7 +457,7 @@ export default function Step2({
 
         // CRÍTICO: Guardar userId de forma consistente en todas las fuentes
         const { saveUserId } = await import('@/app/carrito/utils/getUserId');
-        saveUserId(result.user.id, result.user.email);
+        saveUserId(result.user.id, result.user.email, false); // false = no limpiar de nuevo
         console.log('✅ [Step2] UserId guardado de forma consistente:', result.user.id);
 
         // Guardar cédula para autocompletar

@@ -62,7 +62,7 @@ export default function TrackingService({
     }
   };
 
-  const updateCoordinadoraView = useCallback((envio: Partial<DetalleEnvio>, fechaBase: string) => {
+  const updateCoordinadoraView = useCallback(async (envio: Partial<DetalleEnvio>, fechaBase: string) => {
     if (!envio) return;
 
     // Usar número de guía si existe, si no fallback
@@ -82,9 +82,59 @@ export default function TrackingService({
       setEstimatedFinalDate(formatDate(f.toISOString()));
     }
 
-    setTrackingSteps(envio.eventos || []);
+    // Obtener eventos específicos por número de guía si existe
+    if (envio.numero_guia) {
+      try {
+        const eventosResponse = await apiClient.get<{
+          success: boolean;
+          data: EnvioEvento[];
+          total: number;
+        }>(`/api/deliveries/eventos/guia/${envio.numero_guia}`);
+        
+        if (eventosResponse.data.success && eventosResponse.data.data) {
+          setTrackingSteps(eventosResponse.data.data);
+        } else {
+          // Fallback a eventos genéricos si no hay eventos específicos
+          setTrackingSteps(envio.eventos || []);
+        }
+      } catch (error) {
+        console.warn(`Error obteniendo eventos para guía ${envio.numero_guia}:`, error);
+        // Fallback a eventos genéricos en caso de error
+        setTrackingSteps(envio.eventos || []);
+      }
+    } else {
+      // Si no hay número de guía, usar eventos genéricos
+      setTrackingSteps(envio.eventos || []);
+    }
+
     setPdfBase64(envio.pdf_base64 || "");
   }, []);
+
+  // Función para obtener eventos específicos por número de guía
+  const handleGuideChange = useCallback(async (numeroGuia: string) => {
+    if (!numeroGuia) return;
+    
+    try {
+      const eventosResponse = await apiClient.get<{
+        success: boolean;
+        data: EnvioEvento[];
+        total: number;
+      }>(`/api/deliveries/eventos/guia/${numeroGuia}`);
+      
+      if (eventosResponse.data.success && eventosResponse.data.data) {
+        console.log(`📊 Eventos para guía ${numeroGuia}:`, eventosResponse.data.data.length, eventosResponse.data.data);
+        setTrackingSteps(eventosResponse.data.data);
+      }
+
+      // También buscar el PDF correspondiente a esta guía en los envíos
+      const envioCorrespondiente = envios.find(envio => envio.numero_guia === numeroGuia);
+      if (envioCorrespondiente && envioCorrespondiente.pdf_base64) {
+        setPdfBase64(envioCorrespondiente.pdf_base64);
+      }
+    } catch (error) {
+      console.warn(`Error obteniendo eventos para guía ${numeroGuia}:`, error);
+    }
+  }, [envios]);
 
   // Efecto para actualizar la vista cuando cambia la selección de envío
   useEffect(() => {
@@ -93,6 +143,17 @@ export default function TrackingService({
       updateCoordinadoraView(envios[selectedEnvioIndex], fechaCreacion);
     }
   }, [selectedEnvioIndex, envios, fechaCreacion, updateCoordinadoraView]);
+
+  // Efecto para cargar eventos de la primera guía al inicializar
+  useEffect(() => {
+    if (productos.length > 0 && envios.length > 0 && medioPago === 1) { // Solo para Coordinadora
+      // Encontrar la primera guía con productos
+      const firstProductWithGuide = productos.find(p => p.numero_guia);
+      if (firstProductWithGuide && firstProductWithGuide.numero_guia) {
+        handleGuideChange(firstProductWithGuide.numero_guia);
+      }
+    }
+  }, [productos, envios, medioPago, handleGuideChange]);
 
 
   // Determinar el tipo de envío basado en medio_pago o fallback a metodo_envio
@@ -375,7 +436,7 @@ export default function TrackingService({
         );
         setIsLoading(false);
       });
-  }, [pathParams]);
+  }, [pathParams, updateCoordinadoraView]);
 
   if (isLoading) {
     return <LoadingSpinner message="Cargando información del pedido..." />;
@@ -469,6 +530,7 @@ export default function TrackingService({
               shipments={envios}
               selectedShipmentIndex={selectedEnvioIndex}
               onSelectShipment={setSelectedEnvioIndex}
+              onGuideChange={handleGuideChange}
               products={productos}
               shippingType={shippingType}
             />

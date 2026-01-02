@@ -88,6 +88,8 @@ interface ShippingVerification {
   envio_imagiq: boolean;
   todos_productos_im_it: boolean;
   en_zona_cobertura: boolean;
+  todos_productos_solo_im?: boolean;
+  productos_no_im_tienen_remota?: boolean;
 }
 
 interface BillingData {
@@ -2538,8 +2540,36 @@ export default function Step7({ onBack }: Step7Props) {
                                 )}
                               </p>
                               <p>
-                                • todos_productos_im_it:{" "}
+                                • todos_productos_im_it_av:{" "}
                                 {shippingVerification?.todos_productos_im_it ? (
+                                  <span className="text-green-600 font-bold">
+                                    true
+                                  </span>
+                                ) : (
+                                  <span className="text-red-600 font-bold">
+                                    false
+                                  </span>
+                                )}
+                              </p>
+                              <p>
+                                • todos_productos_solo_im:{" "}
+                                {shippingVerification?.todos_productos_solo_im ? (
+                                  <span className="text-green-600 font-bold">
+                                    true
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-600 font-bold">
+                                    false
+                                  </span>
+                                )}
+                              </p>
+                              <p>
+                                • productos_no_im_tienen_remota:{" "}
+                                {shippingVerification?.todos_productos_solo_im ? (
+                                  <span className="text-gray-500 italic">
+                                    n/a (todos IM)
+                                  </span>
+                                ) : shippingVerification?.productos_no_im_tienen_remota ? (
                                   <span className="text-green-600 font-bold">
                                     true
                                   </span>

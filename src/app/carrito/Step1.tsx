@@ -38,7 +38,7 @@ export default function Step1({
 }) {
   // IMPORTANTE: En Step1, useDelivery hace la llamada inicial a candidate-stores
   // Esto llena el caché para que los demás steps solo lean de él
-  useDelivery({
+  const { storesLoading } = useDelivery({
     canFetchFromEndpoint: true,  // Permitir llamadas en Step1
     onlyReadCache: false,         // NO solo lectura, debe hacer llamada inicial
   });
@@ -354,7 +354,7 @@ export default function Step1({
     } catch (error) {
       console.error("❌ Error al sincronizar Trade-Ins:", error);
     }
-  }, [cartProducts]); // Ejecutar cuando cambian los productos
+  }, [cartProducts, tradeInData]); // Ejecutar cuando cambian los productos
 
   // Abrir modal automáticamente si viene desde el botón "Entrego y Estreno"
   useEffect(() => {
@@ -530,6 +530,8 @@ export default function Step1({
   const [isLoadingCanPickUpGlobal, setIsLoadingCanPickUpGlobal] =
     React.useState(false);
   const [canPickUpGlobalValue, setCanPickUpGlobalValue] = React.useState<boolean | null>(null);
+  // Estado para rastrear si el usuario hizo clic mientras se calculaba
+  const [userClickedWhileLoading, setUserClickedWhileLoading] = React.useState(false);
 
   // Callback para recibir el estado de canPickUp desde Step4OrderSummary
   // Guarda tanto el valor como el estado de loading
@@ -537,9 +539,30 @@ export default function Step1({
     (isReady: boolean, isLoading: boolean) => {
       setIsLoadingCanPickUpGlobal(isLoading);
       setCanPickUpGlobalValue(isReady); // Guardar el valor de canPickUp
-      // El avance automático ahora se maneja en Step4OrderSummary con userClickedWhileLoading
+      
+      // Si el usuario hizo clic mientras se calculaba y ya terminó el loading, avanzar automáticamente
+      if (userClickedWhileLoading && !isLoading) {
+        setUserClickedWhileLoading(false); // Resetear la bandera
+        
+        // Validar Trade-In antes de continuar
+        const validation = validateTradeInProducts(cartProducts);
+        if (validation.isValid) {
+          // Track del evento begin_checkout para analytics
+          trackBeginCheckout(
+            cartProducts.map((p) => ({
+              item_id: p.sku,
+              item_name: p.name,
+              price: Number(p.price),
+              quantity: p.quantity,
+            })),
+            total
+          );
+          
+          onContinue();
+        }
+      }
     },
-    []
+    [userClickedWhileLoading, cartProducts, total, onContinue, trackBeginCheckout]
   );
 
   // Función para manejar el click en continuar pago
@@ -556,11 +579,10 @@ export default function Step1({
       return;
     }
 
-    // IMPORTANTE: Si canPickUp global está cargando, la nueva lógica en Step4OrderSummary
-    // se encargará de avanzar automáticamente cuando termine (usando userClickedWhileLoading)
-    // Solo necesitamos esperar si ya terminó de cargar
+    // Si canPickUp global está cargando, marcar que el usuario hizo clic
+    // y el avance automático se hará cuando termine el cálculo
     if (isLoadingCanPickUpGlobal) {
-      // No hacer nada aquí, dejar que Step4OrderSummary maneje el avance automático
+      setUserClickedWhileLoading(true);
       return;
     }
 
@@ -958,16 +980,18 @@ export default function Step1({
 
             {/* Botón continuar */}
             <button
-              className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${!tradeInValidation.isValid || isLoadingCanPickUpGlobal
+              className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${!tradeInValidation.isValid 
                 ? "bg-gray-400 cursor-not-allowed opacity-70"
+                : userClickedWhileLoading
+                ? "bg-gray-600 cursor-not-allowed opacity-90"
                 : "bg-[#222] hover:bg-[#333] cursor-pointer"
                 }`}
               onClick={handleContinue}
-              disabled={!tradeInValidation.isValid || isLoadingCanPickUpGlobal}
+              disabled={!tradeInValidation.isValid || userClickedWhileLoading}
             >
-              {isLoadingCanPickUpGlobal ? (
+              {userClickedWhileLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
                     <circle
                       className="opacity-25"
                       cx="12"
@@ -983,7 +1007,7 @@ export default function Step1({
                       d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                     />
                   </svg>
-                  Verificando...
+                  Continuar pago
                 </span>
               ) : (
                 "Continuar pago"

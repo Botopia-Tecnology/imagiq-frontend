@@ -1121,12 +1121,15 @@ export default function Step3({
   // Solo mostrar skeleton cuando realmente se está recalculando canPickUp (cambio de dirección)
   // isInitialTradeInLoading solo se usa para la primera carga con trade-in, pero si hay datos en caché no debe mostrar skeleton
 
-  // MODIFICADO: Mostrar skeleton durante recálculo (cambio de dirección) para dar feedback visual claro.
-  // El usuario reportó que "se debe ver el skeleton mejor" y que parecía que no actualizaba.
-  const shouldShowSkeleton = (isLoadingCanPickUp && !hasCanPickUpValue) ||
-    isRecalculatingPickup || // Mostrar skeleton SIEMPRE que se esté recalculando por cambio de dirección
-    (!hasCanPickUpValue && isInitialTradeInLoading && storesLoading) || // Mostrar en carga inicial con trade-in
-    (storesLoading && !hasLoadedPickupOnceRef.current); // FIX: Mostrar skeleton cuando se regresa al paso y está cargando stores
+  // MODIFICADO: Mostrar skeleton SOLO cuando se está calculando candidateStores
+  // Sin importar la razón: cambio de dirección, paso del Step1 al Step3, etc.
+  // IMPORTANTE: Mostrar skeleton INMEDIATAMENTE si no hay datos, para evitar parpadeo
+  const hasStoreData = stores.length > 0 || availableStoresWhenCanPickUpFalse.length > 0;
+  
+  // Mostrar skeleton si:
+  // 1. Está cargando stores Y no hay datos (evita parpadeo)
+  // 2. O si no hay datos Y no se ha cargado pickup al menos una vez (carga inicial)
+  const shouldShowSkeleton = (storesLoading && !hasStoreData) || (!hasStoreData && !hasLoadedPickupOnceRef.current);
 
   // NOTE: REMOVED isRecalculatingPickup conditions to keep UI visible.
   // The loading state is now handled by individual components via isLoading prop.

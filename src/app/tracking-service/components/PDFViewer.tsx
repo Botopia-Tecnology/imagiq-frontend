@@ -72,6 +72,11 @@ export function PDFViewer({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Reset page number when switching between guides
+  useEffect(() => {
+    setPageNumber(1);
+  }, [selectedShipmentIndex]);
+
   if (error) {
     return (
       <div className="w-full rounded-xl bg-white overflow-hidden">

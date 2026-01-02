@@ -144,7 +144,8 @@ export default function LoginPage() {
 
       localStorage.setItem("imagiq_token", access_token);
 
-      login({
+      // ✅ CRITICAL: await login to ensure context is fully established
+      await login({
         id: user.id,
         email: user.email,
         nombre: user.nombre,

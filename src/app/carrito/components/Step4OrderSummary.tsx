@@ -15,6 +15,8 @@ interface ShippingVerification {
   envio_imagiq: boolean;
   todos_productos_im_it: boolean;
   en_zona_cobertura: boolean;
+  todos_productos_solo_im?: boolean;
+  productos_no_im_tienen_remota?: boolean;
 }
 
 interface Step4OrderSummaryProps {
@@ -286,32 +288,26 @@ export default function Step4OrderSummary({
       return;
     }
 
-    // Si no hay caché disponible:
-    // - Si shouldCalculateCanPickUp es true (Steps 1-6): establecer loading=true
-    // - Si solo es por debug (Step 7): establecer null sin loading para no bloquear la UI
-    setGlobalCanPickUp(null);
+    // CRÍTICO: En Step7, NUNCA dejar globalCanPickUp en null
+    // SIEMPRE debe mostrar true o false después de calcular
 
-    // CORRECCIÓN: Si no hay datos en caché, SIEMPRE intentar hacer fetch de respaldo
-    // Si shouldCalculateCanPickUp es true, mostramos loading.
-    // Si es false (Step 7), hacemos fetch silencioso.
+    // Si shouldCalculateCanPickUp es true (Steps 1-6): establecer loading=true
+    // Si es false (Step 7): hacer fetch OBLIGATORIO y establecer loading=true
+    setIsLoadingCanPickUp(true);
 
-    if (shouldCalculateCanPickUp) {
-      setIsLoadingCanPickUp(true);
-    } else {
-      setIsLoadingCanPickUp(false);
-    }
-
-    // Intentar hacer fetch de respaldo siempre que no haya caché
-    // Esto soluciona el problema de que el caché no se llena tras un refresh en steps 4-7
+    // CORRECCIÓN CRÍTICA: SIEMPRE hacer fetch si no hay caché
+    // Esto es especialmente importante para Step7 donde el valor NUNCA puede ser null
     if (typeof window !== 'undefined') {
       // Si es Step1, NO hacer fetch de respaldo (ya lo hace useDelivery)
       if (isStep1) {
+        setGlobalCanPickUp(null);
+        setIsLoadingCanPickUp(false);
         return;
       }
 
+      console.log('🔄 [Step4OrderSummary] No hay caché disponible, haciendo fetch obligatorio...');
 
-
-      // Hacer la petición inmediatamente sin debounce para máxima fluidez
+      // Hacer la petición inmediatamente - CRÍTICO para Step7
       productEndpoints.getCandidateStores({
         products: productsToCheck,
         user_id: userId,
@@ -319,19 +315,25 @@ export default function Step4OrderSummary({
       })
         .then((response) => {
           if (response.data) {
+            console.log('✅ [Step4OrderSummary] Fetch completado, canPickUp:', response.data.canPickUp);
 
+            // Guardar en caché
             setGlobalCanPickUpCache(cacheKey, response.data.canPickUp, response.data, addressId);
 
-            if (!shouldCalculateCanPickUp) {
-              setGlobalCanPickUp(response.data.canPickUp);
-            }
+            // CRÍTICO: Actualizar globalCanPickUp SIEMPRE (tanto en Steps 1-6 como en Step7)
+            setGlobalCanPickUp(response.data.canPickUp ?? false);
+            setIsLoadingCanPickUp(false);
+          } else {
+            console.warn('⚠️ [Step4OrderSummary] Respuesta sin data, usando false por defecto');
+            setGlobalCanPickUp(false);
+            setIsLoadingCanPickUp(false);
           }
         })
         .catch((error) => {
           console.error('❌ [Step4OrderSummary] Error en fetch de respaldo:', error);
-          if (shouldCalculateCanPickUp) {
-            setIsLoadingCanPickUp(false);
-          }
+          // CRÍTICO: Incluso en error, establecer un valor concreto (false) en lugar de null
+          setGlobalCanPickUp(false);
+          setIsLoadingCanPickUp(false);
         });
     }
   }, [products, shouldCalculateCanPickUp, isStep1]);

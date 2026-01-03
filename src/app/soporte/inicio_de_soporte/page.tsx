@@ -67,10 +67,10 @@ function normalizeTipoDocumento(input?: string) {
   return (
     map[key] ??
     map[
-      input
-        .toString()
-        .toLowerCase()
-        .replace(/[^a-z0-9 ]/g, "")
+    input
+      .toString()
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]/g, "")
     ] ??
     input
   );
@@ -551,15 +551,25 @@ export default function InicioDeSoportePage() {
               soporte. Responderemos a la mayor brevedad.
             </p>
 
+            {success && (
+              <div className="mb-6 flex items-center gap-2 px-4 py-3 bg-white border-l-4 border-green-600 rounded-r-lg shadow-sm">
+                <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <p className="text-sm text-gray-900 font-medium">
+                  {success}
+                </p>
+              </div>
+            )}
+
             {supportStatus && (
               <div
-                className={`mb-6 w-full text-xs rounded-md p-3 block ${
-                  supportStatus === "APPROVED"
-                    ? "bg-emerald-50 border border-emerald-100 text-emerald-800"
-                    : supportStatus === "PENDING"
+                className={`mb-6 w-full text-xs rounded-md p-3 block ${supportStatus === "APPROVED"
+                  ? "bg-emerald-50 border border-emerald-100 text-emerald-800"
+                  : supportStatus === "PENDING"
                     ? "bg-yellow-50 border border-yellow-100 text-yellow-800"
                     : "bg-rose-50 border border-rose-100 text-rose-800"
-                }`}
+                  }`}
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -567,8 +577,8 @@ export default function InicioDeSoportePage() {
                       {supportStatus === "APPROVED"
                         ? "Pago aprobado"
                         : supportStatus === "PENDING"
-                        ? "Pago pendiente"
-                        : "Pago rechazado"}
+                          ? "Pago pendiente"
+                          : "Pago rechazado"}
                     </div>
                     {supportOrderId && (
                       <div className="mt-1">
@@ -598,11 +608,7 @@ export default function InicioDeSoportePage() {
               </div>
             )}
 
-            {success && (
-              <span className="mb-6 w-full text-xs rounded-md bg-emerald-50 border border-emerald-100 p-3 text-emerald-800 block">
-                {success}
-              </span>
-            )}
+
 
             <form onSubmit={handleSubmit} className="space-y-6" noValidate>
               {/* Campo C�dula */}
@@ -648,9 +654,8 @@ export default function InicioDeSoportePage() {
                       errors.cedula ? "cedula-error" : undefined
                     }
                     autoFocus
-                    className={`mt-0 block w-full rounded-lg border px-4 py-2 pl-10 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.cedula ? "border-rose-500" : "border-gray-200"
-                    } bg-white`}
+                    className={`mt-0 block w-full rounded-lg border px-4 py-2 pl-10 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary ${errors.cedula ? "border-rose-500" : "border-gray-200"
+                      } bg-white`}
                   />
                 </div>
                 {errors.cedula && (
@@ -706,9 +711,8 @@ export default function InicioDeSoportePage() {
                     placeholder="Ej: 2025-0001"
                     aria-label="Número de orden"
                     aria-describedby={errors.orden ? "orden-error" : undefined}
-                    className={`mt-0 block w-full rounded-lg border px-4 py-2 pl-10 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.orden ? "border-rose-500" : "border-gray-200"
-                    } bg-white`}
+                    className={`mt-0 block w-full rounded-lg border px-4 py-2 pl-10 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary ${errors.orden ? "border-rose-500" : "border-gray-200"
+                      } bg-white`}
                   />
                 </div>
                 {errors.orden && (
@@ -802,7 +806,7 @@ export default function InicioDeSoportePage() {
               {result && (
                 <div className="space-y-4 md:space-y-6">
                   {/* Info del cliente */}
-                  {result.obtenerDocumentosResult.documentos[0] && (
+                  {result.obtenerDocumentosResult?.documentos?.[0] && (
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                       <p className="text-sm font-medium text-gray-900">
                         {result.obtenerDocumentosResult.documentos[0].cliente}
@@ -818,18 +822,18 @@ export default function InicioDeSoportePage() {
                   )}
 
                   {/* Monto a pagar */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 md:p-6">
-                    <p className="text-xs md:text-sm text-blue-900 mb-2">
-                      Monto a pagar:
+                  <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black border border-gray-700 rounded-xl p-6 md:p-8 shadow-2xl">
+                    <p className="text-xs md:text-sm text-gray-300 mb-3 uppercase tracking-wider font-medium">
+                      Monto a pagar
                     </p>
                     <p
                       className={cn(
-                        "font-bold text-blue-900 overflow-wrap-break-word",
-                        result.obtenerDocumentosResult.documentos.every(
+                        "font-bold text-white overflow-wrap-break-word leading-tight",
+                        result.obtenerDocumentosResult?.documentos?.every(
                           (r) => r.valor === "0,0000"
                         ) === true
                           ? "text-2xl md:text-3xl"
-                          : "text-3xl md:text-5xl"
+                          : "text-4xl md:text-6xl"
                       )}
                     >
                       {(() => {
@@ -837,7 +841,7 @@ export default function InicioDeSoportePage() {
                         const raw = doc?.valor;
                         if (!raw)
                           return (
-                            result.obtenerDocumentosResult.documentos.findLast(
+                            result.obtenerDocumentosResult?.documentos?.findLast(
                               (p) => p.valor === "0,0000"
                             )?.estadoNombre ||
                             "Pronto tendremos tu información!"
@@ -846,15 +850,14 @@ export default function InicioDeSoportePage() {
                       })()}
                     </p>
                     {getDocumentoConValor() && (
-                      <p className="text-xs text-blue-700 mt-2">
-                        {getDocumentoConValor()?.tipo} -{" "}
-                        {getDocumentoConValor()?.concepto}
+                      <p className="text-xs md:text-sm text-gray-400 mt-3 pt-3 border-t border-gray-700">
+                        {getDocumentoConValor()?.tipo} • {getDocumentoConValor()?.concepto}
                       </p>
                     )}
                   </div>
 
                   {/* Lista de documentos */}
-                  {result.obtenerDocumentosResult.documentos.length > 1 && (
+                  {(result.obtenerDocumentosResult?.documentos?.length ?? 0) > 1 && (
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-gray-700">
                         Historial de documentos:
@@ -893,27 +896,27 @@ export default function InicioDeSoportePage() {
                     </div>
                   )}
 
-                  {result.obtenerDocumentosResult.documentos.some(
+                  {result.obtenerDocumentosResult?.documentos?.some(
                     (r) => r.valor !== "0,0000"
                   ) && (
-                    <div className="w-full flex flex-col gap-2 md:gap-3">
-                      <Link
-                        href={getDocumentoConValor()?.url || "#"}
-                        target="_blank"
-                        className="w-full rounded-lg inline-flex items-center justify-center px-3 md:px-4 py-2 md:py-3 bg-white text-gray-900 border border-gray-950 font-bold text-sm md:text-base shadow-md transition transform hover:scale-105"
-                      >
-                        Descargar factura
-                      </Link>
+                      <div className="w-full flex flex-col gap-2 md:gap-3">
+                        <Link
+                          href={getDocumentoConValor()?.url || "#"}
+                          target="_blank"
+                          className="w-full rounded-lg inline-flex items-center justify-center px-3 md:px-4 py-2 md:py-3 bg-white text-gray-900 border border-gray-950 font-bold text-sm md:text-base shadow-md transition transform hover:scale-105"
+                        >
+                          Descargar factura
+                        </Link>
 
-                      <Button
-                        onClick={handleGoToPayment}
-                        type="button"
-                        className="w-full px-4 md:px-6 py-2 md:py-3 bg-black text-white rounded-lg font-bold text-sm md:text-base shadow-md transition transform hover:scale-105"
-                      >
-                        Ir a pagar
-                      </Button>
-                    </div>
-                  )}
+                        <Button
+                          onClick={handleGoToPayment}
+                          type="button"
+                          className="w-full px-4 md:px-6 py-2 md:py-3 bg-black text-white rounded-lg font-bold text-sm md:text-base shadow-md transition transform hover:scale-105"
+                        >
+                          Ir a pagar
+                        </Button>
+                      </div>
+                    )}
 
                   <Button
                     onClick={handleCloseModal}

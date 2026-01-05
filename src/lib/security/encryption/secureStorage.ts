@@ -14,7 +14,7 @@
 import CryptoJS from 'crypto-js';
 
 // Keys que NUNCA se encriptan (whitelist)
-const WHITELIST_KEYS = ['app_version'];
+const WHITELIST_KEYS = ['app_version', 'imagiq_user'];
 
 /**
  * Clase SecureStorage

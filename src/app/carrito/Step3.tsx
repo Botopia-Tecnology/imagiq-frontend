@@ -33,9 +33,10 @@ export default function Step3({
   const { products, calculations } = useCart();
   const { trackAddPaymentInfo } = useAnalyticsWithUser();
   const { user, login } = useAuthContext();
-  // OPTIMIZACIÓN: Step3 SOLO lee del caché por defecto
-  // Si viene de Step1 o Step2, usa el caché ya calculado
-  // Solo recalcula candidate stores si cambia la dirección
+  
+  // OPTIMIZACIÓN CRÍTICA: Step3 SOLO lee del caché si ya existe
+  // Si viene de Step1, ya debería existir el caché de candidate-stores
+  // Solo permitir llamadas al endpoint si NO hay caché disponible
   const {
     address,
     setAddress,
@@ -63,8 +64,8 @@ export default function Step3({
     lastResponse,
     setAddresses, // New function from useDelivery
   } = useDelivery({
-    canFetchFromEndpoint: true, // Permitir llamadas cuando cambia dirección
-    onlyReadCache: false, // MODIFICADO: Permitir fetch si no hay datos (ej: volver de otro paso con otra dirección)
+    canFetchFromEndpoint: true, // Permitir fetch solo si no hay caché
+    onlyReadCache: true, // OPTIMIZACIÓN: Solo leer del caché en Step3 (ya debería existir desde Step1)
   });
 
   // Hook para precarga de tarjetas y zero interest

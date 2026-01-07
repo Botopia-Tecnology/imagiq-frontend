@@ -15,7 +15,7 @@ export default function Step6Page() {
     if (!isChecking) return; // Ya se verificó, no volver a verificar
 
     const token = localStorage.getItem("imagiq_token");
-    
+
     // Intentar obtener usuario desde el hook o localStorage directamente
     const userToCheck = loggedUser || (() => {
       try {
@@ -26,8 +26,8 @@ export default function Step6Page() {
       }
     })();
 
-    console.log("🔍 [STEP6] Verificando acceso:", { 
-      hasToken: !!token, 
+    console.log("🔍 [STEP6] Verificando acceso:", {
+      hasToken: !!token,
       hasUser: !!userToCheck,
       userRol: userToCheck ? ((userToCheck as User & { rol?: number }).rol ?? (userToCheck as User).role) : null
     });

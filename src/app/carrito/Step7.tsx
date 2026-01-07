@@ -21,6 +21,7 @@ import CardBrandLogo from "@/components/ui/CardBrandLogo";
 import { payWithAddi, payWithCard, payWithPse, fetchBanks } from "./utils";
 import { useCart } from "@/hooks/useCart";
 import { useCardsCache } from "./hooks/useCardsCache";
+import { useDelivery } from "./hooks/useDelivery";
 import {
   validateTradeInProducts,
   getTradeInValidationMessage,
@@ -156,6 +157,18 @@ export default function Step7({ onBack }: Step7Props) {
     "imagiq_user",
     null
   );
+
+  // CRÍTICO: Usar useDelivery en modo onlyReadCache para leer datos de Steps 1-4
+  // Esto permite mostrar la información de tiendas candidatas en el debug panel
+  const {
+    stores,
+    availableStoresWhenCanPickUpFalse,
+    filteredStores,
+    availableCities,
+  } = useDelivery({
+    canFetchFromEndpoint: false, // NO hacer peticiones, solo leer caché
+    onlyReadCache: true          // Solo lectura del caché
+  });
 
   // Estado para el modal de registro de contraseña
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -2463,6 +2476,12 @@ export default function Step7({ onBack }: Step7Props) {
                 deliveryMethod={shippingData?.type}
                 error={error}
                 shouldCalculateCanPickUp={false}
+                debugStoresInfo={{
+                  availableStoresWhenCanPickUpFalse: availableStoresWhenCanPickUpFalse.length,
+                  stores: stores.length,
+                  filteredStores: filteredStores.length,
+                  availableCities: availableCities.length,
+                }}
               />
             )}
             {/* Información del método de envío - Solo se muestra cuando NEXT_PUBLIC_SHOW_PRODUCT_CODES es true */}

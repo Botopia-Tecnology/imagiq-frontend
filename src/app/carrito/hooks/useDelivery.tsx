@@ -295,8 +295,9 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
           stores: {},
           success: false,
           hasData: false,
-          message: 'Loop protection triggered'
-        } as any, currentAddressId);
+          message: 'Loop protection triggered',
+          default_direction: null
+        } as unknown as CandidateStoresResponse, currentAddressId);
       }
 
       return;
@@ -468,8 +469,15 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
             setStores([]);
             setFilteredStores([]);
           }
+          
+          // CRÍTICO: Desactivar loading cuando se lee del caché
+          setStoresLoading(false);
         }
         return; // Salir sin hacer petición al endpoint
+      } else {
+        // No hay caché disponible con onlyReadCache
+        console.log('📦 [CACHÉ] No hay datos en caché y onlyReadCache=true, desactivando loading');
+        setStoresLoading(false);
       }
     }
 
@@ -968,11 +976,11 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       setGlobalCanPickUpCache(errorCacheKey, false, {
         canPickUp: false,
         stores: {},
-        // @ts-ignore - Propiedades adicionales para debug
         success: false,
         hasData: false,
-        message: errorMessage
-      } as any, currentAddressId);
+        message: errorMessage,
+        default_direction: null
+      } as unknown as CandidateStoresResponse, currentAddressId);
     } finally {
       setStoresLoading(false);
       isFetchingRef.current = false;

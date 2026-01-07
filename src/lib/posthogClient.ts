@@ -19,6 +19,9 @@
  * - GDPR compliance settings
  */
 
+import posthog from "posthog-js";
+import type { CampaignData } from "@/components/InWebCampaign/types";
+
 // Configuración de claves y host de PostHog
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY || "";
 const POSTHOG_HOST =
@@ -54,8 +57,28 @@ export const posthogConfig = {
 
 // Inicialización del SDK de PostHog
 export const initPostHog = () => {
-  // Aquí se implementaría la lógica real de inicialización del SDK
-  // Ejemplo: posthog.init(POSTHOG_KEY, posthogConfig)
+  // Only initialize in browser environment
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  // Return early if PostHog key is empty
+  if (!POSTHOG_KEY) {
+    console.warn("PostHog key is not set. PostHog will not be initialized.");
+    return;
+  }
+
+  // Check if PostHog is already initialized
+  if (posthog.__loaded) {
+    return;
+  }
+
+  try {
+    posthog.init(POSTHOG_KEY, posthogConfig);
+    console.log("PostHog initialized successfully");
+  } catch (error) {
+    console.error("Error initializing PostHog:", error);
+  }
 };
 
 // Variable global para almacenar el userId actual
@@ -78,8 +101,14 @@ export const posthogUtils = {
    * @param userId - ID único del usuario
    * @param userProperties - Propiedades adicionales del usuario
    */
-  identify: (_userId: string, _userProperties?: Record<string, unknown>) => {
-    // PostHog user identification - implementation goes here
+  identify: (userId: string, userProperties?: Record<string, unknown>) => {
+    if (typeof window === "undefined") return;
+    try {
+      posthog.identify(userId, userProperties);
+      currentUserId = userId;
+    } catch (error) {
+      console.error("Error identifying user in PostHog:", error);
+    }
   },
 
   /**
@@ -87,22 +116,31 @@ export const posthogUtils = {
    * @param eventName - Nombre del evento
    * @param properties - Propiedades adicionales del evento
    */
-  capture: (_eventName: string, properties?: Record<string, unknown>) => {
-    const _eventProps = {
-      ...(properties || {}),
-      ...(currentUserId ? { userId: currentUserId } : {}),
-    };
-    // Aquí iría la llamada real al SDK de PostHog
-    // posthog.capture(eventName, eventProps);
+  capture: (eventName: string, properties?: Record<string, unknown>) => {
+    if (typeof window === "undefined") return;
+    try {
+      const eventProps = {
+        ...(properties || {}),
+        ...(currentUserId ? { userId: currentUserId } : {}),
+      };
+      posthog.capture(eventName, eventProps);
+    } catch (error) {
+      console.error("Error capturing event in PostHog:", error);
+    }
   },
 
   /**
    * Captura una vista de página
    * @param pageName - Nombre de la página (opcional)
    */
-  capturePageView: (_pageName?: string) => {
-    console.log("📊 PostHog - Page View captured:", _pageName || window.location.pathname);
-    // PostHog page view capture - implementation goes here
+  capturePageView: (pageName?: string) => {
+    if (typeof window === "undefined") return;
+    try {
+      const page = pageName || window.location.pathname;
+      posthog.capture("$pageview", { page });
+    } catch (error) {
+      console.error("Error capturing page view in PostHog:", error);
+    }
   },
 
   /**
@@ -110,29 +148,51 @@ export const posthogUtils = {
    * @param flagKey - Clave del feature flag
    * @returns boolean
    */
-  isFeatureEnabled: (_flagKey: string): boolean => {
-    return false;
+  isFeatureEnabled: (flagKey: string): boolean => {
+    if (typeof window === "undefined") return false;
+    try {
+      return posthog.isFeatureEnabled(flagKey) || false;
+    } catch (error) {
+      console.error("Error checking feature flag in PostHog:", error);
+      return false;
+    }
   },
 
   /**
    * Inicia la grabación de sesión (session replay)
    */
   startSessionRecording: () => {
-    // PostHog start session recording - implementation goes here
+    if (typeof window === "undefined") return;
+    try {
+      posthog.startSessionRecording();
+    } catch (error) {
+      console.error("Error starting session recording in PostHog:", error);
+    }
   },
 
   /**
    * Detiene la grabación de sesión
    */
   stopSessionRecording: () => {
-    // PostHog stop session recording - implementation goes here
+    if (typeof window === "undefined") return;
+    try {
+      posthog.stopSessionRecording();
+    } catch (error) {
+      console.error("Error stopping session recording in PostHog:", error);
+    }
   },
 
   /**
    * Resetea el usuario (logout)
    */
   reset: () => {
-    // PostHog reset user - implementation goes here
+    if (typeof window === "undefined") return;
+    try {
+      posthog.reset();
+      currentUserId = null;
+    } catch (error) {
+      console.error("Error resetting user in PostHog:", error);
+    }
   },
 };
 
@@ -195,10 +255,58 @@ export function captureEcommerceEvent(
   // posthog.capture(eventName, eventData);
 }
 
-// Inicializa PostHog al cargar el módulo en el navegador
-if (typeof window !== "undefined") {
-  initPostHog();
+/**
+ * Track when an in-web notification campaign is shown to the user
+ * @param campaign - Campaign data object
+ * @param userId - Optional user ID
+ */
+export function trackInWebNotificationShown(
+  campaign: CampaignData,
+  userId?: string
+) {
+  if (!campaign) return;
+
+  const properties: Record<string, unknown> = {
+    campaign_name: campaign.campaign_name,
+    campaign_type: campaign.campaign_type,
+    content_type: campaign.content_type,
+    display_style: campaign.display_style,
+    content_url: campaign.content_url,
+  };
+
+  if (userId) {
+    properties.userId = userId;
+  }
+
+  posthogUtils.capture("inweb_notification_shown", properties);
 }
+
+/**
+ * Track when a user clicks on an in-web notification campaign
+ * @param campaign - Campaign data object
+ * @param userId - Optional user ID
+ */
+export function trackInWebNotificationClicked(
+  campaign: CampaignData,
+  userId?: string
+) {
+  if (!campaign) return;
+
+  const properties: Record<string, unknown> = {
+    campaign_name: campaign.campaign_name,
+    campaign_type: campaign.campaign_type,
+    content_type: campaign.content_type,
+    display_style: campaign.display_style,
+    content_url: campaign.content_url,
+  };
+
+  if (userId) {
+    properties.userId = userId;
+  }
+
+  posthogUtils.capture("inweb_notification_clicked", properties);
+}
+
 // -------------------------------------------------------------
 // Los datos capturados se envían a los servidores de PostHog
 // Puedes consultarlos en el dashboard web de PostHog

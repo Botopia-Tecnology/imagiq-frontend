@@ -3,6 +3,11 @@
 import { X } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import type { CampaignData } from "./types";
+import {
+  trackInWebNotificationShown,
+  trackInWebNotificationClicked,
+} from "@/lib/posthogClient";
+import { useAuthContext } from "@/features/auth/context";
 
 interface InWebCampaignDisplayProps {
   campaign: CampaignData | null;
@@ -278,6 +283,7 @@ export function InWebCampaignDisplay({
   onClose,
 }: InWebCampaignDisplayProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const { user } = useAuthContext();
 
   const handleClose = () => {
     setIsVisible(false);
@@ -288,11 +294,17 @@ export function InWebCampaignDisplay({
     if (campaign?.content_url) {
       window.open(campaign.content_url, "_blank");
     }
+    // Track click event
+    if (campaign) {
+      trackInWebNotificationClicked(campaign, user?.id);
+    }
   };
 
   useEffect(() => {
     if (campaign) {
       setIsVisible(true);
+      // Track shown event when campaign becomes visible
+      trackInWebNotificationShown(campaign, user?.id);
 
       if (campaign.ttl && campaign.ttl > 0) {
         const timer = setTimeout(() => {
@@ -302,7 +314,7 @@ export function InWebCampaignDisplay({
         return () => clearTimeout(timer);
       }
     }
-  }, [campaign, onClose]);
+  }, [campaign, onClose, user?.id]);
 
   if (!campaign || !isVisible) return null;
 

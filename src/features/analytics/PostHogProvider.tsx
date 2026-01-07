@@ -11,7 +11,7 @@
 
 
 import { createContext, useContext, useEffect } from "react";
-import { posthogUtils } from "@/lib/posthogClient";
+import { posthogUtils, initPostHog } from "@/lib/posthogClient";
 
 interface PostHogContextType {
   capture: (event: string, properties?: Record<string, unknown>) => void;
@@ -41,8 +41,14 @@ export const PostHogProvider = ({
   useEffect(() => {
     // Initialize PostHog when component mounts
     if (typeof window !== "undefined") {
-      // Track initial page load
-      posthogUtils.capturePageView(window.location.pathname);
+      try {
+        // Initialize PostHog first
+        initPostHog();
+        // Track initial page load
+        posthogUtils.capturePageView(window.location.pathname);
+      } catch (error) {
+        console.error("Error initializing PostHog in provider:", error);
+      }
     }
   }, []);
 

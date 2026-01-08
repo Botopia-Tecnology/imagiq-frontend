@@ -14,7 +14,7 @@ const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
 if (!API_KEY && process.env.NODE_ENV === "development") {
   console.warn(
     "⚠️ NEXT_PUBLIC_API_KEY no está configurada. Las peticiones al API fallarán.\n" +
-      "Agrega NEXT_PUBLIC_API_KEY a tu archivo .env.local"
+    "Agrega NEXT_PUBLIC_API_KEY a tu archivo .env.local"
   );
 }
 
@@ -75,7 +75,7 @@ export async function apiClient(
         console.error("🔐 Error de autenticación:", error.message, { endpoint, url, status: response.status });
         throw error;
       }
-      
+
       if (response.status === 429) {
         const error = new Error(
           "Demasiadas peticiones. Por favor intenta más tarde."
@@ -83,7 +83,7 @@ export async function apiClient(
         console.error("⚠️ Rate limit excedido:", error.message);
         throw error;
       }
-      
+
       throw new Error(
         data?.message ?? `HTTP Error ${response.status}: ${response.statusText}`
       );
@@ -217,7 +217,18 @@ export async function apiDelete<T = unknown>(endpoint: string): Promise<T> {
     return undefined as T;
   }
 
-  return response.json();
+  // Leer texto para verificar si está vacío antes de parsear
+  const text = await response.text();
+  if (!text) {
+    return undefined as T;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.warn(`[API] Error parsing JSON from DELETE ${endpoint}:`, e);
+    return undefined as T;
+  }
 }
 
 /**

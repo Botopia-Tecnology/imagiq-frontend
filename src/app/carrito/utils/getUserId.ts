@@ -3,28 +3,6 @@
  * Busca en múltiples fuentes para asegurar que siempre se encuentre el userId
  */
 
-// 🔍 DEBUG: Monitor para detectar cuándo se elimina imagiq_user
-if (typeof window !== 'undefined') {
-  // Monitorear cambios en localStorage
-  const originalSetItem = localStorage.setItem;
-  const originalRemoveItem = localStorage.removeItem;
-  
-  localStorage.setItem = function(key: string, value: string) {
-    if (key === 'imagiq_user') {
-      // console.log('🔄 [DEBUG] imagiq_user siendo ESTABLECIDO:', value?.substring(0, 100) + '...');
-    }
-    return originalSetItem.call(this, key, value);
-  };
-  
-  localStorage.removeItem = function(key: string) {
-    if (key === 'imagiq_user') {
-      // console.log('🚨 [DEBUG] imagiq_user siendo ELIMINADO!');
-      // console.trace('🔍 [DEBUG] Stack trace de eliminación:');
-    }
-    return originalRemoveItem.call(this, key);
-  };
-}
-
 /**
  * Obtiene el userId del usuario actual (invitado o registrado)
  * Busca en este orden de prioridad:
@@ -37,70 +15,70 @@ if (typeof window !== 'undefined') {
 export function getUserId(): string | null {
   if (typeof window === 'undefined') return null;
 
-  // console.log('🔍 [getUserId] Buscando userId en localStorage...');
+  console.log('🔍 [getUserId] Buscando userId en localStorage...');
 
   try {
-    // CRÍTICO: Verificar token primero - sin token no hay usuario válido
-    const token = localStorage.getItem('imagiq_token');
-    const hasValidToken = token && token !== 'null' && token !== 'undefined' && token.length > 0;
-    
-    if (!hasValidToken) {
-      // console.warn('⚠️ [getUserId] No hay token válido - no se puede obtener userId');
-      return null;
-    }
-
-    // 1. Intentar obtener de imagiq_user (prioridad más alta) + token válido
+    // 1. Intentar obtener de imagiq_user (prioridad más alta)
     const userStr = localStorage.getItem('imagiq_user');
-    // console.log('  📦 imagiq_user raw:', userStr ? userStr.substring(0, 100) + '...' : 'null');
-    
+    console.log('  📦 imagiq_user raw:', userStr ? userStr.substring(0, 100) + '...' : 'null');
+
     if (userStr && userStr !== 'null' && userStr !== 'undefined') {
       const user = JSON.parse(userStr);
-      // console.log('  📦 imagiq_user parsed:', { id: user?.id, user_id: user?.user_id, email: user?.email });
-      
+      console.log('  📦 imagiq_user parsed:', { id: user?.id, user_id: user?.user_id, email: user?.email });
+
       if (user?.id) {
-        // console.log('✅ [getUserId] UserId encontrado en imagiq_user:', user.id);
+        console.log('✅ [getUserId] UserId encontrado en imagiq_user:', user.id);
         return user.id;
       }
       if (user?.user_id) {
-        // console.log('✅ [getUserId] UserId encontrado en imagiq_user (user_id):', user.user_id);
+        console.log('✅ [getUserId] UserId encontrado en imagiq_user (user_id):', user.user_id);
         return user.user_id;
       }
     }
 
-    // 2. Intentar obtener de checkout-address SOLO si hay token válido
+    // 2. Intentar obtener de checkout-address
     const addressStr = localStorage.getItem('checkout-address');
     console.log('  📦 checkout-address raw:', addressStr ? addressStr.substring(0, 100) + '...' : 'null');
-    
+
     if (addressStr && addressStr !== 'null' && addressStr !== 'undefined') {
       const address = JSON.parse(addressStr);
       console.log('  📦 checkout-address parsed:', { usuario_id: address?.usuario_id, ciudad: address?.ciudad });
-      
+
       if (address?.usuario_id) {
         console.log('✅ [getUserId] UserId encontrado en checkout-address:', address.usuario_id);
         return address.usuario_id;
       }
     }
 
-    // 3. Intentar obtener de imagiq_default_address SOLO si hay token válido
+    // 3. Intentar obtener de imagiq_default_address
     const defaultAddressStr = localStorage.getItem('imagiq_default_address');
     console.log('  📦 imagiq_default_address raw:', defaultAddressStr ? defaultAddressStr.substring(0, 100) + '...' : 'null');
-    
+
     if (defaultAddressStr && defaultAddressStr !== 'null' && defaultAddressStr !== 'undefined') {
       const defaultAddress = JSON.parse(defaultAddressStr);
       console.log('  📦 imagiq_default_address parsed:', { usuario_id: defaultAddress?.usuario_id });
-      
+
       if (defaultAddress?.usuario_id) {
         console.log('✅ [getUserId] UserId encontrado en imagiq_default_address:', defaultAddress.usuario_id);
         return defaultAddress.usuario_id;
       }
     }
 
-    console.warn('⚠️ [getUserId] No se encontró userId válido (token existe pero no hay usuario)');
+    console.warn('⚠️ [getUserId] No se encontró userId en ninguna fuente');
     return null;
   } catch (error) {
     console.error('❌ [getUserId] Error obteniendo userId:', error);
     return null;
   }
+}
+
+/**
+ * Limpia el cache del userId (Mantenido por compatibilidad pero ya no hace nada)
+ * @deprecated El caché ha sido eliminado
+ */
+export function clearUserIdCache(): void {
+  // No-op: Cache eliminado por solicitud
+  console.log('🧹 [clearUserIdCache] Cache eliminado (no-op)');
 }
 
 /**
@@ -115,17 +93,17 @@ export function saveUserId(userId: string, userEmail?: string, clearPrevious: bo
   if (typeof window === 'undefined') return;
 
   try {
-    // PASO 1: Limpiar datos anteriores si se solicita (por defecto sí)
+    // PASO 1: Limpiar datos anteriores si se solicita
     if (clearPrevious) {
       clearPreviousUserData();
     }
 
     console.log('💾 [saveUserId] Guardando nuevo userId:', userId);
 
-    // PASO 2: Crear/Actualizar imagiq_user SIEMPRE (después de limpieza)
+    // PASO 2: Crear/Actualizar imagiq_user SIEMPRE
     const userStr = localStorage.getItem('imagiq_user');
     let user: Record<string, unknown> = {};
-    
+
     // Si existe imagiq_user, mantener datos existentes
     if (userStr && userStr !== 'null' && userStr !== 'undefined') {
       try {
@@ -135,15 +113,14 @@ export function saveUserId(userId: string, userEmail?: string, clearPrevious: bo
         user = {};
       }
     }
-    
-    // CRÍTICO: Siempre asegurar que el userId esté actualizado
+
     user.id = userId;
     if (userEmail) user.email = userEmail;
-    
-    localStorage.setItem('imagiq_user', JSON.stringify(user));
-    console.log('✅ [saveUserId] UserId guardado/creado en imagiq_user:', userId);
 
-    // PASO 3: Actualizar checkout-address si existe (después de limpieza)
+    localStorage.setItem('imagiq_user', JSON.stringify(user));
+    console.log('✅ [saveUserId] UserId guardado en imagiq_user:', userId);
+
+    // PASO 3: Actualizar checkout-address si existe
     const addressStr = localStorage.getItem('checkout-address');
     if (addressStr && addressStr !== 'null' && addressStr !== 'undefined') {
       const address = JSON.parse(addressStr);
@@ -195,7 +172,7 @@ export function clearPreviousUserData(preserveAddress: boolean = false): void {
         cacheKeys.push(key);
       }
     }
-    
+
     cacheKeys.forEach(key => {
       localStorage.removeItem(key);
       console.log('🗑️ [clearPreviousUserData] Caché limpiado:', key);
@@ -239,7 +216,7 @@ export function clearAllUserData(): void {
         cacheKeys.push(key);
       }
     }
-    
+
     cacheKeys.forEach(key => {
       localStorage.removeItem(key);
       console.log('🗑️ [clearAllUserData] Caché limpiado:', key);

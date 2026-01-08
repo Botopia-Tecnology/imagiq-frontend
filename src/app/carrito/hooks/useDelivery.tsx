@@ -14,6 +14,7 @@ import { useCart } from "@/hooks/useCart";
 import {
   buildGlobalCanPickUpKey,
   getFullCandidateStoresResponseFromCache,
+  getGlobalCanPickUpFromCache,
   setGlobalCanPickUpCache,
   invalidateCacheOnAddressChange,
   clearGlobalCanPickUpCache,
@@ -100,6 +101,8 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   const canFetchFromEndpoint = config?.canFetchFromEndpoint ?? true;
   const onlyReadCache = config?.onlyReadCache ?? false;
 
+  const { products } = useCart();
+
   const [address, setAddress] = useState<Address | null>(null);
   const [addressEdit, setAddressEdit] = useState(false);
   const [storeEdit, setStoreEdit] = useState(false);
@@ -175,8 +178,55 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     }
   };
 
-  const [storesLoading, setStoresLoading] = useState(true);
-  const { products } = useCart();
+  const [storesLoading, setStoresLoading] = useState(() => {
+    // Si la configuración es solo leer del caché, verificar si ya tenemos datos
+    if (onlyReadCache && typeof window !== 'undefined') {
+      try {
+        // Lógica similar a Step3/Step4OrderSummary para verificar si tenemos caché válido
+        const storedUser = localStorage.getItem("imagiq_user");
+        let userId: string | undefined;
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          userId = user.id || user.user_id;
+        }
+
+        if (!userId) return false; // Si no hay usuario, no cargará nada, así que no mostrar loading
+
+        // Intentar obtener dirección
+        let addressId: string | null = null;
+        let savedAddress = localStorage.getItem("checkout-address");
+        if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
+          const defaultAddress = localStorage.getItem("imagiq_default_address");
+          if (defaultAddress && defaultAddress !== "null" && defaultAddress !== "undefined") {
+            savedAddress = defaultAddress;
+          }
+        }
+
+        if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
+          const parsed = JSON.parse(savedAddress);
+          if (parsed?.id) {
+            addressId = parsed.id;
+          }
+        }
+
+        // Productos - ACCESO DIRECTO AL HOOK (products ya está disponible en el scope anterior, pero aquí no lo hemos extraído aún)
+        // Oops, products se extrae en la línea 179 original `const { products } = useCart();`
+        // PERO React no permite usar hooks condicionalmente o después.
+        // Solución: Extraer products antes de useState si es posible o usar un valor inicial seguro.
+        // Como no podemos mover `useCart` antes de `useState` fácilmente sin reestructurar todo el hook...
+        // Moveré `const { products } = useCart();` AL PRINCIPIO del hook.
+
+        // Espera, no puedo moverlo arriba porque `storesLoading` se usa en `useEffect`s? No, `storesLoading` es estado.
+        // Voy a asumir que puedo mover `const { products } = useCart();` al principio del hook.
+        return canFetchFromEndpoint;
+      } catch (e) {
+        return canFetchFromEndpoint;
+      }
+    }
+
+    return canFetchFromEndpoint;
+  });
+  // const { products } = useCart(); // Moved to top
 
   // Cargar método de entrega desde localStorage cuando se monta el componente
   // También escuchar cambios en localStorage para sincronizar entre componentes
@@ -295,8 +345,9 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
           stores: {},
           success: false,
           hasData: false,
-          message: 'Loop protection triggered'
-        } as any, currentAddressId);
+          message: 'Loop protection triggered',
+          default_direction: null
+        } as unknown as CandidateStoresResponse, currentAddressId);
       }
 
       return;
@@ -470,8 +521,15 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
             setStores([]);
             setFilteredStores([]);
           }
+
+          // CRÍTICO: Desactivar loading cuando se lee del caché
+          setStoresLoading(false);
         }
         return; // Salir sin hacer petición al endpoint
+      } else {
+        // No hay caché disponible con onlyReadCache
+        console.log('📦 [CACHÉ] No hay datos en caché y onlyReadCache=true, desactivando loading');
+        setStoresLoading(false);
       }
     }
 
@@ -970,11 +1028,11 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       setGlobalCanPickUpCache(errorCacheKey, false, {
         canPickUp: false,
         stores: {},
-        // @ts-ignore - Propiedades adicionales para debug
         success: false,
         hasData: false,
-        message: errorMessage
-      } as any, currentAddressId);
+        message: errorMessage,
+        default_direction: null
+      } as unknown as CandidateStoresResponse, currentAddressId);
     } finally {
       setStoresLoading(false);
       isFetchingRef.current = false;

@@ -1,7 +1,7 @@
 import { SimpleTrackingHeader } from "./SimpleTrackingHeader";
 import { TrackingTimeline } from "./TrackingTimeline";
 import { PDFViewer } from "./PDFViewer";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 interface ShippingOrderViewProps {
   orderNumber: string;
@@ -15,6 +15,7 @@ interface ShippingOrderViewProps {
   shipments?: Array<{ numero_guia: string }>;
   selectedShipmentIndex?: number;
   onSelectShipment?: (index: number) => void;
+  onGuideChange?: (guideNumber: string) => void; // Nueva función callback para cambio de guía
   products?: Array<{
     id: string;
     nombre: string;
@@ -22,6 +23,7 @@ interface ShippingOrderViewProps {
     precio?: number;
     numero_guia?: string;
     desdetallada?: string; // Added to match Imagiq structure if needed
+    cantidad?: number; // Cantidad del producto
   }>;
   shippingType?: "pickup" | "imagiq" | "coordinadora";
 }
@@ -35,39 +37,118 @@ export function ShippingOrderView({
   shipments = [],
   selectedShipmentIndex = 0,
   onSelectShipment,
+  onGuideChange, // Nueva prop
   products = [],
   shippingType = "coordinadora",
 }: Readonly<ShippingOrderViewProps>) {
-  const [activeTab, setActiveTab] = useState<'guide' | 'products'>('guide');
-  
   const isCoordinadora = shippingType === "coordinadora";
+  const [activeTab, setActiveTab] = useState<'guide' | 'products'>(isCoordinadora ? 'products' : 'guide');
+  
   const [currentProductIndex, setCurrentProductIndex] = useState(0);
+  const [currentGuideIndex, setCurrentGuideIndex] = useState(0);
 
-  // Filter products for the selected shipment
+  // Group products by guide number for Coordinadora
+  const productsByGuide = useMemo(() => {
+    if (!isCoordinadora || products.length === 0) return [];
+    
+    // Group products by numero_guia
+    const grouped = products.reduce((acc, product) => {
+      const guia = product.numero_guia || 'sin-guia';
+      if (!acc[guia]) {
+        acc[guia] = [];
+      }
+      acc[guia].push(product);
+      return acc;
+    }, {} as Record<string, typeof products>);
+    
+    // Convert to array format
+    return Object.entries(grouped).map(([guia, prods]) => ({
+      numero_guia: guia,
+      products: prods
+    }));
+  }, [products, isCoordinadora]);
+
+  // Get current guide and products
+  const currentGuide = productsByGuide[currentGuideIndex];
+  const currentGuideProducts = currentGuide?.products || [];
+  const currentProduct = currentGuideProducts[currentProductIndex];
+
+  // For non-Coordinadora, use original logic
   const currentShipment = shipments[selectedShipmentIndex];
   const guideProducts = products.filter(p =>
     !p.numero_guia || !currentShipment || p.numero_guia === currentShipment.numero_guia
   );
 
-  const hasMultipleProducts = guideProducts.length > 1;
-  const currentProduct = guideProducts.length > 0 ? guideProducts[currentProductIndex] : undefined;
+  const hasMultipleProducts = isCoordinadora ? currentGuideProducts.length > 1 : guideProducts.length > 1;
+  const hasMultipleGuides = productsByGuide.length > 1;
+  const displayProduct = isCoordinadora ? currentProduct : (guideProducts.length > 0 ? guideProducts[currentProductIndex] : undefined);
+
+  // Use displayProduct for consistency across both modes
+  const activeProduct = displayProduct;
 
   useEffect(() => {
     setCurrentProductIndex(0);
+    setCurrentGuideIndex(0);
   }, [selectedShipmentIndex, products]);
 
+  // Navigation functions for guides
+  const goToPrevGuide = () => {
+    if (!hasMultipleGuides) return;
+    setCurrentGuideIndex((prev) => {
+      const newIndex = prev === 0 ? productsByGuide.length - 1 : prev - 1;
+      setCurrentProductIndex(0); // Reset product index when changing guide
+      
+      // Notificar el cambio de guía al componente padre
+      const newGuide = productsByGuide[newIndex];
+      if (newGuide && onGuideChange) {
+        onGuideChange(newGuide.numero_guia);
+      }
+      
+      return newIndex;
+    });
+  };
+
+  const goToNextGuide = () => {
+    if (!hasMultipleGuides) return;
+    setCurrentGuideIndex((prev) => {
+      const newIndex = prev === productsByGuide.length - 1 ? 0 : prev + 1;
+      setCurrentProductIndex(0); // Reset product index when changing guide
+      
+      // Notificar el cambio de guía al componente padre
+      const newGuide = productsByGuide[newIndex];
+      if (newGuide && onGuideChange) {
+        onGuideChange(newGuide.numero_guia);
+      }
+      
+      return newIndex;
+    });
+  };
+
+  // Navigation functions for products within a guide
   const goToPrevProduct = () => {
     if (!hasMultipleProducts) return;
-    setCurrentProductIndex((prev) =>
-      prev === 0 ? guideProducts.length - 1 : prev - 1
-    );
+    if (isCoordinadora) {
+      setCurrentProductIndex((prev) =>
+        prev === 0 ? currentGuideProducts.length - 1 : prev - 1
+      );
+    } else {
+      setCurrentProductIndex((prev) =>
+        prev === 0 ? guideProducts.length - 1 : prev - 1
+      );
+    }
   };
 
   const goToNextProduct = () => {
     if (!hasMultipleProducts) return;
-    setCurrentProductIndex((prev) =>
-      prev === guideProducts.length - 1 ? 0 : prev + 1
-    );
+    if (isCoordinadora) {
+      setCurrentProductIndex((prev) =>
+        prev === currentGuideProducts.length - 1 ? 0 : prev + 1
+      );
+    } else {
+      setCurrentProductIndex((prev) =>
+        prev === guideProducts.length - 1 ? 0 : prev + 1
+      );
+    }
   };
 
   const handleDownload = () => {
@@ -139,31 +220,58 @@ export function ShippingOrderView({
           ) : (
             // Product View
             <div className={`w-full rounded-xl bg-white border border-gray-200 shadow-sm overflow-hidden ${isCoordinadora ? 'min-h-[400px]' : 'min-h-[600px]'}`}>
-              {guideProducts.length > 0 ? (
+              {(isCoordinadora ? currentGuideProducts.length > 0 : guideProducts.length > 0) ? (
                 isCoordinadora ? (
-                  // Vista compacta para Coordinadora
+                  // Vista para Coordinadora con navegación por guías
                   <div className="h-full flex flex-col">
-                    {/* Navigation arrows for multiple products - Coordinadora style */}
-                    {hasMultipleProducts && (
-                      <div className="px-5 pt-4 pb-2 flex items-center justify-center gap-3">
+                    {/* Navigation for guides */}
+                    {hasMultipleGuides && (
+                      <div className="px-5 pt-4 pb-2 flex items-center justify-center gap-3 border-b border-gray-200">
                         <button
-                          onClick={goToPrevProduct}
-                          className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition"
-                          aria-label="Producto anterior"
+                          onClick={goToPrevGuide}
+                          className="p-2 rounded-full bg-blue-100 hover:bg-blue-200 transition text-blue-600"
+                          aria-label="Guía anterior"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                           </svg>
                         </button>
-                        <span className="text-sm font-medium text-gray-700 min-w-[100px] text-center">
-                          Producto {currentProductIndex + 1} de {guideProducts.length}
+                        <span className="text-sm font-semibold text-black min-w-[120px] text-center">
+                          Guía {currentGuideIndex + 1} de {productsByGuide.length}
+                        </span>
+                        <button
+                          onClick={goToNextGuide}
+                          className="p-2 rounded-full bg-blue-100 hover:bg-blue-200 transition text-blue-600"
+                          aria-label="Guía siguiente"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Navigation for products within current guide */}
+                    {hasMultipleProducts && (
+                      <div className="px-5 pt-2 pb-2 flex items-center justify-center gap-3">
+                        <button
+                          onClick={goToPrevProduct}
+                          className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition"
+                          aria-label="Producto anterior"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                        </button>
+                        <span className="text-xs font-medium text-gray-600 min-w-[100px] text-center">
+                          Producto {currentProductIndex + 1} de {currentGuideProducts.length}
                         </span>
                         <button
                           onClick={goToNextProduct}
-                          className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition"
+                          className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition"
                           aria-label="Producto siguiente"
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
                         </button>
@@ -173,21 +281,38 @@ export function ShippingOrderView({
                     {/* Product Info Compact */}
                     <div className="px-5 pt-2 pb-3 border-b border-gray-100">
                       <h3 className="font-semibold text-gray-900 text-sm mb-1">
-                        {currentProduct?.desdetallada || currentProduct?.nombre || "Producto"}
+                        {activeProduct?.desdetallada || activeProduct?.nombre || "Producto"}
                       </h3>
-                      {currentProduct?.precio && (
-                        <span className="text-lg font-bold text-[#17407A]">
-                          ${currentProduct.precio.toLocaleString("es-CO")}
-                        </span>
+                      <div className="flex items-center justify-between mb-2">
+                        {activeProduct?.precio && (
+                          <span className="text-lg font-bold text-[#17407A]">
+                            ${activeProduct.precio.toLocaleString("es-CO")}
+                          </span>
+                        )}
+                        <div className="text-right">
+                          {/* Mostrar cantidad del producto */}
+                          <div className="text-sm text-gray-600">
+                            Cantidad: <span className="font-medium">{activeProduct?.cantidad || 1}</span>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Mostrar número de guía del producto */}
+                      {activeProduct?.numero_guia && (
+                        <div className="bg-gray-50 px-3 py-2 rounded-lg">
+                          <div className="text-xs text-gray-500 mb-1">Número de Guía</div>
+                          <div className="text-sm font-mono font-medium text-gray-900">
+                            {activeProduct.numero_guia}
+                          </div>
+                        </div>
                       )}
                     </div>
 
                     {/* Image Area - Compact */}
                     <div className="relative flex-1 flex items-center justify-center bg-white p-4 min-h-[300px]">
-                      {currentProduct?.imagen ? (
+                      {activeProduct?.imagen ? (
                         <img
-                          src={currentProduct.imagen}
-                          alt={currentProduct.nombre}
+                          src={activeProduct.imagen}
+                          alt={activeProduct.nombre}
                           className="max-w-full max-h-full object-contain"
                         />
                       ) : (
@@ -221,11 +346,11 @@ export function ShippingOrderView({
 
                     <div className="text-right flex-1 ml-4 justify-end">
                       <h3 className="font-semibold text-gray-900 text-sm mb-1 text-right">
-                        {currentProduct?.desdetallada || currentProduct?.nombre || "Producto"}
+                        {activeProduct?.desdetallada || activeProduct?.nombre || "Producto"}
                       </h3>
-                      {currentProduct?.precio && (
+                      {activeProduct?.precio && (
                         <span className="text-lg font-bold text-[#17407A]">
-                          ${currentProduct.precio.toLocaleString("es-CO")}
+                          ${activeProduct.precio.toLocaleString("es-CO")}
                         </span>
                       )}
                     </div>
@@ -233,11 +358,11 @@ export function ShippingOrderView({
 
                   {/* Image Area */}
                   <div className="relative flex-1 flex items-center justify-center min-h-[400px] bg-white rounded-lg overflow-hidden">
-                    {currentProduct?.imagen ? (
+                    {activeProduct?.imagen ? (
                       <div className="relative w-full h-full p-8 flex items-center justify-center">
                         <img
-                          src={currentProduct.imagen}
-                          alt={currentProduct.nombre}
+                          src={activeProduct.imagen}
+                          alt={activeProduct.nombre}
                           className="max-w-full max-h-full object-contain"
                         />
                       </div>

@@ -442,8 +442,10 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         console.error('Error al verificar dirección en onlyReadCache:', error);
       }
 
+      // IMPORTANTE: Solo requerir dirección cuando es onlyReadCache
+      // En Step1 (canFetchFromEndpoint=true), permitir cálculo básico sin dirección
       if (!hasAddress) {
-
+        console.log('⚠️ [useDelivery] Sin dirección guardada - solo leer caché retorna vacío');
         setStores([]);
         setFilteredStores([]);
         setCanPickUp(false);
@@ -763,7 +765,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         setStoresLoading(false);
         isFetchingRef.current = false;
         setLastResponse({ success: true, data: cachedResponse });
-        console.log(`📦 [CACHÉ] Usando respuesta CACHEADA. canPickUp=${globalCanPickUp} (NO del endpoint)`);
+        // console.log(`📦 [CACHÉ] Usando respuesta CACHEADA. canPickUp=${globalCanPickUp} (NO del endpoint)`);
       }
       return; // Salir sin hacer petición al endpoint
     }
@@ -822,12 +824,12 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         const responseData = response.data;
 
         // DEBUG SOLICITADO POR USUARIO: Ver respuesta exacta del endpoint
-        console.log('🔥🔥🔥 [candidate-stores] RESPUESTA EXACTA DEL SERVIDOR:', {
+        /* console.log('🔥🔥🔥 [candidate-stores] RESPUESTA EXACTA DEL SERVIDOR:', {
           canPickUp: responseData.canPickUp,
           canPickUpType: typeof responseData.canPickUp,
           stores: responseData.stores,
           fullResponse: responseData
-        });
+        }); */
 
 
 
@@ -1077,7 +1079,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   useEffect(() => {
     // Si no hay productos, no hacer nada
     if (products.length === 0) {
-      console.log('⏭️ [useDelivery] No hay productos, saltando fetchCandidateStores');
+      // console.log('⏭️ [useDelivery] No hay productos, saltando fetchCandidateStores');
       return;
     }
 
@@ -1151,13 +1153,14 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     };
   }, [products, stores.length, canFetchFromEndpoint, onlyReadCache, fetchCandidateStores]);
 
-  // SAFETY TIMEOUT: Si storesLoading se queda en true por más de 8 segundos, forzar reset
-  // Esto es una medida de seguridad definitiva para evitar UI pegada
+  // SAFETY TIMEOUT: Si storesLoading se queda en true por más de 20 segundos, forzar reset
+  // IMPORTANTE: 20 segundos > 15 segundos de Step1 para no interferir con el safety timeout del checkout
   useEffect(() => {
     let safetyTimeout: NodeJS.Timeout | null = null;
 
     if (storesLoading) {
       safetyTimeout = setTimeout(() => {
+        console.warn("🚨 [useDelivery] Safety timeout reached (20s). Forcing storesLoading=false");
         setStoresLoading(false);
         // También limpiar flags internos por si acaso
         if (isFetchingRef.current) {
@@ -1169,7 +1172,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
             globalState.__imagiqIsFetching = false;
           }
         }
-      }, 8000);
+      }, 20000); // 20 segundos > 15 segundos de Step1
     }
 
     return () => {

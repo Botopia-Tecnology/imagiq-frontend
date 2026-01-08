@@ -164,10 +164,126 @@ export default function Step4OrderSummary({
   }, [products]);
 
   // Estado para canPickUp global y debug
-  const [globalCanPickUp, setGlobalCanPickUp] = React.useState<boolean | null>(
-    null
-  );
-  const [isLoadingCanPickUp, setIsLoadingCanPickUp] = React.useState(false);
+  const [globalCanPickUp, setGlobalCanPickUp] = React.useState<boolean | null>(() => {
+    // Intentar leer sincrónicamente del caché al inicializar
+    if (typeof window === 'undefined') return null;
+
+    try {
+      // 1. Obtener usuario
+      // IMPORTANTE: Obtener userId de forma consistente usando la utilidad centralizada
+      const storedUser = localStorage.getItem("imagiq_user");
+      let userId: string | undefined;
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        userId = user.id || user.user_id;
+      }
+
+      if (!userId) return null;
+
+      // 2. Obtener dirección
+      let addressId: string | null = null;
+      let savedAddress = localStorage.getItem("checkout-address");
+      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
+        const defaultAddress = localStorage.getItem("imagiq_default_address");
+        if (defaultAddress && defaultAddress !== "null" && defaultAddress !== "undefined") {
+          savedAddress = defaultAddress;
+        }
+      }
+
+      if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
+        const parsed = JSON.parse(savedAddress);
+        if (parsed?.id) {
+          addressId = parsed.id;
+        }
+      }
+
+      // 3. Obtener productos
+      if (!products || products.length === 0) return null;
+
+      const productsToCheck = products.map((p) => ({
+        sku: p.sku,
+        quantity: p.quantity,
+      }));
+
+      // 4. Construir clave y buscar en caché
+      const cacheKey = buildGlobalCanPickUpKey({
+        userId,
+        products: productsToCheck,
+        addressId,
+      });
+
+      const cachedValue = getGlobalCanPickUpFromCache(cacheKey);
+      return cachedValue;
+    } catch (e) {
+      console.error("Error reading cache synchronously in Step4OrderSummary:", e);
+      return null;
+    }
+  });
+
+  const [isLoadingCanPickUp, setIsLoadingCanPickUp] = React.useState(() => {
+    if (typeof window === 'undefined') return false;
+
+    // Si shouldCalculateCanPickUp es false (e.g. Step7), no mostrar loading
+    if (!shouldCalculateCanPickUp) return false;
+
+    try {
+      // Repetir lógica para consistencia
+      const storedUser = localStorage.getItem("imagiq_user");
+      let userId: string | undefined;
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        userId = user.id || user.user_id;
+      }
+
+      if (!userId) return false; // Sin usuario no podemos validar, no bloquear
+
+      if (!products || products.length === 0) return false;
+
+      // Verificar caché de nuevo
+      let addressId: string | null = null;
+      let savedAddress = localStorage.getItem("checkout-address");
+      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
+        const defaultAddress = localStorage.getItem("imagiq_default_address");
+        if (defaultAddress && defaultAddress !== "null" && defaultAddress !== "undefined") {
+          savedAddress = defaultAddress;
+        }
+      }
+
+      if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
+        const parsed = JSON.parse(savedAddress);
+        if (parsed?.id) {
+          addressId = parsed.id;
+        }
+      }
+
+      // Si no tenemos dirección válida y estamos en Steps 1-6 (shouldCalculateCanPickUp=true),
+      // NO mostrar loading porque setGlobalCanPickUp pondrá null automáticamente más tarde
+      // A MENOS QUE sea Step1, donde useDelivery maneja la lógica.
+      // Pero aquí solo VALIDAMOS si ya tenemos un valor en caché.
+      if (!addressId && !isStep1) return false;
+
+      const productsToCheck = products.map((p) => ({
+        sku: p.sku,
+        quantity: p.quantity,
+      }));
+
+      const cacheKey = buildGlobalCanPickUpKey({
+        userId,
+        products: productsToCheck,
+        addressId,
+      });
+
+      const cachedValue = getGlobalCanPickUpFromCache(cacheKey);
+
+      // Si tenemos valor en caché, NO estamos cargando
+      if (cachedValue !== null) return false;
+
+      // Si no tenemos valor en caché y shouldCalculateCanPickUp es true, estamos cargando
+      return true;
+    } catch {
+      return false; // Ante error, no bloquear
+    }
+  });
   // Estado para rastrear si el usuario hizo clic en el botón mientras está cargando
   const [userClickedWhileLoading, setUserClickedWhileLoading] = React.useState(false);
   // Ref para guardar la función onFinishPayment y evitar ejecuciones múltiples

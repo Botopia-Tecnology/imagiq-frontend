@@ -21,6 +21,10 @@ import { useCardsCache } from "./hooks/useCardsCache";
 import { useAuthContext } from "@/features/auth/context";
 import { syncAddress } from "@/lib/addressSync";
 import { safeGetLocalStorage } from "@/lib/localStorage";
+import {
+  getGlobalCanPickUpFromCache,
+  buildGlobalCanPickUpKey,
+} from "./utils/globalCanPickUpCache";
 
 export default function Step3({
   onBack,
@@ -33,9 +37,10 @@ export default function Step3({
   const { products, calculations } = useCart();
   const { trackAddPaymentInfo } = useAnalyticsWithUser();
   const { user, login } = useAuthContext();
-  // OPTIMIZACIÓN: Step3 SOLO lee del caché por defecto
-  // Si viene de Step1 o Step2, usa el caché ya calculado
-  // Solo recalcula candidate stores si cambia la dirección
+
+  // OPTIMIZACIÓN CRÍTICA: Step3 SOLO lee del caché si ya existe
+  // Si viene de Step1, ya debería existir el caché de candidate-stores
+  // Solo permitir llamadas al endpoint si NO hay caché disponible
   const {
     address,
     setAddress,
@@ -63,8 +68,8 @@ export default function Step3({
     lastResponse,
     setAddresses, // New function from useDelivery
   } = useDelivery({
-    canFetchFromEndpoint: true, // Permitir llamadas cuando cambia dirección
-    onlyReadCache: false, // MODIFICADO: Permitir fetch si no hay datos (ej: volver de otro paso con otra dirección)
+    canFetchFromEndpoint: true, // Permitir fetch solo si no hay caché
+    onlyReadCache: true, // OPTIMIZACIÓN: Solo leer del caché en Step3 (ya debería existir desde Step1)
   });
 
   // Hook para precarga de tarjetas y zero interest
@@ -383,10 +388,115 @@ export default function Step3({
   }, [productsWithTradeIn]);
 
   // Estado para recibir canPickUp global desde Step4OrderSummary (fuente de verdad)
-  const [globalCanPickUpFromSummary, setGlobalCanPickUpFromSummary] = React.useState<boolean | null>(null);
+  const [globalCanPickUpFromSummary, setGlobalCanPickUpFromSummary] = React.useState<boolean | null>(() => {
+    // Intentar leer sincrónicamente del caché al inicializar
+    if (typeof window === 'undefined') return null;
+
+    try {
+      // 1. Obtener usuario
+      const storedUser = localStorage.getItem("imagiq_user");
+      let userId: string | undefined;
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        userId = user.id || user.user_id;
+      }
+
+      if (!userId) return null;
+
+      // 2. Obtener dirección
+      let addressId: string | null = null;
+      let savedAddress = localStorage.getItem("checkout-address");
+      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
+
+      }
+
+      if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
+        const parsed = JSON.parse(savedAddress);
+        if (parsed?.id) {
+          addressId = parsed.id;
+        }
+      }
+
+      // 3. Obtener productos
+      if (!products || products.length === 0) return null;
+
+      const productsToCheck = products.map((p) => ({
+        sku: p.sku,
+        quantity: p.quantity,
+      }));
+
+      // 4. Construir clave y buscar en caché
+      const cacheKey = buildGlobalCanPickUpKey({
+        userId,
+        products: productsToCheck,
+        addressId,
+      });
+
+      const cachedValue = getGlobalCanPickUpFromCache(cacheKey);
+      return cachedValue;
+    } catch (e) {
+      console.error("Error reading cache synchronously in Step3:", e);
+      return null;
+    }
+  });
 
   // Estado para rastrear si canPickUp está cargando
-  const [isLoadingCanPickUp, setIsLoadingCanPickUp] = React.useState(true);
+  const [isLoadingCanPickUp, setIsLoadingCanPickUp] = React.useState(() => {
+    // Si ya obtuvimos un valor del caché en la inicialización de globalCanPickUpFromSummary,
+    // entonces NO estamos cargando
+    // PERO: Como globalCanPickUpFromSummary se inicializa en el mismo render cycle, no podemos leerlo aquí directamente
+    // Tenemos que repetir la lógica o confiar en que si hay caché, no cargamos
+
+    // Repetir la lógica es más seguro para garantizar sincronía
+    if (typeof window === 'undefined') return true;
+
+    try {
+      const storedUser = localStorage.getItem("imagiq_user");
+      let userId: string | undefined;
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        userId = user.id || user.user_id;
+      }
+
+      if (!userId) return true;
+
+      if (!products || products.length === 0) return true; // Si no hay productos, asumimos loading hasta que lleguen
+
+      // Verificar caché de nuevo (es rápido porque es memoria/localStorage)
+      let addressId: string | null = null;
+      let savedAddress = localStorage.getItem("checkout-address");
+      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
+
+      }
+
+      if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
+        const parsed = JSON.parse(savedAddress);
+        if (parsed?.id) {
+          addressId = parsed.id;
+        }
+      }
+
+      const productsToCheck = products.map((p) => ({
+        sku: p.sku,
+        quantity: p.quantity,
+      }));
+
+      const cacheKey = buildGlobalCanPickUpKey({
+        userId,
+        products: productsToCheck,
+        addressId,
+      });
+
+      const cachedValue = getGlobalCanPickUpFromCache(cacheKey);
+
+      // Si tenemos valor en caché, NO estamos cargando
+      if (cachedValue !== null) return false;
+
+      return true;
+    } catch (e) {
+      return true;
+    }
+  });
 
   // Ref para rastrear si ya se cargó el pickup por primera vez
   const hasLoadedPickupOnceRef = React.useRef(false);

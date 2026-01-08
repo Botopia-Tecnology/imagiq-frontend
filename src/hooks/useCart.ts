@@ -277,9 +277,9 @@ export const formatPrice = (price: number): string => {
 };
 
 export function useCart(): UseCartReturn {
-  const [products, setProducts] = useState<CartProduct[]>([]);
-  const [appliedDiscount, setAppliedDiscount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState<CartProduct[]>(() => getStoredProducts());
+  const [appliedDiscount, setAppliedDiscount] = useState(() => getStoredDiscount());
+  const [isLoading, setIsLoading] = useState(false);
   const [loadingShippingInfo, setLoadingShippingInfo] = useState<Record<string, boolean>>({});
 
   // Ref para prevenir múltiples clics del mismo producto en un corto período
@@ -375,12 +375,12 @@ export function useCart(): UseCartReturn {
     }
   }, []);
 
-  // Inicializar datos del carrito
-  useEffect(() => {
-    setProducts(getStoredProducts());
-    setAppliedDiscount(getStoredDiscount());
-    setIsLoading(false);
-  }, []);
+  // Inicializar datos del carrito - YA NO ES NECESARIO (se hace en useState)
+  // useEffect(() => {
+  //   setProducts(getStoredProducts());
+  //   setAppliedDiscount(getStoredDiscount());
+  //   setIsLoading(false);
+  // }, []);
 
   // Cargar información de envío para productos sin ella al montar
   useEffect(() => {

@@ -407,10 +407,7 @@ export default function Step3({
       let addressId: string | null = null;
       let savedAddress = localStorage.getItem("checkout-address");
       if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
-        const defaultAddress = localStorage.getItem("imagiq_default_address");
-        if (defaultAddress && defaultAddress !== "null" && defaultAddress !== "undefined") {
-          savedAddress = defaultAddress;
-        }
+
       }
 
       if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
@@ -469,10 +466,7 @@ export default function Step3({
       let addressId: string | null = null;
       let savedAddress = localStorage.getItem("checkout-address");
       if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
-        const defaultAddress = localStorage.getItem("imagiq_default_address");
-        if (defaultAddress && defaultAddress !== "null" && defaultAddress !== "undefined") {
-          savedAddress = defaultAddress;
-        }
+
       }
 
       if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {

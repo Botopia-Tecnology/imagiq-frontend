@@ -79,6 +79,9 @@ export default function Step4OrderSummary({
   const calculations = propCalculations || hookCalculations;
   const isEmpty = propProducts ? propProducts.length === 0 : hookIsEmpty;
 
+  // Detectar si estamos en Step 2 (para deshabilitar lógica de loading artificial)
+  const isStep2 = typeof window !== 'undefined' && window.location.pathname.includes('/carrito/step2');
+
   // Obtener método de entrega desde localStorage - forzar lectura correcta
   const getDeliveryMethodFromStorage = React.useCallback(() => {
     if (globalThis.window === undefined) return "domicilio";
@@ -946,11 +949,11 @@ export default function Step4OrderSummary({
         <button
           type="button"
           className={`shrink-0 bg-black text-white font-bold py-3 px-6 rounded-lg text-sm hover:bg-gray-800 transition flex items-center justify-center ${buttonText === "Registrarse como invitado" ? "min-h-[4.5rem] whitespace-normal flex-wrap" : ""
-            } ${isProcessing || disabled || userClickedWhileLoading || isArtificialLoading
+            } ${isProcessing || disabled || (!isStep2 && (userClickedWhileLoading || isArtificialLoading))
               ? "opacity-70 cursor-not-allowed"
               : "cursor-pointer"
             }`}
-          disabled={isProcessing || disabled || userClickedWhileLoading || isArtificialLoading}
+          disabled={isProcessing || disabled || (!isStep2 && (userClickedWhileLoading || isArtificialLoading))}
           data-testid="checkout-finish-btn"
           data-button-text={buttonText}
           aria-busy={isProcessing || userClickedWhileLoading || isArtificialLoading}

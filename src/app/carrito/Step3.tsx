@@ -1235,7 +1235,7 @@ export default function Step3({
   // Sin importar la razón: cambio de dirección, paso del Step1 al Step3, etc.
   // IMPORTANTE: Mostrar skeleton INMEDIATAMENTE si no hay datos, para evitar parpadeo
   const hasStoreData = stores.length > 0 || availableStoresWhenCanPickUpFalse.length > 0;
-  
+
   // Mostrar skeleton si:
   // 1. Está cargando stores Y no hay datos (evita parpadeo)
   // 2. O si no hay datos Y no se ha cargado pickup al menos una vez (carga inicial)
@@ -1493,10 +1493,10 @@ export default function Step3({
 
           {/* Botón continuar */}
           <button
-            className={`w - full font - bold py - 3 rounded - lg text - base transition text - white ${!canContinue || !tradeInValidation.isValid || isWaitingForCanPickUp
+            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${!canContinue || !tradeInValidation.isValid || isWaitingForCanPickUp
               ? "bg-gray-400 cursor-not-allowed opacity-70"
               : "bg-[#222] hover:bg-[#333] cursor-pointer"
-              } `}
+              }`}
             onClick={handleContinue}
             disabled={!canContinue || !tradeInValidation.isValid || isWaitingForCanPickUp}
           >

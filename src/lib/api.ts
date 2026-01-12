@@ -245,8 +245,27 @@ export const productEndpoints = {
       if (params.menuUuid) critical.menuUuid = String(params.menuUuid);
       if (params.submenuUuid) critical.submenuUuid = String(params.submenuUuid);
       if (params.precioMin !== undefined) critical.precioMin = String(params.precioMin);
+      if (params.precioMax !== undefined) critical.precioMax = String(params.precioMax);
       if (params.lazyLimit !== undefined) critical.lazyLimit = String(params.lazyLimit);
       if (params.lazyOffset !== undefined) critical.lazyOffset = String(params.lazyOffset);
+
+      // CORRECCIÓN: Incluir filtros dinámicos en la clave de deduplicación
+      // Los filtros dinámicos tienen sintaxis extendida: column_operator o column_range_min/max
+      Object.keys(params).forEach((key) => {
+        if (
+          !['categoria', 'menuUuid', 'submenuUuid', 'precioMin', 'precioMax', 
+            'lazyLimit', 'lazyOffset', 'sortBy', 'sortOrder', 'page', 'limit',
+            'category', 'subcategory', 'color', 'nombreColor', 'capacity', 
+            'memoriaram', 'name', 'withDiscount', 'minStock', 'descriptionKeyword', 
+            'model', 'filterMode'].includes(key)
+        ) {
+          // Es un filtro dinámico o campo adicional
+          const value = (params as Record<string, any>)[key];
+          if (value !== undefined && value !== null && value !== '') {
+            critical[key] = String(value);
+          }
+        }
+      });
 
       // Ignorar: sortBy, sortOrder, page, limit (no afectan qué productos se obtienen)
 

@@ -6,6 +6,8 @@ import type { CampaignData } from "./types";
 import {
   trackInWebNotificationShown,
   trackInWebNotificationClicked,
+  storeInWebCampaignRedirect,
+  trackInWebCampaignRedirect,
 } from "@/lib/posthogClient";
 import { useAuthContext } from "@/features/auth/context";
 
@@ -291,12 +293,20 @@ export function InWebCampaignDisplay({
   };
 
   const handleContentClick = () => {
-    if (campaign?.content_url) {
-      window.open(campaign.content_url, "_blank");
-    }
+    if (!campaign) return;
+    
     // Track click event
-    if (campaign) {
-      trackInWebNotificationClicked(campaign, user?.id);
+    trackInWebNotificationClicked(campaign, user?.id);
+    
+    if (campaign.content_url) {
+      // Store redirect info for cross-page tracking before opening new tab
+      storeInWebCampaignRedirect(campaign, user?.id);
+      
+      // Track redirect event
+      trackInWebCampaignRedirect(campaign, user?.id);
+      
+      // Open the destination URL
+      window.open(campaign.content_url, "_blank");
     }
   };
 

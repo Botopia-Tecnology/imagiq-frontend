@@ -76,6 +76,15 @@ export const initPostHog = () => {
   try {
     posthog.init(POSTHOG_KEY, posthogConfig);
     console.log("PostHog initialized successfully");
+    
+    // 🧪 Evento de prueba al inicializar - puedes eliminarlo después de verificar
+    posthog.capture("posthog_test_event", {
+      test: true,
+      timestamp: new Date().toISOString(),
+      source: "posthog_initialization",
+      message: "PostHog se ha inicializado correctamente en Imagiq"
+    });
+    console.log("🧪 PostHog test event captured: posthog_test_event");
   } catch (error) {
     console.error("Error initializing PostHog:", error);
   }
@@ -255,6 +264,43 @@ export function captureEcommerceEvent(
   // posthog.capture(eventName, eventData);
 }
 
+// -------------------------------------------------------------
+// InWeb Campaign Tracking
+// -------------------------------------------------------------
+
+const INWEB_CAMPAIGN_STORAGE_KEY = "posthog_inweb_campaign_redirect";
+
+/**
+ * Helper to get current page URL
+ */
+function getCurrentPageUrl(): string {
+  if (typeof window === "undefined") return "";
+  return window.location.href;
+}
+
+/**
+ * Helper to build common campaign properties
+ */
+function buildCampaignProperties(
+  campaign: CampaignData,
+  userId?: string
+): Record<string, unknown> {
+  const isPopup = campaign.display_style === "modal";
+  const isSlider = campaign.display_style === "slider";
+
+  return {
+    campaign_name: campaign.campaign_name,
+    campaign_type: campaign.campaign_type,
+    content_type: campaign.content_type,
+    display_style: campaign.display_style,
+    destination_url: campaign.content_url,
+    is_popup: isPopup,
+    is_slider: isSlider,
+    source_page: getCurrentPageUrl(),
+    ...(userId ? { userId } : {}),
+  };
+}
+
 /**
  * Track when an in-web notification campaign is shown to the user
  * @param campaign - Campaign data object
@@ -266,18 +312,7 @@ export function trackInWebNotificationShown(
 ) {
   if (!campaign) return;
 
-  const properties: Record<string, unknown> = {
-    campaign_name: campaign.campaign_name,
-    campaign_type: campaign.campaign_type,
-    content_type: campaign.content_type,
-    display_style: campaign.display_style,
-    content_url: campaign.content_url,
-  };
-
-  if (userId) {
-    properties.userId = userId;
-  }
-
+  const properties = buildCampaignProperties(campaign, userId);
   posthogUtils.capture("inweb_notification_shown", properties);
 }
 
@@ -292,19 +327,120 @@ export function trackInWebNotificationClicked(
 ) {
   if (!campaign) return;
 
+  const properties = buildCampaignProperties(campaign, userId);
+  posthogUtils.capture("inweb_notification_clicked", properties);
+}
+
+/**
+ * Store campaign redirect info in sessionStorage for cross-page tracking
+ * Call this before redirecting the user to the destination page
+ * @param campaign - Campaign data object
+ * @param userId - Optional user ID
+ */
+export function storeInWebCampaignRedirect(
+  campaign: CampaignData,
+  userId?: string
+) {
+  if (typeof window === "undefined" || !campaign) return;
+
+  try {
+    const redirectData = {
+      campaign_name: campaign.campaign_name,
+      campaign_type: campaign.campaign_type,
+      content_type: campaign.content_type,
+      display_style: campaign.display_style,
+      destination_url: campaign.content_url,
+      source_page: getCurrentPageUrl(),
+      userId: userId || null,
+      timestamp: new Date().toISOString(),
+    };
+    sessionStorage.setItem(
+      INWEB_CAMPAIGN_STORAGE_KEY,
+      JSON.stringify(redirectData)
+    );
+  } catch (error) {
+    console.error("Error storing InWeb campaign redirect:", error);
+  }
+}
+
+/**
+ * Track when user is redirected from an in-web campaign click
+ * @param campaign - Campaign data object
+ * @param userId - Optional user ID
+ */
+export function trackInWebCampaignRedirect(
+  campaign: CampaignData,
+  userId?: string
+) {
+  if (!campaign) return;
+
+  const properties = buildCampaignProperties(campaign, userId);
+  posthogUtils.capture("inweb_campaign_redirect", properties);
+}
+
+/**
+ * Track when user views the destination page from an in-web campaign
+ * @param campaignData - Stored campaign data from sessionStorage
+ */
+export function trackInWebCampaignDestinationViewed(campaignData: {
+  campaign_name?: string;
+  campaign_type?: string;
+  content_type?: string;
+  display_style?: string;
+  destination_url?: string;
+  source_page?: string;
+  userId?: string | null;
+}) {
+  if (!campaignData) return;
+
+  const isPopup = campaignData.display_style === "modal";
+  const isSlider = campaignData.display_style === "slider";
+
   const properties: Record<string, unknown> = {
-    campaign_name: campaign.campaign_name,
-    campaign_type: campaign.campaign_type,
-    content_type: campaign.content_type,
-    display_style: campaign.display_style,
-    content_url: campaign.content_url,
+    campaign_name: campaignData.campaign_name,
+    campaign_type: campaignData.campaign_type,
+    content_type: campaignData.content_type,
+    display_style: campaignData.display_style,
+    destination_url: campaignData.destination_url,
+    referrer_page: campaignData.source_page,
+    current_page: getCurrentPageUrl(),
+    is_popup: isPopup,
+    is_slider: isSlider,
+    ...(campaignData.userId ? { userId: campaignData.userId } : {}),
   };
 
-  if (userId) {
-    properties.userId = userId;
-  }
+  posthogUtils.capture("inweb_campaign_destination_viewed", properties);
+}
 
-  posthogUtils.capture("inweb_notification_clicked", properties);
+/**
+ * Check and track if current page is a destination from an InWeb campaign redirect
+ * Call this on page load to detect campaign destination views
+ */
+export function checkAndTrackInWebDestination() {
+  if (typeof window === "undefined") return;
+
+  try {
+    const storedData = sessionStorage.getItem(INWEB_CAMPAIGN_STORAGE_KEY);
+    if (!storedData) return;
+
+    const campaignData = JSON.parse(storedData);
+    
+    // Check if current URL matches the destination URL (or is a subpath of it)
+    const currentUrl = getCurrentPageUrl();
+    const destinationUrl = campaignData.destination_url;
+    
+    if (destinationUrl && currentUrl.includes(new URL(destinationUrl, window.location.origin).pathname)) {
+      // Track the destination view
+      trackInWebCampaignDestinationViewed(campaignData);
+      
+      // Clear the stored data to prevent duplicate tracking
+      sessionStorage.removeItem(INWEB_CAMPAIGN_STORAGE_KEY);
+    }
+  } catch (error) {
+    console.error("Error checking InWeb campaign destination:", error);
+    // Clear corrupted data
+    sessionStorage.removeItem(INWEB_CAMPAIGN_STORAGE_KEY);
+  }
 }
 
 // -------------------------------------------------------------

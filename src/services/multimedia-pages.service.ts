@@ -21,8 +21,13 @@ export interface ProductCardData {
   cta_text: string | null;
   cta_url: string | null;
   url: string | null;
-  content_position: string | null;
-  text_styles: Record<string, unknown> | null;
+  content_position: Record<string, unknown> | null;
+  text_styles: {
+    title?: { color?: string; [key: string]: unknown };
+    subtitle?: { color?: string; [key: string]: unknown };
+    description?: { color?: string; [key: string]: unknown };
+    cta?: { color?: string; backgroundColor?: string; [key: string]: unknown };
+  } | null;
   status: string;
   created_at: string;
   updated_at: string;

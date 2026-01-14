@@ -471,7 +471,7 @@ export default function ProductViewPage({ params }) {
       <BenefitsSection />
 
       {/* Especificaciones y Flix Media - Solo se muestra si hay contenido */}
-      <div className="relative flex items-center justify-center w-full py-0 -mt-8">
+      <div className="relative flex items-center justify-center w-full py-0 -mt-4">
         <Specifications
           product={productToUse}
           flix={productToUse}

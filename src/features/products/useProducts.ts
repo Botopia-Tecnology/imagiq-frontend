@@ -243,6 +243,7 @@ export const useProducts = (
 
       // CRÍTICO: Copiar todos los campos adicionales que no están mapeados explícitamente
       // Esto incluye los nuevos filtros dinámicos con sintaxis extendida (nombrecolor_equal, etc.)
+      const dynamicFilterKeys: string[] = [];
       Object.keys(filters).forEach((key) => {
         // Solo copiar campos que no hayan sido mapeados ya
         if (
@@ -257,11 +258,24 @@ export const useProducts = (
         ) {
           // Copiar el campo directamente (incluye filtros dinámicos con sintaxis extendida)
           const value = (filters as Record<string, string | number | boolean | undefined>)[key];
-          if (value !== undefined) {
+          // CORRECCIÓN: Filtrar valores null y empty strings para evitar enviar parámetros inválidos
+          if (value !== undefined && value !== null && value !== '') {
             (params as ProductFilterParams & Record<string, string | number | boolean>)[key] = value as string | number | boolean;
+            dynamicFilterKeys.push(key);
           }
         }
       });
+
+      // Debug: Log para verificar que los filtros dinámicos se están copiando
+      if (dynamicFilterKeys.length > 0) {
+        console.log('[useProducts] convertFiltersToApiParams - Filtros dinámicos copiados:', {
+          dynamicFilterKeys,
+          dynamicFilterValues: dynamicFilterKeys.reduce((acc, key) => {
+            acc[key] = (filters as Record<string, any>)[key];
+            return acc;
+          }, {} as Record<string, any>)
+        });
+      }
 
       return params;
     },

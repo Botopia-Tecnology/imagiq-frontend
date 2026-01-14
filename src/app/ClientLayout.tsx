@@ -16,6 +16,7 @@ import { useInWebCampaign } from "@/hooks/useInWebCampaign";
 import { useFavicon } from "@/hooks/useFavicon";
 import VersionManager from "@/components/VersionManager";
 import { InWebCampaignDisplay } from "@/components/InWebCampaign/InWebCampaignDisplay";
+import PostHogTestButton from "@/components/debug/PostHogTestButton";
 
 // Rutas donde el Navbar NO debe mostrarse
 const HIDDEN_NAVBAR_ROUTES = [
@@ -83,6 +84,8 @@ export default function ClientLayout({
   return (
     <>
       <VersionManager />
+      {/* 🧪 Botón de prueba PostHog - solo en desarrollo */}
+      <PostHogTestButton />
       <CookieBanner />
       {activeCampaigns.map((campaign) => (
         <InWebCampaignDisplay

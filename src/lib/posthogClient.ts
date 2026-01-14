@@ -19,6 +19,9 @@
  * - GDPR compliance settings
  */
 
+import posthog from "posthog-js";
+import type { CampaignData } from "@/components/InWebCampaign/types";
+
 // Configuración de claves y host de PostHog
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY || "";
 const POSTHOG_HOST =
@@ -54,8 +57,37 @@ export const posthogConfig = {
 
 // Inicialización del SDK de PostHog
 export const initPostHog = () => {
-  // Aquí se implementaría la lógica real de inicialización del SDK
-  // Ejemplo: posthog.init(POSTHOG_KEY, posthogConfig)
+  // Only initialize in browser environment
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  // Return early if PostHog key is empty
+  if (!POSTHOG_KEY) {
+    console.warn("PostHog key is not set. PostHog will not be initialized.");
+    return;
+  }
+
+  // Check if PostHog is already initialized
+  if (posthog.__loaded) {
+    return;
+  }
+
+  try {
+    posthog.init(POSTHOG_KEY, posthogConfig);
+    console.log("PostHog initialized successfully");
+    
+    // 🧪 Evento de prueba al inicializar - puedes eliminarlo después de verificar
+    posthog.capture("posthog_test_event", {
+      test: true,
+      timestamp: new Date().toISOString(),
+      source: "posthog_initialization",
+      message: "PostHog se ha inicializado correctamente en Imagiq"
+    });
+    console.log("🧪 PostHog test event captured: posthog_test_event");
+  } catch (error) {
+    console.error("Error initializing PostHog:", error);
+  }
 };
 
 // Variable global para almacenar el userId actual
@@ -78,8 +110,14 @@ export const posthogUtils = {
    * @param userId - ID único del usuario
    * @param userProperties - Propiedades adicionales del usuario
    */
-  identify: (_userId: string, _userProperties?: Record<string, unknown>) => {
-    // PostHog user identification - implementation goes here
+  identify: (userId: string, userProperties?: Record<string, unknown>) => {
+    if (typeof window === "undefined") return;
+    try {
+      posthog.identify(userId, userProperties);
+      currentUserId = userId;
+    } catch (error) {
+      console.error("Error identifying user in PostHog:", error);
+    }
   },
 
   /**
@@ -87,22 +125,31 @@ export const posthogUtils = {
    * @param eventName - Nombre del evento
    * @param properties - Propiedades adicionales del evento
    */
-  capture: (_eventName: string, properties?: Record<string, unknown>) => {
-    const _eventProps = {
-      ...(properties || {}),
-      ...(currentUserId ? { userId: currentUserId } : {}),
-    };
-    // Aquí iría la llamada real al SDK de PostHog
-    // posthog.capture(eventName, eventProps);
+  capture: (eventName: string, properties?: Record<string, unknown>) => {
+    if (typeof window === "undefined") return;
+    try {
+      const eventProps = {
+        ...(properties || {}),
+        ...(currentUserId ? { userId: currentUserId } : {}),
+      };
+      posthog.capture(eventName, eventProps);
+    } catch (error) {
+      console.error("Error capturing event in PostHog:", error);
+    }
   },
 
   /**
    * Captura una vista de página
    * @param pageName - Nombre de la página (opcional)
    */
-  capturePageView: (_pageName?: string) => {
-    console.log("📊 PostHog - Page View captured:", _pageName || window.location.pathname);
-    // PostHog page view capture - implementation goes here
+  capturePageView: (pageName?: string) => {
+    if (typeof window === "undefined") return;
+    try {
+      const page = pageName || window.location.pathname;
+      posthog.capture("$pageview", { page });
+    } catch (error) {
+      console.error("Error capturing page view in PostHog:", error);
+    }
   },
 
   /**
@@ -110,29 +157,51 @@ export const posthogUtils = {
    * @param flagKey - Clave del feature flag
    * @returns boolean
    */
-  isFeatureEnabled: (_flagKey: string): boolean => {
-    return false;
+  isFeatureEnabled: (flagKey: string): boolean => {
+    if (typeof window === "undefined") return false;
+    try {
+      return posthog.isFeatureEnabled(flagKey) || false;
+    } catch (error) {
+      console.error("Error checking feature flag in PostHog:", error);
+      return false;
+    }
   },
 
   /**
    * Inicia la grabación de sesión (session replay)
    */
   startSessionRecording: () => {
-    // PostHog start session recording - implementation goes here
+    if (typeof window === "undefined") return;
+    try {
+      posthog.startSessionRecording();
+    } catch (error) {
+      console.error("Error starting session recording in PostHog:", error);
+    }
   },
 
   /**
    * Detiene la grabación de sesión
    */
   stopSessionRecording: () => {
-    // PostHog stop session recording - implementation goes here
+    if (typeof window === "undefined") return;
+    try {
+      posthog.stopSessionRecording();
+    } catch (error) {
+      console.error("Error stopping session recording in PostHog:", error);
+    }
   },
 
   /**
    * Resetea el usuario (logout)
    */
   reset: () => {
-    // PostHog reset user - implementation goes here
+    if (typeof window === "undefined") return;
+    try {
+      posthog.reset();
+      currentUserId = null;
+    } catch (error) {
+      console.error("Error resetting user in PostHog:", error);
+    }
   },
 };
 
@@ -195,10 +264,185 @@ export function captureEcommerceEvent(
   // posthog.capture(eventName, eventData);
 }
 
-// Inicializa PostHog al cargar el módulo en el navegador
-if (typeof window !== "undefined") {
-  initPostHog();
+// -------------------------------------------------------------
+// InWeb Campaign Tracking
+// -------------------------------------------------------------
+
+const INWEB_CAMPAIGN_STORAGE_KEY = "posthog_inweb_campaign_redirect";
+
+/**
+ * Helper to get current page URL
+ */
+function getCurrentPageUrl(): string {
+  if (typeof window === "undefined") return "";
+  return window.location.href;
 }
+
+/**
+ * Helper to build common campaign properties
+ */
+function buildCampaignProperties(
+  campaign: CampaignData,
+  userId?: string
+): Record<string, unknown> {
+  const isPopup = campaign.display_style === "modal";
+  const isSlider = campaign.display_style === "slider";
+
+  return {
+    campaign_name: campaign.campaign_name,
+    campaign_type: campaign.campaign_type,
+    content_type: campaign.content_type,
+    display_style: campaign.display_style,
+    destination_url: campaign.content_url,
+    is_popup: isPopup,
+    is_slider: isSlider,
+    source_page: getCurrentPageUrl(),
+    ...(userId ? { userId } : {}),
+  };
+}
+
+/**
+ * Track when an in-web notification campaign is shown to the user
+ * @param campaign - Campaign data object
+ * @param userId - Optional user ID
+ */
+export function trackInWebNotificationShown(
+  campaign: CampaignData,
+  userId?: string
+) {
+  if (!campaign) return;
+
+  const properties = buildCampaignProperties(campaign, userId);
+  posthogUtils.capture("inweb_notification_shown", properties);
+}
+
+/**
+ * Track when a user clicks on an in-web notification campaign
+ * @param campaign - Campaign data object
+ * @param userId - Optional user ID
+ */
+export function trackInWebNotificationClicked(
+  campaign: CampaignData,
+  userId?: string
+) {
+  if (!campaign) return;
+
+  const properties = buildCampaignProperties(campaign, userId);
+  posthogUtils.capture("inweb_notification_clicked", properties);
+}
+
+/**
+ * Store campaign redirect info in sessionStorage for cross-page tracking
+ * Call this before redirecting the user to the destination page
+ * @param campaign - Campaign data object
+ * @param userId - Optional user ID
+ */
+export function storeInWebCampaignRedirect(
+  campaign: CampaignData,
+  userId?: string
+) {
+  if (typeof window === "undefined" || !campaign) return;
+
+  try {
+    const redirectData = {
+      campaign_name: campaign.campaign_name,
+      campaign_type: campaign.campaign_type,
+      content_type: campaign.content_type,
+      display_style: campaign.display_style,
+      destination_url: campaign.content_url,
+      source_page: getCurrentPageUrl(),
+      userId: userId || null,
+      timestamp: new Date().toISOString(),
+    };
+    sessionStorage.setItem(
+      INWEB_CAMPAIGN_STORAGE_KEY,
+      JSON.stringify(redirectData)
+    );
+  } catch (error) {
+    console.error("Error storing InWeb campaign redirect:", error);
+  }
+}
+
+/**
+ * Track when user is redirected from an in-web campaign click
+ * @param campaign - Campaign data object
+ * @param userId - Optional user ID
+ */
+export function trackInWebCampaignRedirect(
+  campaign: CampaignData,
+  userId?: string
+) {
+  if (!campaign) return;
+
+  const properties = buildCampaignProperties(campaign, userId);
+  posthogUtils.capture("inweb_campaign_redirect", properties);
+}
+
+/**
+ * Track when user views the destination page from an in-web campaign
+ * @param campaignData - Stored campaign data from sessionStorage
+ */
+export function trackInWebCampaignDestinationViewed(campaignData: {
+  campaign_name?: string;
+  campaign_type?: string;
+  content_type?: string;
+  display_style?: string;
+  destination_url?: string;
+  source_page?: string;
+  userId?: string | null;
+}) {
+  if (!campaignData) return;
+
+  const isPopup = campaignData.display_style === "modal";
+  const isSlider = campaignData.display_style === "slider";
+
+  const properties: Record<string, unknown> = {
+    campaign_name: campaignData.campaign_name,
+    campaign_type: campaignData.campaign_type,
+    content_type: campaignData.content_type,
+    display_style: campaignData.display_style,
+    destination_url: campaignData.destination_url,
+    referrer_page: campaignData.source_page,
+    current_page: getCurrentPageUrl(),
+    is_popup: isPopup,
+    is_slider: isSlider,
+    ...(campaignData.userId ? { userId: campaignData.userId } : {}),
+  };
+
+  posthogUtils.capture("inweb_campaign_destination_viewed", properties);
+}
+
+/**
+ * Check and track if current page is a destination from an InWeb campaign redirect
+ * Call this on page load to detect campaign destination views
+ */
+export function checkAndTrackInWebDestination() {
+  if (typeof window === "undefined") return;
+
+  try {
+    const storedData = sessionStorage.getItem(INWEB_CAMPAIGN_STORAGE_KEY);
+    if (!storedData) return;
+
+    const campaignData = JSON.parse(storedData);
+    
+    // Check if current URL matches the destination URL (or is a subpath of it)
+    const currentUrl = getCurrentPageUrl();
+    const destinationUrl = campaignData.destination_url;
+    
+    if (destinationUrl && currentUrl.includes(new URL(destinationUrl, window.location.origin).pathname)) {
+      // Track the destination view
+      trackInWebCampaignDestinationViewed(campaignData);
+      
+      // Clear the stored data to prevent duplicate tracking
+      sessionStorage.removeItem(INWEB_CAMPAIGN_STORAGE_KEY);
+    }
+  } catch (error) {
+    console.error("Error checking InWeb campaign destination:", error);
+    // Clear corrupted data
+    sessionStorage.removeItem(INWEB_CAMPAIGN_STORAGE_KEY);
+  }
+}
+
 // -------------------------------------------------------------
 // Los datos capturados se envían a los servidores de PostHog
 // Puedes consultarlos en el dashboard web de PostHog

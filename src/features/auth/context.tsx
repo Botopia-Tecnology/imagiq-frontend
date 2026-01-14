@@ -19,6 +19,7 @@ import {
 import { apiClient } from "@/lib/api";
 import { User } from "@/types/user";
 import { addressesService } from "@/services/addresses.service";
+import { setPosthogUserId, posthogUtils } from "@/lib/posthogClient";
 
 interface AuthContextType {
   user: User | null;
@@ -166,6 +167,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('📡 [AuthContext] Evento user-changed disparado:', { userId: userData.id, role: userRole });
     }
 
+    // Identify user in PostHog
+    setPosthogUserId(userData.id);
+
     // ✅ NUEVO: Cargar dirección predeterminada del usuario
     try {
       console.log('🔄 [AuthContext] Cargando dirección predeterminada del usuario...');
@@ -213,6 +217,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Logout function
   const logout = () => {
     console.log('🚪 [AuthContext] Cerrando sesión...');
+    
+    // Reset PostHog user session
+    posthogUtils.reset();
+    
     setUser(null);
 
     // CRÍTICO: Usar función especializada para logout que limpia TODO

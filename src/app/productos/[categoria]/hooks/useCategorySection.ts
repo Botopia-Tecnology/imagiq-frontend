@@ -252,8 +252,28 @@ export function useCategoryProducts(
   }, [dynamicFilters, dynamicFilterStateSerialized, dynamicFilterState]);
 
   // Combinar todos los filtros solo cuando sea necesario
+  // CORRECCIÓN: Asegurar que hierarchyFilters siempre se incluyan, incluso si appliedFilters está vacío
+  // Mover hierarchyFilters antes de appliedFilters para que los filtros dinámicos no sobrescriban los de jerarquía
   const apiFilters = useMemo(() => {
-    return { ...baseFilters, ...appliedFilters, ...hierarchyFilters };
+    // Asegurar que los filtros de jerarquía siempre estén presentes
+    const combined = { 
+      ...baseFilters, 
+      ...hierarchyFilters,  // Mover hierarchyFilters antes de appliedFilters para que no se sobrescriban
+      ...appliedFilters 
+    };
+    
+    // Debug: Verificar que los filtros de jerarquía están presentes
+    console.log('[useCategoryProducts] apiFilters combinados:', {
+      baseFilters,
+      hierarchyFilters,
+      appliedFilters,
+      combined,
+      hasCategory: !!combined.category,
+      hasMenuUuid: !!combined.menuUuid,
+      hasSubmenuUuid: !!combined.submenuUuid
+    });
+    
+    return combined;
   }, [baseFilters, appliedFilters, hierarchyFilters]);
 
   // Evitar llamadas API hasta que tengamos los datos críticos

@@ -3,6 +3,13 @@
 import { X } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import type { CampaignData } from "./types";
+import {
+  trackInWebNotificationShown,
+  trackInWebNotificationClicked,
+  storeInWebCampaignRedirect,
+  trackInWebCampaignRedirect,
+} from "@/lib/posthogClient";
+import { useAuthContext } from "@/features/auth/context";
 
 interface InWebCampaignDisplayProps {
   campaign: CampaignData | null;
@@ -278,6 +285,7 @@ export function InWebCampaignDisplay({
   onClose,
 }: InWebCampaignDisplayProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const { user } = useAuthContext();
 
   const handleClose = () => {
     setIsVisible(false);
@@ -285,7 +293,19 @@ export function InWebCampaignDisplay({
   };
 
   const handleContentClick = () => {
-    if (campaign?.content_url) {
+    if (!campaign) return;
+    
+    // Track click event
+    trackInWebNotificationClicked(campaign, user?.id);
+    
+    if (campaign.content_url) {
+      // Store redirect info for cross-page tracking before opening new tab
+      storeInWebCampaignRedirect(campaign, user?.id);
+      
+      // Track redirect event
+      trackInWebCampaignRedirect(campaign, user?.id);
+      
+      // Open the destination URL
       window.open(campaign.content_url, "_blank");
     }
   };
@@ -293,6 +313,8 @@ export function InWebCampaignDisplay({
   useEffect(() => {
     if (campaign) {
       setIsVisible(true);
+      // Track shown event when campaign becomes visible
+      trackInWebNotificationShown(campaign, user?.id);
 
       if (campaign.ttl && campaign.ttl > 0) {
         const timer = setTimeout(() => {
@@ -302,7 +324,7 @@ export function InWebCampaignDisplay({
         return () => clearTimeout(timer);
       }
     }
-  }, [campaign, onClose]);
+  }, [campaign, onClose, user?.id]);
 
   if (!campaign || !isVisible) return null;
 

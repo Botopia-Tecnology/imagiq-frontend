@@ -11,7 +11,7 @@
 
 
 import { createContext, useContext, useEffect } from "react";
-import { posthogUtils } from "@/lib/posthogClient";
+import { posthogUtils, initPostHog, checkAndTrackInWebDestination } from "@/lib/posthogClient";
 
 interface PostHogContextType {
   capture: (event: string, properties?: Record<string, unknown>) => void;
@@ -41,8 +41,16 @@ export const PostHogProvider = ({
   useEffect(() => {
     // Initialize PostHog when component mounts
     if (typeof window !== "undefined") {
-      // Track initial page load
-      posthogUtils.capturePageView(window.location.pathname);
+      try {
+        // Initialize PostHog first
+        initPostHog();
+        // Track initial page load
+        posthogUtils.capturePageView(window.location.pathname);
+        // Check if this page is a destination from an InWeb campaign redirect
+        checkAndTrackInWebDestination();
+      } catch (error) {
+        console.error("Error initializing PostHog in provider:", error);
+      }
     }
   }, []);
 

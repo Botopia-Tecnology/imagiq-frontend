@@ -101,7 +101,7 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
         {/* Imagen del dispositivo con altura aumentada */}
         <button
           type="button"
-          className="flex justify-center h-[600px] w-full items-center relative cursor-pointer group overflow-hidden"
+          className="flex justify-center h-[400px] sm:h-[450px] md:h-[500px] w-full items-center relative cursor-pointer group overflow-hidden"
           onClick={() => onImageClick?.(images, currentImageIndex)}
           aria-label={`Mostrar imagen ${currentImageIndex + 1} de ${alt}`}
         >

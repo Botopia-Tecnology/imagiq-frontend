@@ -89,7 +89,7 @@ async function getValidSlugs(): Promise<Set<string>> {
     validSlugs = new Set(slugs);
     lastFetch = now;
 
-    console.log(`[Middleware] ✅ Cached ${slugs.length} valid slugs`);
+    //console.log(`[Middleware] ✅ Cached ${slugs.length} valid slugs`);
     return validSlugs;
   } catch (error) {
     console.error("[Middleware] ❌ Error fetching slugs:", error);

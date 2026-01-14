@@ -14,6 +14,13 @@ interface CustomProductCardProps {
 }
 
 export default function CustomProductCard({ card }: CustomProductCardProps) {
+  // Obtener colores desde text_styles o usar valores por defecto
+  const titleColor = card.text_styles?.title?.color || "#ffffff"
+  const subtitleColor = card.text_styles?.subtitle?.color || "#ffffff"
+  const descriptionColor = card.text_styles?.description?.color || "#ffffff"
+  const ctaTextColor = card.text_styles?.cta?.color || "#000000"
+  const ctaBackgroundColor = card.text_styles?.cta?.backgroundColor || "#ffffff"
+  
   const content = (
     <div className="group relative w-full aspect-square rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
       {/* Imagen de fondo */}
@@ -29,26 +36,41 @@ export default function CustomProductCard({ card }: CustomProductCardProps) {
       <div className="absolute inset-0 p-4 md:p-6 flex flex-col justify-start">
         {/* Subtitle (etiqueta superior) */}
         {card.subtitle && (
-          <p className="text-xs md:text-sm font-bold text-white/90 uppercase tracking-wide mb-2">
+          <p 
+            className="text-xs md:text-sm font-bold uppercase tracking-wide mb-2"
+            style={{ color: subtitleColor }}
+          >
             {card.subtitle}
           </p>
         )}
 
         {/* Título */}
-        <h4 className="text-lg md:text-xl lg:text-2xl font-bold text-white mb-2 line-clamp-2">
+        <h4 
+          className="text-lg md:text-xl lg:text-2xl font-bold mb-2 line-clamp-2"
+          style={{ color: titleColor }}
+        >
           {card.title}
         </h4>
 
         {/* Descripción */}
         {card.description && (
-          <p className="text-sm text-white/90 mb-4 line-clamp-3 font-bold">
+          <p 
+            className="text-sm mb-4 line-clamp-3 font-bold"
+            style={{ color: descriptionColor }}
+          >
             {card.description}
           </p>
         )}
 
         {/* CTA Button */}
         {card.cta_text && (
-          <button className="w-fit bg-white text-black py-2 px-6 rounded-full font-semibold text-sm md:text-base hover:bg-gray-100 transition-colors duration-200">
+          <button 
+            className="w-fit py-2 px-6 rounded-full font-semibold text-sm md:text-base hover:opacity-90 transition-opacity duration-200"
+            style={{ 
+              color: ctaTextColor,
+              backgroundColor: ctaBackgroundColor
+            } as React.CSSProperties}
+          >
             {card.cta_text}
           </button>
         )}

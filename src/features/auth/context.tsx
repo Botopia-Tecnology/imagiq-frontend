@@ -167,8 +167,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('📡 [AuthContext] Evento user-changed disparado:', { userId: userData.id, role: userRole });
     }
 
-    // Identify user in PostHog
-    setPosthogUserId(userData.id);
+    // Identify user in PostHog (enrich with profile properties)
+    setPosthogUserId(userData.id, {
+      $email: userData.email,
+      $name: `${userData.nombre ?? ""} ${userData.apellido ?? ""}`.trim(),
+      telefono: userData.telefono,
+      role: userRole,
+    });
 
     // ✅ NUEVO: Cargar dirección predeterminada del usuario
     try {

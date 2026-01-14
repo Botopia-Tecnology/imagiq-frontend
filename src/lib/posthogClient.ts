@@ -98,9 +98,12 @@ let currentUserId: string | null = null;
  * Llama a esta función al autenticar o identificar al usuario
  * @param userId - ID único del usuario
  */
-export function setPosthogUserId(userId: string) {
+export function setPosthogUserId(
+  userId: string,
+  userProperties?: Record<string, unknown>
+) {
   currentUserId = userId;
-  posthogUtils.identify(userId);
+  posthogUtils.identify(userId, userProperties);
 }
 
 // Utilidades para interactuar con PostHog

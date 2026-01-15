@@ -135,12 +135,13 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
                           onAddressChange(ad);
 
                           // Disparar evento para sincronizar navbar con la dirección seleccionada
+                          // IMPORTANTE: fromHeader: true para forzar recálculo de tiendas
                           if (typeof window !== 'undefined') {
                             window.dispatchEvent(new CustomEvent('address-changed', {
                               detail: {
                                 address: ad,
                                 addressId: ad.id,
-                                fromHeader: false
+                                fromHeader: true
                               }
                             }));
                           }

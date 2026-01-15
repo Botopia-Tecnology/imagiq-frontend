@@ -1166,12 +1166,13 @@ export default function Step3({
       console.log('🔄 [Step3] Sincronizando dirección con backend:', newAddress.id);
       try {
         // Usar utility centralizada para sincronizar dirección
+        // IMPORTANTE: fromHeader: true para forzar recálculo de tiendas y mostrar skeleton
         await syncAddress({
           address: newAddress,
           userEmail: user?.email,
           user,
           loginFn: login,
-          fromHeader: false, // Viene del checkout
+          fromHeader: true,
         });
         console.log('✅ [Step3] Dirección sincronizada correctamente');
       } catch (error) {
@@ -1260,9 +1261,9 @@ export default function Step3({
   const hasStoreData = stores.length > 0 || availableStoresWhenCanPickUpFalse.length > 0;
 
   // Mostrar skeleton si:
-  // 1. Está cargando stores Y no hay datos (evita parpadeo)
+  // 1. Está cargando stores (siempre mostrar skeleton mientras carga, incluso si hay datos previos)
   // 2. O si no hay datos Y no se ha cargado pickup al menos una vez (carga inicial)
-  const shouldShowSkeleton = (storesLoading && !hasStoreData) || (!hasStoreData && !hasLoadedPickupOnceRef.current);
+  const shouldShowSkeleton = storesLoading || (!hasStoreData && !hasLoadedPickupOnceRef.current);
 
   // NOTE: REMOVED isRecalculatingPickup conditions to keep UI visible.
   // The loading state is now handled by individual components via isLoading prop.

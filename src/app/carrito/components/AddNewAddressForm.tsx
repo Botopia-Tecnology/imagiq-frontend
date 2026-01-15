@@ -657,7 +657,7 @@ export default function AddNewAddressForm({
           userEmail,
           user,
           loginFn: login,
-          fromHeader: false, // Viene del checkout/formulario
+          fromHeader: true, // Forzar recálculo de tiendas al agregar nueva dirección
         });
       } catch (syncError) {
         console.error('⚠️ Error al sincronizar dirección con el header:', syncError);

@@ -59,7 +59,12 @@ const UserOptionsDropdown: React.FC<UserOptionsDropdownProps> = ({
     };
   }, [open]);
 
-  if (!isAuthenticated || !user?.nombre) return null;
+  // No mostrar el dropdown si:
+  // 1. No está autenticado
+  // 2. No tiene nombre
+  // 3. Es usuario invitado (rol 3) - los invitados no tienen menú de perfil
+  const userRole = user?.role ?? user?.rol;
+  if (!isAuthenticated || !user?.nombre || userRole === 3) return null;
 
   return (
     <div className="relative" ref={dropdownRef}>

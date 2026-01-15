@@ -61,7 +61,23 @@ export default function LoginPage() {
     }
   }, [router]);
 
-  if (isAuthenticated) {
+  // Verificar si es usuario invitado (rol 3) - los invitados pueden ver el login
+  const userRole = (() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const userStr = localStorage.getItem("imagiq_user");
+      if (userStr && userStr !== "null" && userStr !== "undefined") {
+        const user = JSON.parse(userStr);
+        return user?.role ?? user?.rol ?? null;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  })();
+
+  // Solo mostrar "Ya iniciaste sesión" si está autenticado Y NO es invitado (rol 3)
+  if (isAuthenticated && userRole !== 3) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center space-y-6">

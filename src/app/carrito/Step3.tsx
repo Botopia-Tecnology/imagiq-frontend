@@ -40,7 +40,7 @@ export default function Step3({
 
   // OPTIMIZACIÓN CRÍTICA: Step3 SOLO lee del caché si ya existe
   // Si viene de Step1, ya debería existir el caché de candidate-stores
-  // Solo permitir llamadas al endpoint si NO hay caché disponible
+  // NUNCA debe hacer llamadas al endpoint en Step3, solo leer del caché
   const {
     address,
     setAddress,
@@ -68,9 +68,22 @@ export default function Step3({
     lastResponse,
     setAddresses, // New function from useDelivery
   } = useDelivery({
-    canFetchFromEndpoint: true, // Permitir fetch solo si no hay caché
-    onlyReadCache: true, // OPTIMIZACIÓN: Solo leer del caché en Step3 (ya debería existir desde Step1)
+    canFetchFromEndpoint: false, // ❌ NUNCA hacer fetch en Step3
+    onlyReadCache: true, // ✅ Solo leer del caché (ya calculado en Step1)
   });
+
+  // DEBUG: Verificar valores retornados por useDelivery en Step3
+  React.useEffect(() => {
+    console.log('🔍 [STEP3] useDelivery retornó:', {
+      canPickUp,
+      storesCount: stores.length,
+      storesLoading,
+      availableStoresWhenCanPickUpFalseCount: availableStoresWhenCanPickUpFalse.length,
+      availableCitiesCount: availableCities.length,
+      deliveryMethod,
+      hasAddress: !!address,
+    });
+  }, [canPickUp, stores.length, storesLoading, availableStoresWhenCanPickUpFalse.length, availableCities.length, deliveryMethod, address]);
 
   // Hook para precarga de tarjetas y zero interest
   const { preloadCards, preloadZeroInterest } = useCardsCache();
@@ -403,14 +416,16 @@ export default function Step3({
 
       if (!userId) return null;
 
-      // 2. Obtener dirección
+      // 2. Obtener dirección - Intentar checkout-address primero, luego imagiq_default_address como fallback
       let addressId: string | null = null;
       let savedAddress = localStorage.getItem("checkout-address");
-      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
 
+      // Fallback a imagiq_default_address si checkout-address no existe (para usuarios invitados)
+      if (!savedAddress || savedAddress === "null" || savedAddress === "undefined") {
+        savedAddress = localStorage.getItem("imagiq_default_address");
       }
 
-      if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
+      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
         const parsed = JSON.parse(savedAddress);
         if (parsed?.id) {
           addressId = parsed.id;
@@ -465,11 +480,13 @@ export default function Step3({
       // Verificar caché de nuevo (es rápido porque es memoria/localStorage)
       let addressId: string | null = null;
       let savedAddress = localStorage.getItem("checkout-address");
-      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
 
+      // Fallback a imagiq_default_address si checkout-address no existe (para usuarios invitados)
+      if (!savedAddress || savedAddress === "null" || savedAddress === "undefined") {
+        savedAddress = localStorage.getItem("imagiq_default_address");
       }
 
-      if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
+      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
         const parsed = JSON.parse(savedAddress);
         if (parsed?.id) {
           addressId = parsed.id;
@@ -653,9 +670,12 @@ export default function Step3({
       } else {
         // Intentar obtener el ID desde localStorage
         try {
-          const saved = JSON.parse(
-            globalThis.window.localStorage.getItem("checkout-address") || "{}"
-          ) as Address;
+          let addressStr = globalThis.window.localStorage.getItem("checkout-address");
+          // Fallback a imagiq_default_address si checkout-address no existe
+          if (!addressStr || addressStr === "null" || addressStr === "undefined") {
+            addressStr = globalThis.window.localStorage.getItem("imagiq_default_address") || "{}";
+          }
+          const saved = JSON.parse(addressStr) as Address;
           newAddressId = saved?.id || null;
         } catch {
           return;
@@ -690,9 +710,12 @@ export default function Step3({
       } else {
         // Si no viene del header, leer de localStorage
         try {
-          const saved = JSON.parse(
-            globalThis.window.localStorage.getItem("checkout-address") || "{}"
-          ) as Address;
+          let addressStr = globalThis.window.localStorage.getItem("checkout-address");
+          // Fallback a imagiq_default_address si checkout-address no existe
+          if (!addressStr || addressStr === "null" || addressStr === "undefined") {
+            addressStr = globalThis.window.localStorage.getItem("imagiq_default_address") || "{}";
+          }
+          const saved = JSON.parse(addressStr) as Address;
 
           if (saved?.id && saved.id !== lastAddressIdRef.current) {
             setIsRecalculatingPickup(true);

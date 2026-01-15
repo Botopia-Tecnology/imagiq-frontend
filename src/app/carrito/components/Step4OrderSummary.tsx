@@ -7,6 +7,7 @@ import { productEndpoints } from "@/lib/api";
 import {
   buildGlobalCanPickUpKey,
   getGlobalCanPickUpFromCache,
+  getFullCandidateStoresResponseFromCache,
   setGlobalCanPickUpCache,
 } from "../utils/globalCanPickUpCache";
 
@@ -182,17 +183,20 @@ export default function Step4OrderSummary({
         userId = user.id || user.user_id;
       }
 
+      console.log('🔍 [Step4OrderSummary INIT globalCanPickUp] userId:', userId);
+
       if (!userId) return null;
 
-      // 2. Obtener dirección
+      // 2. Obtener dirección - Intentar checkout-address primero, luego imagiq_default_address como fallback
       let addressId: string | null = null;
       let savedAddress = localStorage.getItem("checkout-address");
-      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
-        const defaultAddress = localStorage.getItem("imagiq_default_address");
-        if (defaultAddress && defaultAddress !== "null" && defaultAddress !== "undefined") {
-          savedAddress = defaultAddress;
-        }
+
+      // Fallback a imagiq_default_address si checkout-address no existe
+      if (!savedAddress || savedAddress === "undefined" || savedAddress === "null") {
+        savedAddress = localStorage.getItem("imagiq_default_address");
       }
+
+      console.log('🔍 [Step4OrderSummary INIT] savedAddress:', savedAddress?.substring(0, 50));
 
       if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
         const parsed = JSON.parse(savedAddress);
@@ -201,13 +205,20 @@ export default function Step4OrderSummary({
         }
       }
 
+      console.log('🔍 [Step4OrderSummary INIT] addressId:', addressId);
+
       // 3. Obtener productos
-      if (!products || products.length === 0) return null;
+      if (!products || products.length === 0) {
+        console.log('🔍 [Step4OrderSummary INIT] No products');
+        return null;
+      }
 
       const productsToCheck = products.map((p) => ({
         sku: p.sku,
         quantity: p.quantity,
       }));
+
+      console.log('🔍 [Step4OrderSummary INIT] productsToCheck:', productsToCheck.length);
 
       // 4. Construir clave y buscar en caché
       const cacheKey = buildGlobalCanPickUpKey({
@@ -216,19 +227,53 @@ export default function Step4OrderSummary({
         addressId,
       });
 
+      console.log('🔍 [Step4OrderSummary INIT] cacheKey:', cacheKey.substring(0, 80) + '...');
+
+      // Primero intentar obtener el valor simple
       const cachedValue = getGlobalCanPickUpFromCache(cacheKey);
-      return cachedValue;
+      console.log('🔍 [Step4OrderSummary INIT] cachedValue (simple):', cachedValue);
+
+      if (cachedValue !== null) {
+        return cachedValue;
+      }
+
+      // Si no hay valor simple, intentar obtener de fullResponse
+      const fullResponse = getFullCandidateStoresResponseFromCache(cacheKey);
+      console.log('🔍 [Step4OrderSummary INIT] fullResponse:', {
+        exists: !!fullResponse,
+        canPickUp: fullResponse?.canPickUp
+      });
+
+      if (fullResponse && typeof fullResponse.canPickUp === 'boolean') {
+        console.log('✅ [Step4OrderSummary INIT] Usando canPickUp de fullResponse:', fullResponse.canPickUp);
+        return fullResponse.canPickUp;
+      }
+
+      return null;
     } catch (e) {
       console.error("Error reading cache synchronously in Step4OrderSummary:", e);
       return null;
     }
   });
 
+  // Estado para datos de debug desde el caché (tiendas, ciudades, etc.)
+  const [cachedDebugStoresInfo, setCachedDebugStoresInfo] = React.useState<{
+    availableStoresWhenCanPickUpFalse: number;
+    stores: number;
+    filteredStores: number;
+    availableCities: number;
+  } | null>(null);
+
   const [isLoadingCanPickUp, setIsLoadingCanPickUp] = React.useState(() => {
     if (typeof window === 'undefined') return false;
 
+    console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] shouldCalculateCanPickUp:', shouldCalculateCanPickUp, 'isStep1:', isStep1);
+
     // Si shouldCalculateCanPickUp es false (e.g. Step7), no mostrar loading
-    if (!shouldCalculateCanPickUp) return false;
+    if (!shouldCalculateCanPickUp) {
+      console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (shouldCalculateCanPickUp=false)');
+      return false;
+    }
 
     try {
       // Repetir lógica para consistencia
@@ -239,18 +284,23 @@ export default function Step4OrderSummary({
         userId = user.id || user.user_id;
       }
 
-      if (!userId) return false; // Sin usuario no podemos validar, no bloquear
+      if (!userId) {
+        console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (no userId)');
+        return false; // Sin usuario no podemos validar, no bloquear
+      }
 
-      if (!products || products.length === 0) return false;
+      if (!products || products.length === 0) {
+        console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (no products)');
+        return false;
+      }
 
-      // Verificar caché de nuevo
+      // Verificar caché de nuevo - Intentar checkout-address primero, luego fallback
       let addressId: string | null = null;
       let savedAddress = localStorage.getItem("checkout-address");
-      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
-        const defaultAddress = localStorage.getItem("imagiq_default_address");
-        if (defaultAddress && defaultAddress !== "null" && defaultAddress !== "undefined") {
-          savedAddress = defaultAddress;
-        }
+
+      // Fallback a imagiq_default_address si checkout-address no existe
+      if (!savedAddress || savedAddress === "undefined" || savedAddress === "null") {
+        savedAddress = localStorage.getItem("imagiq_default_address");
       }
 
       if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
@@ -260,11 +310,16 @@ export default function Step4OrderSummary({
         }
       }
 
+      console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] addressId:', addressId);
+
       // Si no tenemos dirección válida y estamos en Steps 1-6 (shouldCalculateCanPickUp=true),
       // NO mostrar loading porque setGlobalCanPickUp pondrá null automáticamente más tarde
       // A MENOS QUE sea Step1, donde useDelivery maneja la lógica.
       // Pero aquí solo VALIDAMOS si ya tenemos un valor en caché.
-      if (!addressId && !isStep1) return false;
+      if (!addressId && !isStep1) {
+        console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (no addressId and not Step1)');
+        return false;
+      }
 
       const productsToCheck = products.map((p) => ({
         sku: p.sku,
@@ -277,14 +332,29 @@ export default function Step4OrderSummary({
         addressId,
       });
 
+      console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] cacheKey:', cacheKey.substring(0, 80) + '...');
+
       const cachedValue = getGlobalCanPickUpFromCache(cacheKey);
+      console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] cachedValue:', cachedValue);
 
       // Si tenemos valor en caché, NO estamos cargando
-      if (cachedValue !== null) return false;
+      if (cachedValue !== null) {
+        console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (cache hit)');
+        return false;
+      }
+
+      // NUEVO: También verificar fullResponse
+      const fullResponse = getFullCandidateStoresResponseFromCache(cacheKey);
+      if (fullResponse && typeof fullResponse.canPickUp === 'boolean') {
+        console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (fullResponse cache hit)');
+        return false;
+      }
 
       // Si no tenemos valor en caché y shouldCalculateCanPickUp es true, estamos cargando
+      console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> true (no cache, shouldCalculate=true)');
       return true;
     } catch {
+      console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (error)');
       return false; // Ante error, no bloquear
     }
   });
@@ -294,6 +364,8 @@ export default function Step4OrderSummary({
   const [isArtificialLoading, setIsArtificialLoading] = React.useState(false);
   // Estado para saber si el usuario está logueado (para optimizar lógica del botón)
   const [isUserLoggedIn, setIsUserLoggedIn] = React.useState<boolean | null>(null);
+  // Estado para saber si el usuario tiene dirección predeterminada
+  const [hasDefaultAddress, setHasDefaultAddress] = React.useState<boolean | null>(null);
 
   // Verificar si el usuario está logueado y es rol 2/3 al montar el componente
   React.useEffect(() => {
@@ -321,8 +393,8 @@ export default function Step4OrderSummary({
           console.error('Error checking user role:', error);
         }
 
-        // Solo considerar "logueado" si es rol 2 o 3 (que necesitan candidate stores)
-        const requiresCalculation = userRole === 2 || userRole === 3;
+        // Solo considerar "logueado" si es rol 2, 3 o 4 (que necesitan candidate stores)
+        const requiresCalculation = userRole === 2 || userRole === 3 || userRole === 4;
         setIsUserLoggedIn(requiresCalculation);
 
         // console.log(`👤 [Step4OrderSummary] User check: userId=${!!userId}, role=${userRole}, requiresCalculation=${requiresCalculation}`);
@@ -333,6 +405,53 @@ export default function Step4OrderSummary({
     };
 
     checkUserLoggedIn();
+  }, []);
+
+  // Verificar si el usuario tiene dirección predeterminada
+  React.useEffect(() => {
+    const checkDefaultAddress = () => {
+      if (typeof globalThis.window === "undefined") {
+        setHasDefaultAddress(false);
+        return;
+      }
+
+      try {
+        // Verificar checkout-address o imagiq_default_address
+        let savedAddress = globalThis.window.localStorage.getItem("checkout-address");
+        const defaultAddress = globalThis.window.localStorage.getItem("imagiq_default_address");
+
+        // Si hay imagiq_default_address, usarla
+        if (defaultAddress && defaultAddress !== "null" && defaultAddress !== "undefined") {
+          savedAddress = defaultAddress;
+        }
+
+        if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
+          const parsed = JSON.parse(savedAddress);
+          // Verificar que tenga ciudad y línea_uno como mínimo
+          if (parsed?.ciudad && parsed?.linea_uno) {
+            setHasDefaultAddress(true);
+            return;
+          }
+        }
+
+        setHasDefaultAddress(false);
+      } catch (error) {
+        console.error('Error checking default address:', error);
+        setHasDefaultAddress(false);
+      }
+    };
+
+    checkDefaultAddress();
+
+    // Escuchar cambios de dirección
+    const handleAddressChange = () => checkDefaultAddress();
+    globalThis.window?.addEventListener("address-changed", handleAddressChange);
+    globalThis.window?.addEventListener("storage", handleAddressChange);
+
+    return () => {
+      globalThis.window?.removeEventListener("address-changed", handleAddressChange);
+      globalThis.window?.removeEventListener("storage", handleAddressChange);
+    };
   }, []);
 
   // Ref para guardar la función onFinishPayment y evitar ejecuciones múltiples
@@ -382,8 +501,8 @@ export default function Step4OrderSummary({
           const userData = JSON.parse(userDataStr);
           const userRole = userData?.role ?? userData?.rol;
 
-          // Solo calcular para rol 2 (registrado) o rol 3 (invitado)
-          if (userRole === 2 || userRole === 3) {
+          // Solo calcular para rol 2 (registrado), rol 3 (invitado) o rol 4
+          if (userRole === 2 || userRole === 3 || userRole === 4) {
             shouldCalculateForUser = true;
             // console.log(`👤 [Step4OrderSummary] User with rol ${userRole}, will calculate candidate stores`);
           } else {
@@ -428,17 +547,12 @@ export default function Step4OrderSummary({
     // Esto evita mostrar "loading" cuando el usuario se registra como invitado pero aún no ha agregado dirección
     let hasValidAddress = false;
     let addressId: string | null = null;
+    // IMPORTANTE: Usar la misma lógica que useDelivery.tsx para obtener addressId
+    // Esto asegura que las claves de caché coincidan exactamente
     if (typeof globalThis.window !== "undefined") {
       try {
-        let savedAddress = globalThis.window.localStorage.getItem("checkout-address");
-        if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
-          const defaultAddress = globalThis.window.localStorage.getItem("imagiq_default_address");
-          if (defaultAddress && defaultAddress !== "null" && defaultAddress !== "undefined") {
-            // Copiar imagiq_default_address a checkout-address para mantener consistencia
-            globalThis.window.localStorage.setItem("checkout-address", defaultAddress);
-            savedAddress = defaultAddress;
-          }
-        }
+        // Leer SOLO de checkout-address (igual que useDelivery)
+        const savedAddress = globalThis.window.localStorage.getItem("checkout-address");
 
         if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
           const parsed = JSON.parse(savedAddress) as { id?: string; ciudad?: string; linea_uno?: string };
@@ -489,8 +603,9 @@ export default function Step4OrderSummary({
     // Si es false (Step 7): hacer fetch OBLIGATORIO y establecer loading=true
     setIsLoadingCanPickUp(true);
 
-    // CORRECCIÓN CRÍTICA: SIEMPRE hacer fetch si no hay caché
-    // Esto es especialmente importante para Step7 donde el valor NUNCA puede ser null
+    // CORRECCIÓN: En Step1-6, NO hacer fetch propio - solo leer del caché
+    // useDelivery.tsx se encarga de calcular y guardar en caché
+    // Solo Step7 (shouldCalculateCanPickUp=false) puede hacer fetch de respaldo
     if (typeof window !== 'undefined') {
       // Si es Step1, NO hacer fetch de respaldo (ya lo hace useDelivery)
       if (isStep1) {
@@ -499,7 +614,19 @@ export default function Step4OrderSummary({
         return;
       }
 
-      // console.log('🔄 [Step4OrderSummary] No hay caché disponible, haciendo fetch obligatorio...');
+      // NUEVO: Si shouldCalculateCanPickUp es true (Steps 2-6), NO hacer fetch
+      // Solo mostrar loading y esperar a que useDelivery actualice el caché
+      if (shouldCalculateCanPickUp) {
+        // console.log('⏳ [Step4OrderSummary] Esperando caché de useDelivery (no hacer fetch propio)');
+        // Mantener loading en true para indicar que estamos esperando
+        // El evento 'canPickUpCache-updated' disparará fetchGlobalCanPickUp cuando el caché esté listo
+        setIsLoadingCanPickUp(true);
+        setGlobalCanPickUp(null);
+        return;
+      }
+
+      // Solo Step7 (shouldCalculateCanPickUp=false) hace fetch de respaldo
+      // console.log('🔄 [Step4OrderSummary] Step7: No hay caché disponible, haciendo fetch obligatorio...');
 
       // Hacer la petición inmediatamente - CRÍTICO para Step7
       productEndpoints.getCandidateStores({
@@ -542,7 +669,7 @@ export default function Step4OrderSummary({
           setIsLoadingCanPickUp(false);
         });
     }
-  }, [products, isStep1]);
+  }, [products, isStep1, shouldCalculateCanPickUp]);
 
   // Safety timeout para evitar que se quede cargando indefinidamente
   // IMPORTANTE: Solo detener el loading, NO cambiar el valor de canPickUp
@@ -584,6 +711,135 @@ export default function Step4OrderSummary({
     };
   }, []); // ✅ Sin dependencias, listener estable
 
+  // Leer datos de debug desde el caché completo (para mostrar info de tiendas en panel DEBUG)
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const updateDebugInfoFromCache = () => {
+      console.log('🔍 [Step4OrderSummary] updateDebugInfoFromCache llamada');
+      try {
+        // Obtener userId
+        const storedUser = localStorage.getItem("imagiq_user");
+        let userId: string | undefined;
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          userId = user.id || user.user_id;
+        }
+        console.log('🔍 [Step4OrderSummary] userId:', userId);
+        if (!userId) {
+          console.log('🔍 [Step4OrderSummary] No userId, saliendo');
+          return;
+        }
+
+        // Obtener dirección - Intentar checkout-address primero, luego imagiq_default_address como fallback
+        let addressId: string | null = null;
+        let savedAddress = localStorage.getItem("checkout-address");
+
+        // Fallback a imagiq_default_address si checkout-address no existe
+        if (!savedAddress || savedAddress === "undefined" || savedAddress === "null") {
+          savedAddress = localStorage.getItem("imagiq_default_address");
+        }
+
+        console.log('🔍 [Step4OrderSummary] savedAddress raw:', savedAddress?.substring(0, 100));
+        if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
+          const parsed = JSON.parse(savedAddress);
+          if (parsed?.id) {
+            addressId = parsed.id;
+          }
+        }
+        console.log('🔍 [Step4OrderSummary] addressId:', addressId);
+
+        if (!products || products.length === 0) {
+          console.log('🔍 [Step4OrderSummary] No products, saliendo');
+          return;
+        }
+
+        const productsToCheck = products.map((p) => ({
+          sku: p.sku,
+          quantity: p.quantity,
+        }));
+        console.log('🔍 [Step4OrderSummary] productsToCheck:', productsToCheck.length, 'productos');
+
+        const cacheKey = buildGlobalCanPickUpKey({
+          userId,
+          products: productsToCheck,
+          addressId,
+        });
+        console.log('🔍 [Step4OrderSummary] cacheKey construida:', cacheKey.substring(0, 80) + '...');
+
+        // Obtener respuesta completa del caché
+        const fullResponse = getFullCandidateStoresResponseFromCache(cacheKey);
+        console.log('🔍 [Step4OrderSummary] fullResponse del caché:', {
+          exists: !!fullResponse,
+          hasStores: !!fullResponse?.stores,
+          canPickUp: fullResponse?.canPickUp,
+          storesKeys: fullResponse?.stores ? Object.keys(fullResponse.stores) : []
+        });
+
+        if (fullResponse && fullResponse.stores) {
+          // stores es Record<string, CandidateStore[]> - necesitamos aplanar todas las tiendas
+          const allStores = Object.values(fullResponse.stores).flat();
+          const totalStores = allStores.length;
+          const availableCitiesCount = Object.keys(fullResponse.stores).length;
+
+          console.log('🔍 [Step4OrderSummary] Datos de tiendas:', {
+            totalStores,
+            availableCitiesCount,
+            canPickUp: fullResponse.canPickUp
+          });
+
+          // Según la lógica de useDelivery:
+          // - Si canPickUp es true: stores = todas las tiendas, availableStoresWhenCanPickUpFalse = 0
+          // - Si canPickUp es false: stores = 0, availableStoresWhenCanPickUpFalse = todas las tiendas
+          const storesCanPickUpTrue = fullResponse.canPickUp ? totalStores : 0;
+          const storesCanPickUpFalse = fullResponse.canPickUp ? 0 : totalStores;
+
+          setCachedDebugStoresInfo({
+            stores: storesCanPickUpTrue,
+            availableStoresWhenCanPickUpFalse: storesCanPickUpFalse,
+            filteredStores: storesCanPickUpTrue,
+            availableCities: availableCitiesCount,
+          });
+
+          // CRÍTICO: También actualizar globalCanPickUp desde el caché completo
+          // Esto asegura que el panel DEBUG muestre el valor correcto
+          console.log('🔍 [Step4OrderSummary] fullResponse.canPickUp tipo:', typeof fullResponse.canPickUp, 'valor:', fullResponse.canPickUp);
+          if (typeof fullResponse.canPickUp === 'boolean') {
+            console.log('✅ [Step4OrderSummary] Actualizando globalCanPickUp a:', fullResponse.canPickUp);
+            setGlobalCanPickUp(fullResponse.canPickUp);
+            setIsLoadingCanPickUp(false);
+          } else {
+            console.log('⚠️ [Step4OrderSummary] fullResponse.canPickUp NO es boolean, no actualizo globalCanPickUp');
+          }
+        } else {
+          console.log('⚠️ [Step4OrderSummary] No hay fullResponse o no tiene stores');
+        }
+      } catch (e) {
+        console.error("Error reading full cache for debug info:", e);
+      }
+    };
+
+    // Leer al montar
+    updateDebugInfoFromCache();
+
+    // También actualizar cuando cambie el caché
+    const handleCacheUpdate = () => {
+      updateDebugInfoFromCache();
+    };
+    window.addEventListener('canPickUpCache-updated', handleCacheUpdate);
+
+    // También escuchar cambios de dirección para re-leer el caché
+    const handleAddressChange = () => {
+      // Pequeño delay para asegurar que localStorage se actualizó
+      setTimeout(updateDebugInfoFromCache, 100);
+    };
+    window.addEventListener('address-changed', handleAddressChange);
+
+    return () => {
+      window.removeEventListener('canPickUpCache-updated', handleCacheUpdate);
+      window.removeEventListener('address-changed', handleAddressChange);
+    };
+  }, [products]);
 
   // OPTIMIZACIÓN: En Steps 4-7, NO recalcular automáticamente
   // SOLO recalcular cuando se cambia la dirección desde el navbar
@@ -996,14 +1252,14 @@ export default function Step4OrderSummary({
                 console.error('Error checking user role in onClick:', error);
               }
 
-              // Si NO es rol 2 o 3, proceder después de mostrar loading
-              if (userRole !== 2 && userRole !== 3) {
+              // Si NO es rol 2, 3 o 4, proceder después de mostrar loading
+              if (userRole !== 2 && userRole !== 3 && userRole !== 4) {
                 // console.log(`👤 [Step4OrderSummary] User role ${userRole} does not need candidate stores, proceeding after short loading`);
                 setTimeout(() => onFinishPayment(), 300); // Mostrar loading por un momento
                 return;
               }
 
-              // Solo si es rol 2/3, entonces sí esperar al cálculo real
+              // Solo si es rol 2/3/4, entonces sí esperar al cálculo real
               // console.log(`⏳ [Step4OrderSummary] User rol ${userRole} needs candidate stores and it's loading, waiting for real calculation...`);
 
               // AHORA activamos el flag para que el useEffect se encargue cuando termine
@@ -1045,8 +1301,8 @@ export default function Step4OrderSummary({
                 console.error('Error checking user role in onClick:', error);
               }
 
-              // Si no es rol 2 o 3, proceder después de mostrar loading
-              if (userRole !== 2 && userRole !== 3) {
+              // Si no es rol 2, 3 o 4, proceder después de mostrar loading
+              if (userRole !== 2 && userRole !== 3 && userRole !== 4) {
                 // console.log(`👤 [Step4OrderSummary] User role ${userRole} does not require candidate stores, proceeding after short loading`);
                 setTimeout(() => onFinishPayment(), 300);
                 return;
@@ -1213,6 +1469,19 @@ export default function Step4OrderSummary({
         {/* Debug Info - Solo visible cuando NEXT_PUBLIC_SHOW_PRODUCT_CODES=true */}
         {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
           <div className="mt-3 p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
+            {/* Log de debug para consola */}
+            {(() => {
+              console.log('🎨 [Step4OrderSummary DEBUG RENDER]', {
+                globalCanPickUp,
+                isLoadingCanPickUp,
+                shouldCalculateCanPickUp,
+                hasDefaultAddress,
+                debugStoresInfo,
+                cachedDebugStoresInfo,
+                productCount: products.length
+              });
+              return null;
+            })()}
             <p className="text-[10px] font-bold text-yellow-900 mb-1">
               🔍 DEBUG - Candidate Stores Info
             </p>
@@ -1220,11 +1489,11 @@ export default function Step4OrderSummary({
               <div className="flex justify-between">
                 <span>canPickUp (endpoint):</span>
                 <span className="font-mono font-bold">
-                  {isLoadingCanPickUp ? (
+                  {isLoadingCanPickUp && shouldCalculateCanPickUp ? (
                     <span className="text-blue-600 animate-pulse">⏳ calculando...</span>
                   ) : globalCanPickUp === null ? (
-                    // Para usuarios que no necesitan candidate stores, mostrar "no aplica"
-                    isUserLoggedIn === false ? (
+                    // Mostrar "no aplica" solo cuando no tiene dirección
+                    hasDefaultAddress === false ? (
                       <span className="text-gray-500">➖ no aplica</span>
                     ) : (
                       <span className="text-orange-600">🔄 calculando...</span>
@@ -1248,19 +1517,20 @@ export default function Step4OrderSummary({
                   )}
                 </span>
               </div>
-              {debugStoresInfo && (
+              {/* Usar debugStoresInfo (prop) si existe, sino usar cachedDebugStoresInfo (del caché) */}
+              {(debugStoresInfo || cachedDebugStoresInfo) && (
                 <>
                   <div className="flex justify-between">
                     <span>Stores (canPickUp=true):</span>
-                    <span className="font-mono">{debugStoresInfo.stores}</span>
+                    <span className="font-mono">{(debugStoresInfo || cachedDebugStoresInfo)?.stores ?? '-'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Stores (canPickUp=false):</span>
-                    <span className="font-mono">{debugStoresInfo.availableStoresWhenCanPickUpFalse}</span>
+                    <span className="font-mono">{(debugStoresInfo || cachedDebugStoresInfo)?.availableStoresWhenCanPickUpFalse ?? '-'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Cities available:</span>
-                    <span className="font-mono">{debugStoresInfo.availableCities}</span>
+                    <span className="font-mono">{(debugStoresInfo || cachedDebugStoresInfo)?.availableCities ?? '-'}</span>
                   </div>
                 </>
               )}

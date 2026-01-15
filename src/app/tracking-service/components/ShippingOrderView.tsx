@@ -94,34 +94,28 @@ export function ShippingOrderView({
   // Navigation functions for guides
   const goToPrevGuide = () => {
     if (!hasMultipleGuides) return;
-    setCurrentGuideIndex((prev) => {
-      const newIndex = prev === 0 ? productsByGuide.length - 1 : prev - 1;
-      setCurrentProductIndex(0); // Reset product index when changing guide
-      
-      // Notificar el cambio de guía al componente padre
-      const newGuide = productsByGuide[newIndex];
-      if (newGuide && onGuideChange) {
-        onGuideChange(newGuide.numero_guia);
-      }
-      
-      return newIndex;
-    });
+    const newIndex = currentGuideIndex === 0 ? productsByGuide.length - 1 : currentGuideIndex - 1;
+    setCurrentGuideIndex(newIndex);
+    setCurrentProductIndex(0); // Reset product index when changing guide
+
+    // Notificar el cambio de guía al componente padre
+    const newGuide = productsByGuide[newIndex];
+    if (newGuide && onGuideChange) {
+      onGuideChange(newGuide.numero_guia);
+    }
   };
 
   const goToNextGuide = () => {
     if (!hasMultipleGuides) return;
-    setCurrentGuideIndex((prev) => {
-      const newIndex = prev === productsByGuide.length - 1 ? 0 : prev + 1;
-      setCurrentProductIndex(0); // Reset product index when changing guide
-      
-      // Notificar el cambio de guía al componente padre
-      const newGuide = productsByGuide[newIndex];
-      if (newGuide && onGuideChange) {
-        onGuideChange(newGuide.numero_guia);
-      }
-      
-      return newIndex;
-    });
+    const newIndex = currentGuideIndex === productsByGuide.length - 1 ? 0 : currentGuideIndex + 1;
+    setCurrentGuideIndex(newIndex);
+    setCurrentProductIndex(0); // Reset product index when changing guide
+
+    // Notificar el cambio de guía al componente padre
+    const newGuide = productsByGuide[newIndex];
+    if (newGuide && onGuideChange) {
+      onGuideChange(newGuide.numero_guia);
+    }
   };
 
   // Navigation functions for products within a guide

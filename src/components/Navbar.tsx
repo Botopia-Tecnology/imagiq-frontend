@@ -414,7 +414,8 @@ export default function Navbar() {
                 shouldShowWhiteItemsMobile ? "text-white" : "text-black"
               }
             />
-            {navbar.isAuthenticated && navbar.user?.nombre ? (
+            {/* Solo mostrar dropdown si está autenticado, tiene nombre Y NO es invitado (rol 3) */}
+            {navbar.isAuthenticated && navbar.user?.nombre && (navbar.user?.role ?? navbar.user?.rol) !== 3 ? (
               <UserOptionsDropdown
                 showWhiteItems={shouldShowWhiteItemsMobile}
               />
@@ -698,7 +699,8 @@ export default function Navbar() {
                 <Heart className={cn("w-5 h-5", getIconColorClasses())} />
               </Link>
               <div className="flex items-center justify-end">
-                {navbar.isAuthenticated && navbar.user?.nombre ? (
+                {/* Solo mostrar dropdown si está autenticado, tiene nombre Y NO es invitado (rol 3) */}
+                {navbar.isAuthenticated && navbar.user?.nombre && (navbar.user?.role ?? navbar.user?.rol) !== 3 ? (
                   <UserOptionsDropdown showWhiteItems={shouldShowWhiteItems} />
                 ) : (
                   <button

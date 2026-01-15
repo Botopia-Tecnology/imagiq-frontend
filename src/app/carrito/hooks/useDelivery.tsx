@@ -195,11 +195,10 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         // Intentar obtener dirección
         let addressId: string | null = null;
         let savedAddress = localStorage.getItem("checkout-address");
-        if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
-          const defaultAddress = localStorage.getItem("imagiq_default_address");
-          if (defaultAddress && defaultAddress !== "null" && defaultAddress !== "undefined") {
-            savedAddress = defaultAddress;
-          }
+
+        // Fallback a imagiq_default_address si checkout-address no existe (para usuarios invitados)
+        if (!savedAddress || savedAddress === "null" || savedAddress === "undefined") {
+          savedAddress = localStorage.getItem("imagiq_default_address");
         }
 
         if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
@@ -407,7 +406,13 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       let savedAddress: string | null = null;
       try {
         savedAddress = globalThis.window?.localStorage.getItem("checkout-address") || null;
-        if (savedAddress) {
+
+        // Fallback a imagiq_default_address si checkout-address no existe (para usuarios invitados)
+        if (!savedAddress || savedAddress === 'null' || savedAddress === 'undefined') {
+          savedAddress = globalThis.window?.localStorage.getItem("imagiq_default_address") || null;
+        }
+
+        if (savedAddress && savedAddress !== 'null' && savedAddress !== 'undefined') {
           const parsed = JSON.parse(savedAddress) as Address;
           if (parsed.id) {
             currentAddressId = parsed.id;
@@ -592,11 +597,25 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
 
     // Obtener user_id PRIMERO (antes de activar loading)
-    const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
-      "imagiq_user",
-      {}
-    );
-    let userId = user?.id || user?.user_id;
+    // IMPORTANTE: Usar getUserId() para consistencia con el resto del código
+    let userId: string | null = null;
+    try {
+      const { getUserId } = await import('@/app/carrito/utils/getUserId');
+      userId = getUserId();
+      console.log('🔍 [useDelivery] userId obtenido de getUserId():', userId);
+    } catch (e) {
+      console.error('Error obteniendo userId:', e);
+    }
+
+    // Fallback al método anterior si getUserId() falla
+    if (!userId) {
+      const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
+        "imagiq_user",
+        {}
+      );
+      userId = user?.id || user?.user_id || null;
+      console.log('🔍 [useDelivery] userId obtenido de safeGetLocalStorage:', userId);
+    }
 
     // Si no hay userId en imagiq_user, intentar obtenerlo de checkout-address o imagiq_default_address
     if (!userId) {
@@ -606,7 +625,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
           const parsed = JSON.parse(savedAddress);
           if (parsed.usuario_id) {
             userId = parsed.usuario_id;
-
+            console.log('🔍 [useDelivery] userId obtenido de checkout-address:', userId);
           }
         }
 
@@ -616,7 +635,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
             const parsed = JSON.parse(defaultAddress);
             if (parsed.usuario_id) {
               userId = parsed.usuario_id;
-
+              console.log('🔍 [useDelivery] userId obtenido de imagiq_default_address:', userId);
             }
           }
         }
@@ -625,10 +644,10 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       }
     }
 
-
+    console.log('🔍 [useDelivery] FINAL userId:', userId, 'products.length:', products.length);
 
     if (!userId || products.length === 0) {
-
+      console.log('⚠️ [useDelivery] No hay userId o no hay productos, retornando sin calcular');
       setStores([]);
       setFilteredStores([]);
       setCanPickUp(false);
@@ -662,7 +681,13 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     // Si no vino explícito, intentar leer de localStorage
     if (!explicitAddressId) {
       try {
-        const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
+        let savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
+
+        // Fallback a imagiq_default_address si checkout-address no existe (para usuarios invitados)
+        if (!savedAddress || savedAddress === 'null' || savedAddress === 'undefined') {
+          savedAddress = globalThis.window?.localStorage.getItem("imagiq_default_address") || null;
+        }
+
         if (savedAddress && savedAddress !== 'null' && savedAddress !== 'undefined') {
           const parsed = JSON.parse(savedAddress) as Address & { usuario_id?: string };
           if (parsed.id) {

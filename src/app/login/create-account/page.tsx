@@ -62,11 +62,38 @@ export default function CreateAccountPage() {
     // Verificar si ya hay un usuario logueado
     const token = localStorage.getItem("imagiq_token");
     const userInfo = localStorage.getItem("imagiq_user");
-    
+
     if (token && userInfo) {
-      // Usuario ya verificado, ir directo al paso 3
       try {
         const user = JSON.parse(userInfo);
+        const userRole = user.role ?? user.rol;
+
+        // Si es usuario invitado (rol 3), debe empezar desde el paso 1
+        // para completar su registro como usuario normal
+        if (userRole === 3) {
+          console.log("🔄 Usuario invitado (rol 3) - iniciando registro desde paso 1");
+          // Limpiar datos de sesión del invitado para que pueda registrarse
+          localStorage.removeItem("imagiq_token");
+          localStorage.removeItem("imagiq_user");
+          localStorage.removeItem("create_account_progress");
+          // Pre-llenar datos del invitado si existen
+          setFormData({
+            nombre: user.nombre || "",
+            apellido: user.apellido || "",
+            email: user.email || "",
+            telefono: user.telefono || "",
+            codigo_pais: "57",
+            tipo_documento: user.tipo_documento || "CC",
+            numero_documento: user.numero_documento || "",
+            fecha_nacimiento: user.fecha_nacimiento || "",
+            contrasena: "",
+            confirmPassword: "",
+          });
+          setCurrentStep(1); // Empezar desde el paso 1
+          return;
+        }
+
+        // Usuario ya verificado (rol 2 u otro), ir directo al paso 3
         setFormData({
           nombre: user.nombre || "",
           apellido: user.apellido || "",

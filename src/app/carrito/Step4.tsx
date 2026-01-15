@@ -306,6 +306,7 @@ export default function Step4({
             buttonText="Continuar"
             disabled={isProcessing || isValidatingCard || !tradeInValidation.isValid || !isPaymentMethodValid}
             isSticky={false}
+            shouldCalculateCanPickUp={false}
             deliveryMethod={
               typeof window !== "undefined"
                 ? (() => {

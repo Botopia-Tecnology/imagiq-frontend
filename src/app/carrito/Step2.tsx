@@ -355,33 +355,138 @@ export default function Step2({
 
   /**
    * Maneja el envío de OTP
+   * Si el teléfono/email ya está verificado, intenta auto-login del usuario existente
    */
   const handleSendOTP = async (method?: 'email' | 'whatsapp') => {
+    console.log("🔄 [Step2 handleSendOTP] Iniciando...", { guestUserId, method, sendMethod });
+
     if (!guestUserId) {
+      console.log("❌ [Step2 handleSendOTP] No hay guestUserId");
       setError("No hay un proceso de registro en curso");
       return;
     }
 
     const methodToUse = method || sendMethod;
+    console.log("📧 [Step2 handleSendOTP] Método seleccionado:", methodToUse);
     setLoading(true);
     setError("");
 
     try {
       if (methodToUse === 'email') {
+        console.log("📧 [Step2 handleSendOTP] Enviando OTP por email a:", guestForm.email);
         await apiPost("/api/auth/otp/send-email-register", {
           email: guestForm.email,
+          userId: guestUserId, // Enviar userId para evitar conflictos con teléfonos duplicados
         });
       } else {
+        console.log("📱 [Step2 handleSendOTP] Enviando OTP por WhatsApp a:", guestForm.celular);
         await apiPost("/api/auth/otp/send-register", {
           telefono: guestForm.celular,
           metodo: "whatsapp",
+          userId: guestUserId, // Enviar userId para evitar conflictos con teléfonos duplicados
         });
       }
+      console.log("✅ [Step2 handleSendOTP] OTP enviado exitosamente");
       setOtpSent(true);
       setSendMethod(methodToUse);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error al enviar código de verificación";
-      setError(msg);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.log("⚠️ [Step2 handleSendOTP] Error:", errorMsg);
+
+      // Si el teléfono o email ya está verificado, intentar auto-login
+      if (errorMsg.toLowerCase().includes("ya está verificado")) {
+        console.log("🔐 [Step2] Usuario ya verificado detectado, intentando auto-login con userId:", guestUserId);
+        try {
+          // Usar el userId que ya tenemos del registro
+          const autoLoginResult = await apiPost<{
+            access_token: string;
+            user: {
+              id: string;
+              nombre: string;
+              apellido: string;
+              email: string;
+              numero_documento: string;
+              telefono: string;
+              rol?: number;
+            };
+          }>("/api/auth/auto-login-guest", {
+            userId: guestUserId,
+          });
+
+          console.log("📦 [Step2] Respuesta auto-login:", {
+            hasToken: !!autoLoginResult.access_token,
+            hasUser: !!autoLoginResult.user,
+            userRol: autoLoginResult.user?.rol
+          });
+
+          if (autoLoginResult.access_token && autoLoginResult.user) {
+            // Preservar el carrito antes de guardar el usuario
+            const currentCart = localStorage.getItem("cart-items");
+
+            // Limpiar datos de usuario anterior
+            try {
+              const { clearPreviousUserData } = await import('@/app/carrito/utils/getUserId');
+              clearPreviousUserData();
+            } catch (cleanErr) {
+              console.error('Error limpiando datos:', cleanErr);
+            }
+
+            // Guardar usuario con rol de invitado
+            const userWithRole = {
+              ...autoLoginResult.user,
+              role: autoLoginResult.user.rol || 3,
+              rol: autoLoginResult.user.rol || 3
+            };
+
+            console.log("💾 [Step2] Guardando usuario con rol:", userWithRole.rol);
+            localStorage.setItem("imagiq_token", autoLoginResult.access_token);
+            localStorage.setItem("imagiq_user", JSON.stringify(userWithRole));
+            console.log("✅ [Step2] Token y usuario guardados en localStorage");
+
+            // Guardar userId de forma consistente
+            const { saveUserId } = await import('@/app/carrito/utils/getUserId');
+            saveUserId(autoLoginResult.user.id, autoLoginResult.user.email, false);
+            console.log('✅ [Step2] Auto-login exitoso, userId:', autoLoginResult.user.id);
+
+            // Guardar cédula para autocompletar
+            if (globalThis.window !== undefined) {
+              globalThis.window.localStorage.setItem(
+                "checkout-document",
+                guestForm.cedula
+              );
+            }
+
+            // Restaurar carrito
+            if (currentCart) {
+              try {
+                const cartData = JSON.parse(currentCart);
+                if (Array.isArray(cartData) && cartData.length > 0) {
+                  localStorage.setItem("cart-items", currentCart);
+                  if (globalThis.window) {
+                    globalThis.window.dispatchEvent(new Event("storage"));
+                  }
+                }
+              } catch (cartErr) {
+                console.error("Error restaurando carrito:", cartErr);
+              }
+            }
+
+            // Limpiar sessionStorage
+            sessionStorage.removeItem("guest-otp-process");
+
+            // Marcar como registrado y verificado
+            setIsRegisteredAsGuest(true);
+            setGuestStep('verified');
+            setLoading(false);
+            return;
+          }
+        } catch (autoLoginErr) {
+          console.error("❌ [Step2] Error en auto-login:", autoLoginErr);
+          // Si falla el auto-login, continuar mostrando el error original
+        }
+      }
+
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -391,12 +496,16 @@ export default function Step2({
    * Maneja la verificación del OTP y completa el registro del invitado
    */
   const handleVerifyOTP = async () => {
+    console.log("🔐 [Step2 handleVerifyOTP] Iniciando verificación...", { otpCode, guestUserId, sendMethod });
+
     if (!otpCode || otpCode.length !== 6) {
+      console.log("❌ [Step2 handleVerifyOTP] Código inválido:", otpCode);
       setError("El código debe tener 6 dígitos");
       return;
     }
 
     if (!guestUserId) {
+      console.log("❌ [Step2 handleVerifyOTP] No hay guestUserId");
       setError("No hay un proceso de registro en curso");
       return;
     }
@@ -418,16 +527,24 @@ export default function Step2({
       };
 
       if (sendMethod === 'email') {
+        console.log("📧 [Step2 handleVerifyOTP] Verificando OTP por email:", guestForm.email);
         result = await apiPost("/api/auth/otp/verify-email", {
           email: guestForm.email,
           codigo: otpCode,
         });
       } else {
+        console.log("📱 [Step2 handleVerifyOTP] Verificando OTP por WhatsApp:", guestForm.celular);
         result = await apiPost("/api/auth/otp/verify-register", {
           telefono: guestForm.celular,
           codigo: otpCode,
         });
       }
+
+      console.log("✅ [Step2 handleVerifyOTP] OTP verificado, resultado:", {
+        hasToken: !!result.access_token,
+        hasUser: !!result.user,
+        userId: result.user?.id
+      });
 
       // IMPORTANTE: Solo ahora guardamos en localStorage después de verificar OTP
       if (result.access_token && result.user) {
@@ -1048,7 +1165,20 @@ export default function Step2({
       });
 
       // IMPORTANTE: Usar el addressId de la dirección recién agregada
-      const addressId = address.id;
+      // Si no hay ID en address, intentar leer de checkout-address que acabamos de guardar
+      let addressId = address.id;
+      if (!addressId) {
+        const storedAddress = localStorage.getItem('checkout-address');
+        if (storedAddress) {
+          try {
+            const parsed = JSON.parse(storedAddress);
+            addressId = parsed.id;
+            console.log('📦 [handleAddressAdded] addressId obtenido de checkout-address:', addressId);
+          } catch (e) {
+            console.error('❌ Error leyendo checkout-address para addressId:', e);
+          }
+        }
+      }
 
       console.log('📦 Consultando candidate stores con:', {
         userId,
@@ -1696,6 +1826,7 @@ export default function Step2({
                     })()
                   : undefined
               }
+              shouldCalculateCanPickUp={false}
             />
             {/* Estilo personalizado para el botón "Registrarse como invitado" - más alto y texto en dos líneas */}
             <style jsx global>{`

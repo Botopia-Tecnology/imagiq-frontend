@@ -42,7 +42,15 @@ export function buildGlobalCanPickUpKey(input: CacheKeyInput): string {
     .map((p) => `${p.sku}:${p.quantity}`)
     .join("|");
 
-  return `${userPart}::${addressPart}::${productsPart}`;
+  const key = `${userPart}::${addressPart}::${productsPart}`;
+  console.log('🔑 [Cache] buildGlobalCanPickUpKey:', {
+    userId: userPart,
+    addressId: addressPart,
+    productsCount: input.products.length,
+    keyLength: key.length,
+    keyPreview: key.substring(0, 100) + (key.length > 100 ? '...' : '')
+  });
+  return key;
 }
 
 /**
@@ -108,16 +116,36 @@ export function getGlobalCanPickUpFromCache(key: string): boolean | null {
  * Útil para evitar skeleton al cambiar a "recoger en tienda"
  */
 export function getFullCandidateStoresResponseFromCache(key: string): CandidateStoresResponse | null {
+  console.log('🔍 [Cache] getFullCandidateStoresResponseFromCache llamada');
+  console.log('🔍 [Cache] key solicitada:', key.substring(0, 80) + '...');
+
   // Si no hay caché en memoria, intentar cargar de localStorage
   if (!cache) {
+    console.log('🔍 [Cache] No hay caché en memoria, intentando localStorage...');
     loadFromLocalStorage();
   }
 
-  if (!cache) return null;
-  if (cache.key !== key) return null;
+  if (!cache) {
+    console.log('⚠️ [Cache] No hay caché disponible');
+    return null;
+  }
+
+  console.log('🔍 [Cache] cache.key actual:', cache.key.substring(0, 80) + '...');
+  console.log('🔍 [Cache] Keys coinciden?', cache.key === key);
+
+  if (cache.key !== key) {
+    console.log('⚠️ [Cache] Keys NO coinciden, retornando null');
+    console.log('🔍 [Cache] Diferencias:', {
+      keyLength: key.length,
+      cacheKeyLength: cache.key.length,
+      first50Match: key.substring(0, 50) === cache.key.substring(0, 50)
+    });
+    return null;
+  }
 
   const isExpired = Date.now() - cache.timestamp > TTL_MS;
   if (isExpired) {
+    console.log('⚠️ [Cache] Caché expirado');
     cache = null;
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(LOCAL_STORAGE_KEY);
@@ -125,6 +153,10 @@ export function getFullCandidateStoresResponseFromCache(key: string): CandidateS
     return null;
   }
 
+  console.log('✅ [Cache] Retornando fullResponse:', {
+    hasStores: !!cache.fullResponse?.stores,
+    canPickUp: cache.fullResponse?.canPickUp
+  });
   return cache.fullResponse;
 }
 
@@ -138,6 +170,14 @@ export function setGlobalCanPickUpCache(
   fullResponse?: CandidateStoresResponse | null,
   addressId?: string | null
 ): void {
+  console.log('💾 [Cache] setGlobalCanPickUpCache:', {
+    keyPreview: key.substring(0, 80) + '...',
+    value,
+    hasFullResponse: !!fullResponse,
+    fullResponseCanPickUp: fullResponse?.canPickUp,
+    addressId
+  });
+
   cache = {
     key,
     value,

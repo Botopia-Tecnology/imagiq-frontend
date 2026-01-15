@@ -403,14 +403,16 @@ export default function Step3({
 
       if (!userId) return null;
 
-      // 2. Obtener dirección
+      // 2. Obtener dirección - Intentar checkout-address primero, luego imagiq_default_address como fallback
       let addressId: string | null = null;
       let savedAddress = localStorage.getItem("checkout-address");
-      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
 
+      // Fallback a imagiq_default_address si checkout-address no existe (para usuarios invitados)
+      if (!savedAddress || savedAddress === "null" || savedAddress === "undefined") {
+        savedAddress = localStorage.getItem("imagiq_default_address");
       }
 
-      if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
+      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
         const parsed = JSON.parse(savedAddress);
         if (parsed?.id) {
           addressId = parsed.id;
@@ -465,11 +467,13 @@ export default function Step3({
       // Verificar caché de nuevo (es rápido porque es memoria/localStorage)
       let addressId: string | null = null;
       let savedAddress = localStorage.getItem("checkout-address");
-      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
 
+      // Fallback a imagiq_default_address si checkout-address no existe (para usuarios invitados)
+      if (!savedAddress || savedAddress === "null" || savedAddress === "undefined") {
+        savedAddress = localStorage.getItem("imagiq_default_address");
       }
 
-      if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
+      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
         const parsed = JSON.parse(savedAddress);
         if (parsed?.id) {
           addressId = parsed.id;
@@ -653,9 +657,12 @@ export default function Step3({
       } else {
         // Intentar obtener el ID desde localStorage
         try {
-          const saved = JSON.parse(
-            globalThis.window.localStorage.getItem("checkout-address") || "{}"
-          ) as Address;
+          let addressStr = globalThis.window.localStorage.getItem("checkout-address");
+          // Fallback a imagiq_default_address si checkout-address no existe
+          if (!addressStr || addressStr === "null" || addressStr === "undefined") {
+            addressStr = globalThis.window.localStorage.getItem("imagiq_default_address") || "{}";
+          }
+          const saved = JSON.parse(addressStr) as Address;
           newAddressId = saved?.id || null;
         } catch {
           return;
@@ -690,9 +697,12 @@ export default function Step3({
       } else {
         // Si no viene del header, leer de localStorage
         try {
-          const saved = JSON.parse(
-            globalThis.window.localStorage.getItem("checkout-address") || "{}"
-          ) as Address;
+          let addressStr = globalThis.window.localStorage.getItem("checkout-address");
+          // Fallback a imagiq_default_address si checkout-address no existe
+          if (!addressStr || addressStr === "null" || addressStr === "undefined") {
+            addressStr = globalThis.window.localStorage.getItem("imagiq_default_address") || "{}";
+          }
+          const saved = JSON.parse(addressStr) as Address;
 
           if (saved?.id && saved.id !== lastAddressIdRef.current) {
             setIsRecalculatingPickup(true);

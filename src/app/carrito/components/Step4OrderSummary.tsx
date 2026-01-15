@@ -294,6 +294,8 @@ export default function Step4OrderSummary({
   const [isArtificialLoading, setIsArtificialLoading] = React.useState(false);
   // Estado para saber si el usuario está logueado (para optimizar lógica del botón)
   const [isUserLoggedIn, setIsUserLoggedIn] = React.useState<boolean | null>(null);
+  // Estado para saber si el usuario tiene dirección predeterminada
+  const [hasDefaultAddress, setHasDefaultAddress] = React.useState<boolean | null>(null);
 
   // Verificar si el usuario está logueado y es rol 2/3 al montar el componente
   React.useEffect(() => {
@@ -321,8 +323,8 @@ export default function Step4OrderSummary({
           console.error('Error checking user role:', error);
         }
 
-        // Solo considerar "logueado" si es rol 2 o 3 (que necesitan candidate stores)
-        const requiresCalculation = userRole === 2 || userRole === 3;
+        // Solo considerar "logueado" si es rol 2, 3 o 4 (que necesitan candidate stores)
+        const requiresCalculation = userRole === 2 || userRole === 3 || userRole === 4;
         setIsUserLoggedIn(requiresCalculation);
 
         // console.log(`👤 [Step4OrderSummary] User check: userId=${!!userId}, role=${userRole}, requiresCalculation=${requiresCalculation}`);
@@ -333,6 +335,53 @@ export default function Step4OrderSummary({
     };
 
     checkUserLoggedIn();
+  }, []);
+
+  // Verificar si el usuario tiene dirección predeterminada
+  React.useEffect(() => {
+    const checkDefaultAddress = () => {
+      if (typeof globalThis.window === "undefined") {
+        setHasDefaultAddress(false);
+        return;
+      }
+
+      try {
+        // Verificar checkout-address o imagiq_default_address
+        let savedAddress = globalThis.window.localStorage.getItem("checkout-address");
+        const defaultAddress = globalThis.window.localStorage.getItem("imagiq_default_address");
+
+        // Si hay imagiq_default_address, usarla
+        if (defaultAddress && defaultAddress !== "null" && defaultAddress !== "undefined") {
+          savedAddress = defaultAddress;
+        }
+
+        if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
+          const parsed = JSON.parse(savedAddress);
+          // Verificar que tenga ciudad y línea_uno como mínimo
+          if (parsed?.ciudad && parsed?.linea_uno) {
+            setHasDefaultAddress(true);
+            return;
+          }
+        }
+
+        setHasDefaultAddress(false);
+      } catch (error) {
+        console.error('Error checking default address:', error);
+        setHasDefaultAddress(false);
+      }
+    };
+
+    checkDefaultAddress();
+
+    // Escuchar cambios de dirección
+    const handleAddressChange = () => checkDefaultAddress();
+    globalThis.window?.addEventListener("address-changed", handleAddressChange);
+    globalThis.window?.addEventListener("storage", handleAddressChange);
+
+    return () => {
+      globalThis.window?.removeEventListener("address-changed", handleAddressChange);
+      globalThis.window?.removeEventListener("storage", handleAddressChange);
+    };
   }, []);
 
   // Ref para guardar la función onFinishPayment y evitar ejecuciones múltiples
@@ -382,8 +431,8 @@ export default function Step4OrderSummary({
           const userData = JSON.parse(userDataStr);
           const userRole = userData?.role ?? userData?.rol;
 
-          // Solo calcular para rol 2 (registrado) o rol 3 (invitado)
-          if (userRole === 2 || userRole === 3) {
+          // Solo calcular para rol 2 (registrado), rol 3 (invitado) o rol 4
+          if (userRole === 2 || userRole === 3 || userRole === 4) {
             shouldCalculateForUser = true;
             // console.log(`👤 [Step4OrderSummary] User with rol ${userRole}, will calculate candidate stores`);
           } else {
@@ -489,8 +538,9 @@ export default function Step4OrderSummary({
     // Si es false (Step 7): hacer fetch OBLIGATORIO y establecer loading=true
     setIsLoadingCanPickUp(true);
 
-    // CORRECCIÓN CRÍTICA: SIEMPRE hacer fetch si no hay caché
-    // Esto es especialmente importante para Step7 donde el valor NUNCA puede ser null
+    // CORRECCIÓN: En Step1-6, NO hacer fetch propio - solo leer del caché
+    // useDelivery.tsx se encarga de calcular y guardar en caché
+    // Solo Step7 (shouldCalculateCanPickUp=false) puede hacer fetch de respaldo
     if (typeof window !== 'undefined') {
       // Si es Step1, NO hacer fetch de respaldo (ya lo hace useDelivery)
       if (isStep1) {
@@ -499,7 +549,19 @@ export default function Step4OrderSummary({
         return;
       }
 
-      // console.log('🔄 [Step4OrderSummary] No hay caché disponible, haciendo fetch obligatorio...');
+      // NUEVO: Si shouldCalculateCanPickUp es true (Steps 2-6), NO hacer fetch
+      // Solo mostrar loading y esperar a que useDelivery actualice el caché
+      if (shouldCalculateCanPickUp) {
+        // console.log('⏳ [Step4OrderSummary] Esperando caché de useDelivery (no hacer fetch propio)');
+        // Mantener loading en true para indicar que estamos esperando
+        // El evento 'canPickUpCache-updated' disparará fetchGlobalCanPickUp cuando el caché esté listo
+        setIsLoadingCanPickUp(true);
+        setGlobalCanPickUp(null);
+        return;
+      }
+
+      // Solo Step7 (shouldCalculateCanPickUp=false) hace fetch de respaldo
+      // console.log('🔄 [Step4OrderSummary] Step7: No hay caché disponible, haciendo fetch obligatorio...');
 
       // Hacer la petición inmediatamente - CRÍTICO para Step7
       productEndpoints.getCandidateStores({
@@ -542,7 +604,7 @@ export default function Step4OrderSummary({
           setIsLoadingCanPickUp(false);
         });
     }
-  }, [products, isStep1]);
+  }, [products, isStep1, shouldCalculateCanPickUp]);
 
   // Safety timeout para evitar que se quede cargando indefinidamente
   // IMPORTANTE: Solo detener el loading, NO cambiar el valor de canPickUp
@@ -996,14 +1058,14 @@ export default function Step4OrderSummary({
                 console.error('Error checking user role in onClick:', error);
               }
 
-              // Si NO es rol 2 o 3, proceder después de mostrar loading
-              if (userRole !== 2 && userRole !== 3) {
+              // Si NO es rol 2, 3 o 4, proceder después de mostrar loading
+              if (userRole !== 2 && userRole !== 3 && userRole !== 4) {
                 // console.log(`👤 [Step4OrderSummary] User role ${userRole} does not need candidate stores, proceeding after short loading`);
                 setTimeout(() => onFinishPayment(), 300); // Mostrar loading por un momento
                 return;
               }
 
-              // Solo si es rol 2/3, entonces sí esperar al cálculo real
+              // Solo si es rol 2/3/4, entonces sí esperar al cálculo real
               // console.log(`⏳ [Step4OrderSummary] User rol ${userRole} needs candidate stores and it's loading, waiting for real calculation...`);
 
               // AHORA activamos el flag para que el useEffect se encargue cuando termine
@@ -1045,8 +1107,8 @@ export default function Step4OrderSummary({
                 console.error('Error checking user role in onClick:', error);
               }
 
-              // Si no es rol 2 o 3, proceder después de mostrar loading
-              if (userRole !== 2 && userRole !== 3) {
+              // Si no es rol 2, 3 o 4, proceder después de mostrar loading
+              if (userRole !== 2 && userRole !== 3 && userRole !== 4) {
                 // console.log(`👤 [Step4OrderSummary] User role ${userRole} does not require candidate stores, proceeding after short loading`);
                 setTimeout(() => onFinishPayment(), 300);
                 return;
@@ -1223,8 +1285,8 @@ export default function Step4OrderSummary({
                   {isLoadingCanPickUp ? (
                     <span className="text-blue-600 animate-pulse">⏳ calculando...</span>
                   ) : globalCanPickUp === null ? (
-                    // Para usuarios que no necesitan candidate stores, mostrar "no aplica"
-                    isUserLoggedIn === false ? (
+                    // Mostrar "no aplica" SOLO cuando no tiene dirección predeterminada
+                    hasDefaultAddress === false ? (
                       <span className="text-gray-500">➖ no aplica</span>
                     ) : (
                       <span className="text-orange-600">🔄 calculando...</span>

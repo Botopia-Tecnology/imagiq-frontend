@@ -274,14 +274,15 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   }, []);
 
   // Ref para controlar la última petición activa de fetchCandidateStores
-  const lastFetchRequestId = { current: 0 };
+  // IMPORTANTE: Usar useRef para que persista entre renders y SIEMPRE tome la última llamada
+  const lastFetchRequestIdRef = useRef(0);
 
   // Función para cargar tiendas candidatas
   // Llama al endpoint con TODOS los productos agrupados para obtener canPickUp global y sus tiendas
   // Acepta addressId opcional para evitar lecturas de localStorage desactualizadas (race conditions)
   const fetchCandidateStores = useCallback(async (explicitAddressId?: string) => {
     // Incrementar el requestId para esta llamada
-    const thisRequestId = ++lastFetchRequestId.current;
+    const thisRequestId = ++lastFetchRequestIdRef.current;
 
     // CRÍTICO: Cancelar cualquier timeout de reintento pendiente INMEDIATAMENTE
     // Esto asegura que solo la llamada más reciente se ejecute
@@ -504,7 +505,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
         // Establecer estados inmediatamente desde caché (sin skeleton)
         // Solo actualizar si es la última petición
-        if (thisRequestId === lastFetchRequestId.current) {
+        if (thisRequestId === lastFetchRequestIdRef.current) {
           setCanPickUp(globalCanPickUp);
           setAvailableCities(cities);
 
@@ -744,7 +745,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
       // Establecer estados inmediatamente desde caché (sin skeleton)
       // Solo actualizar si es la última petición
-      if (thisRequestId === lastFetchRequestId.current) {
+      if (thisRequestId === lastFetchRequestIdRef.current) {
         setCanPickUp(globalCanPickUp);
         setAvailableCities(cities);
 
@@ -905,6 +906,11 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         }
 
         // IMPORTANTE: Establecer canPickUp y tiendas AL MISMO TIEMPO (sin delays)
+        // CRÍTICO: Solo actualizar si es la última petición (evita race conditions)
+        if (thisRequestId !== lastFetchRequestIdRef.current) {
+          console.log(`⏭️ [fetchCandidateStores] Ignorando respuesta obsoleta (requestId=${thisRequestId}, current=${lastFetchRequestIdRef.current})`);
+          return;
+        }
 
         // Establecer canPickUp primero
         setCanPickUp(globalCanPickUp);
@@ -974,10 +980,13 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         }
 
         // Para otros errores, establecer estados vacíos
-        setCanPickUp(false);
-        setStores([]);
-        setFilteredStores([]);
-        setAvailableStoresWhenCanPickUpFalse([]);
+        // CRÍTICO: Solo actualizar si es la última petición
+        if (thisRequestId === lastFetchRequestIdRef.current) {
+          setCanPickUp(false);
+          setStores([]);
+          setFilteredStores([]);
+          setAvailableStoresWhenCanPickUpFalse([]);
+        }
       }
     } // Cierra el bloque try
     catch (error) {
@@ -1005,10 +1014,13 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         retry429CountRef.current = 0; // Resetear contador
       }
 
-      setStores([]);
-      setFilteredStores([]);
-      setAvailableStoresWhenCanPickUpFalse([]);
-      setCanPickUp(false);
+      // CRÍTICO: Solo actualizar si es la última petición
+      if (thisRequestId === lastFetchRequestIdRef.current) {
+        setStores([]);
+        setFilteredStores([]);
+        setAvailableStoresWhenCanPickUpFalse([]);
+        setCanPickUp(false);
+      }
 
       // CRÍTICO: Escribir en caché incluso en error para desbloquear Step4OrderSummary
       // Si no escribimos en caché, Step4 se queda esperando indefinidamente
@@ -1034,7 +1046,11 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         default_direction: null
       } as unknown as CandidateStoresResponse, currentAddressId);
     } finally {
-      setStoresLoading(false);
+      // CRÍTICO: Solo desactivar loading si es la última petición
+      // Esto evita que una petición antigua desactive el loading de una más reciente
+      if (thisRequestId === lastFetchRequestIdRef.current) {
+        setStoresLoading(false);
+      }
       isFetchingRef.current = false;
 
       // CRÍTICO: Liberar el lock global INMEDIATAMENTE
@@ -1071,6 +1087,8 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   // Si no hay pickup disponible, cargar TODAS las tiendas
   // PROTECCIÓN: Solo ejecutar una vez al montar o cuando cambian los productos significativamente
   const productsHashRef = useRef<string>('');
+  // Debounce timer para cambios de productos (evita llamadas múltiples cuando se agregan varios productos rápido)
+  const productsChangeDebounceRef = useRef<NodeJS.Timeout | null>(null);
   // Actualizar ref con la función actual en cada render para que los reintentos usen el closure más reciente
   useEffect(() => {
     fetchCandidateStoresRef.current = fetchCandidateStores;
@@ -1099,16 +1117,31 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       // cuando se cambian múltiples cantidades rápidamente.
       // fetchCandidateStores sobrescribirá el caché con el nuevo valor automáticamente.
 
-      // fetchCandidateStores sobrescribirá el caché con el nuevo valor automáticamente.
-
       productsHashRef.current = productsHash;
 
       // Verificar que NO estemos eliminando trade-in
       if (!isRemovingTradeInRef.current) {
-        // Llamar inmediatamente - el hash de productos ya garantiza que solo se llama cuando hay cambios reales
-        fetchCandidateStores();
+        // DEBOUNCE: Cancelar cualquier llamada pendiente antes de programar una nueva
+        // Esto asegura que cuando se agregan múltiples productos rápido, solo se hace UNA llamada al final
+        if (productsChangeDebounceRef.current) {
+          clearTimeout(productsChangeDebounceRef.current);
+        }
+
+        // Programar la llamada con un pequeño delay para agrupar cambios rápidos
+        productsChangeDebounceRef.current = setTimeout(() => {
+          productsChangeDebounceRef.current = null;
+          fetchCandidateStores();
+        }, 300); // 300ms de debounce para agrupar cambios rápidos de productos
       }
     }
+
+    // Cleanup: cancelar debounce si el componente se desmonta
+    return () => {
+      if (productsChangeDebounceRef.current) {
+        clearTimeout(productsChangeDebounceRef.current);
+        productsChangeDebounceRef.current = null;
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products]); // IMPORTANTE: Solo depender de products - canFetchFromEndpoint y onlyReadCache son config, no cambian
 

@@ -118,7 +118,7 @@ export default function PaymentForm({
   };
 
   const userRole = getUserRole();
-  const canSaveCards = userRole === 2; // Solo rol 2 puede guardar tarjetas
+  const canSaveCards = userRole === 2 || userRole === 4; // Roles 2 y 4 pueden guardar tarjetas
 
   // Helper para obtener el máximo de cuotas sin interés de una tarjeta
   const getMaxInstallments = (cardId: string): number | null => {

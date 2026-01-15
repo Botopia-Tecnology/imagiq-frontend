@@ -40,7 +40,7 @@ export default function Step3({
 
   // OPTIMIZACIÓN CRÍTICA: Step3 SOLO lee del caché si ya existe
   // Si viene de Step1, ya debería existir el caché de candidate-stores
-  // Solo permitir llamadas al endpoint si NO hay caché disponible
+  // NUNCA debe hacer llamadas al endpoint en Step3, solo leer del caché
   const {
     address,
     setAddress,
@@ -68,9 +68,22 @@ export default function Step3({
     lastResponse,
     setAddresses, // New function from useDelivery
   } = useDelivery({
-    canFetchFromEndpoint: true, // Permitir fetch solo si no hay caché
-    onlyReadCache: true, // OPTIMIZACIÓN: Solo leer del caché en Step3 (ya debería existir desde Step1)
+    canFetchFromEndpoint: false, // ❌ NUNCA hacer fetch en Step3
+    onlyReadCache: true, // ✅ Solo leer del caché (ya calculado en Step1)
   });
+
+  // DEBUG: Verificar valores retornados por useDelivery en Step3
+  React.useEffect(() => {
+    console.log('🔍 [STEP3] useDelivery retornó:', {
+      canPickUp,
+      storesCount: stores.length,
+      storesLoading,
+      availableStoresWhenCanPickUpFalseCount: availableStoresWhenCanPickUpFalse.length,
+      availableCitiesCount: availableCities.length,
+      deliveryMethod,
+      hasAddress: !!address,
+    });
+  }, [canPickUp, stores.length, storesLoading, availableStoresWhenCanPickUpFalse.length, availableCities.length, deliveryMethod, address]);
 
   // Hook para precarga de tarjetas y zero interest
   const { preloadCards, preloadZeroInterest } = useCardsCache();

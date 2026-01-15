@@ -543,13 +543,29 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         return; // Salir sin hacer petición al endpoint
       } else {
         // No hay caché disponible con onlyReadCache
-        console.log('📦 [CACHÉ] No hay datos en caché y onlyReadCache=true, desactivando loading');
-        setStoresLoading(false);
+        // IMPORTANTE: Si el usuario tiene rol 2, 3 o 4 y tiene dirección, FORZAR recálculo
+        const user = safeGetLocalStorage<{ id?: string; user_id?: string; rol?: number }>(
+          "imagiq_user",
+          {}
+        );
+        const userRol = user?.rol;
+        const shouldForceRecalculate = hasAddress && (userRol === 2 || userRol === 3 || userRol === 4);
+
+        if (shouldForceRecalculate) {
+          console.log('🔄 [CACHÉ] No hay caché pero usuario rol', userRol, 'con dirección - FORZANDO recálculo');
+          allowFetchOnAddressChangeRef.current = true;
+          // No retornar aquí, continuar para hacer la petición
+        } else {
+          console.log('📦 [CACHÉ] No hay datos en caché y onlyReadCache=true, desactivando loading');
+          setStoresLoading(false);
+          return;
+        }
       }
     }
 
     // PROTECCIÓN: Si canFetchFromEndpoint es false, NO hacer petición
-    if (!canFetchFromEndpoint) {
+    // EXCEPCIÓN: Si allowFetchOnAddressChangeRef es true (cambio de dirección o forzado por rol)
+    if (!canFetchFromEndpoint && !allowFetchOnAddressChangeRef.current) {
 
       setStoresLoading(false); // Asegurar que loading se apague
       return;
@@ -1141,6 +1157,12 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         });
       }
       isFetchingRef.current = false;
+
+      // CRÍTICO: Resetear allowFetchOnAddressChangeRef después de cualquier fetch
+      // Esto evita que quede en true indefinidamente después de un recálculo forzado
+      setTimeout(() => {
+        allowFetchOnAddressChangeRef.current = false;
+      }, 1500);
 
       // CRÍTICO: Liberar el lock global INMEDIATAMENTE
       // El cooldown artificial de 200ms estaba bloqueando peticiones rápidas consecutivas

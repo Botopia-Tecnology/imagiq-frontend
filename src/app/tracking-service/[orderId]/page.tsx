@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState, useCallback } from "react";
+import { use, useEffect, useState, useCallback, useRef } from "react";
 
 // Importación de iconos
 import { apiClient, type ApiResponse } from "@/lib/api";
@@ -44,6 +44,10 @@ export default function TrackingService({
   const [longitudDestino, setLongitudDestino] = useState<number | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const pathParams = use(params);
+
+  // Ref para cancelar peticiones anteriores y evitar race conditions
+  const guideChangeAbortRef = useRef<AbortController | null>(null);
+  const currentGuideRef = useRef<string | null>(null);
 
   // Helper functions
   const formatDate = (
@@ -113,14 +117,31 @@ export default function TrackingService({
   // Función para obtener eventos específicos por número de guía
   const handleGuideChange = useCallback(async (numeroGuia: string) => {
     if (!numeroGuia) return;
-    
+
+    // Cancelar petición anterior si existe
+    if (guideChangeAbortRef.current) {
+      guideChangeAbortRef.current.abort();
+    }
+
+    // Crear nuevo AbortController para esta petición
+    const abortController = new AbortController();
+    guideChangeAbortRef.current = abortController;
+    currentGuideRef.current = numeroGuia;
+
     try {
       const eventosResponse = await apiClient.get<{
         success: boolean;
         data: EnvioEvento[];
         total: number;
-      }>(`/api/deliveries/eventos/guia/${numeroGuia}`);
-      
+      }>(`/api/deliveries/eventos/guia/${numeroGuia}`, {
+        signal: abortController.signal,
+      });
+
+      // Verificar que esta sigue siendo la guía actual (evitar race condition)
+      if (currentGuideRef.current !== numeroGuia) {
+        return;
+      }
+
       if (eventosResponse.data.success && eventosResponse.data.data) {
         console.log(`📊 Eventos para guía ${numeroGuia}:`, eventosResponse.data.data.length, eventosResponse.data.data);
         setTrackingSteps(eventosResponse.data.data);
@@ -132,6 +153,10 @@ export default function TrackingService({
         setPdfBase64(envioCorrespondiente.pdf_base64);
       }
     } catch (error) {
+      // Ignorar errores de cancelación
+      if (error instanceof Error && error.name === 'AbortError') {
+        return;
+      }
       console.warn(`Error obteniendo eventos para guía ${numeroGuia}:`, error);
     }
   }, [envios]);

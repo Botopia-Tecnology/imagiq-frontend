@@ -102,12 +102,13 @@ export function NearbyLocationButton({ onAddressAdded, className }: NearbyLocati
       console.log("✅ Dirección creada:", newAddress);
 
       // 4. Sincronizar con el estado global y localStorage
+      // IMPORTANTE: fromHeader: true para forzar recálculo de tiendas
       await syncAddress({
         address: newAddress,
         userEmail: user?.email,
         user: user || undefined,
         loginFn: login,
-        fromHeader: false,
+        fromHeader: true,
       });
 
       // 5. Notificar al componente padre

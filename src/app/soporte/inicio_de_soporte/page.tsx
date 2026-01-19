@@ -481,8 +481,6 @@ export default function InicioDeSoportePage() {
       // Store cedula and order sent with the support-order so payments use the same identifiers
       setSubmittedCedula(cedula.replace(/\D/g, ""));
       setSubmittedOrder(orden.trim() || null);
-      setCedula("");
-      setOrden("");
       setErrors({});
       setSuccess("Solicitud enviada correctamente.");
       setIsModalOpen(true);
@@ -795,45 +793,58 @@ export default function InicioDeSoportePage() {
 
       {/* Modal de Resultado */}
       <Modal isOpen={isModalOpen} onClose={handleCloseModal} size="lg">
-        <div className="p-4 md:p-8">
+        <div className="p-5 md:p-6 pb-3 md:pb-4">
           {/* PASO 1: Resumen */}
           {modalStep === "resumen" && (
             <>
-              <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">
-                Resumen de tu consulta
-              </h2>
+              {/* Header mejorado */}
+              <div className="mb-5">
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
+                  Resumen de tu consulta
+                </h2>
+                {orden && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Orden #{orden}
+                  </p>
+                )}
+              </div>
 
               {result && (
-                <div className="space-y-4 md:space-y-6">
-                  {/* Info del cliente */}
+                <div className="space-y-4">
+                  {/* Info del cliente - Diseño minimalista */}
                   {result.obtenerDocumentosResult?.documentos?.[0] && (
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                      <p className="text-sm font-medium text-gray-900">
-                        {result.obtenerDocumentosResult.documentos[0].cliente}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {
-                          result.obtenerDocumentosResult.documentos[0]
-                            .tipoDocumento
-                        }{" "}
-                        • {result.obtenerDocumentosResult.documentos[0].email}
-                      </p>
+                    <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+                      <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-semibold text-sm">
+                          {result.obtenerDocumentosResult.documentos[0].cliente?.charAt(0)?.toUpperCase() || "?"}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-900 truncate">
+                          {result.obtenerDocumentosResult.documentos[0].cliente}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {result.obtenerDocumentosResult.documentos[0].email}
+                        </p>
+                      </div>
                     </div>
                   )}
 
-                  {/* Monto a pagar */}
-                  <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black border border-gray-700 rounded-xl p-6 md:p-8 shadow-2xl">
-                    <p className="text-xs md:text-sm text-gray-300 mb-3 uppercase tracking-wider font-medium">
-                      Monto a pagar
+                  {/* Monto a pagar - Card destacada */}
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl p-5">
+                    <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider font-medium">
+                      {result.obtenerDocumentosResult?.documentos?.some(
+                        (d) => d.estadoNombre === "En Reparación" || d.estadoNombre === "Reparado"
+                      ) ? "Monto pagado" : "Monto a pagar"}
                     </p>
                     <p
                       className={cn(
-                        "font-bold text-white overflow-wrap-break-word leading-tight",
+                        "font-bold leading-none text-gray-900",
                         result.obtenerDocumentosResult?.documentos?.every(
                           (r) => r.valor === "0,0000"
                         ) === true
-                          ? "text-2xl md:text-3xl"
-                          : "text-4xl md:text-6xl"
+                          ? "text-xl md:text-2xl"
+                          : "text-4xl md:text-5xl"
                       )}
                     >
                       {(() => {
@@ -841,54 +852,73 @@ export default function InicioDeSoportePage() {
                         const raw = doc?.valor;
                         if (!raw)
                           return (
-                            result.obtenerDocumentosResult?.documentos?.findLast(
-                              (p) => p.valor === "0,0000"
-                            )?.estadoNombre ||
-                            "Pronto tendremos tu información!"
+                            <span className="text-lg md:text-xl text-gray-600">
+                              {result.obtenerDocumentosResult?.documentos?.findLast(
+                                (p) => p.valor === "0,0000"
+                              )?.estadoNombre ||
+                              "Pronto tendremos tu información!"}
+                            </span>
                           );
                         return `$${formatCurrency(raw)}`;
                       })()}
                     </p>
-                    {getDocumentoConValor() && (
-                      <p className="text-xs md:text-sm text-gray-400 mt-3 pt-3 border-t border-gray-700">
-                        {getDocumentoConValor()?.tipo} • {getDocumentoConValor()?.concepto}
+                    {getDocumentoConValor() && !result.obtenerDocumentosResult?.documentos?.some(
+                      (d) => d.estadoNombre === "En Reparación" || d.estadoNombre === "Reparado"
+                    ) && (
+                      <p className="text-sm text-gray-500 mt-3">
+                        {getDocumentoConValor()?.tipo} · {getDocumentoConValor()?.concepto}
                       </p>
                     )}
                   </div>
 
-                  {/* Lista de documentos */}
-                  {(result.obtenerDocumentosResult?.documentos?.length ?? 0) > 1 && (
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-gray-700">
-                        Historial de documentos:
+                  {/* Lista de documentos - Timeline moderno */}
+                  {(result.obtenerDocumentosResult?.documentos?.length ?? 0) >= 1 && (
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wider font-medium mb-3">
+                        Historial
                       </p>
-                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                      <div className="space-y-0 relative">
+                        {/* Línea vertical conectora */}
+                        <div className="absolute left-[5px] top-2 bottom-2 w-px bg-gray-200" />
+
+                        {/* Documentos con links */}
                         {result.obtenerDocumentosResult.documentos.map(
                           (doc, index) => (
                             <div
                               key={doc.diffgrId || index}
-                              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm"
+                              className="flex items-start gap-4 py-2 relative"
                             >
-                              <div>
-                                <p className="font-medium text-gray-900">
-                                  {doc.tipo}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {doc.estadoNombre} • {doc.fecha.split(" ")[0]}
-                                </p>
+                              <div className={cn(
+                                "w-[11px] h-[11px] rounded-full border-2 border-white ring-1 flex-shrink-0 mt-0.5 z-10",
+                                doc.estadoNombre === "En Cotización" ? "bg-blue-500 ring-blue-200" :
+                                doc.estadoNombre === "En Reparación" ? "bg-amber-500 ring-amber-200" :
+                                doc.estadoNombre === "Reparado" ? "bg-emerald-500 ring-emerald-200" :
+                                doc.valor !== "0,0000" ? "bg-emerald-500 ring-emerald-200" : "bg-gray-300 ring-gray-200"
+                              )} />
+                              <div className="flex-1 flex items-center justify-between min-w-0 gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-gray-900">{doc.tipo}</p>
+                                  <p className="text-xs text-gray-400">{doc.estadoNombre} · {doc.fecha.split(" ")[0]}</p>
+                                </div>
+                                <div className="flex items-center gap-3 flex-shrink-0">
+                                  <span className={cn(
+                                    "text-sm tabular-nums font-medium",
+                                    doc.valor === "0,0000" ? "text-gray-300" : "text-gray-900"
+                                  )}>
+                                    {doc.valor === "0,0000" ? "—" : `$${formatCurrency(doc.valor)}`}
+                                  </span>
+                                  {doc.url && (
+                                    <a
+                                      href={doc.url.replace('documentkey=/', 'documentkey=')}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-xs font-medium text-gray-900 hover:text-gray-600 underline underline-offset-2 cursor-pointer transition-colors"
+                                    >
+                                      Ver
+                                    </a>
+                                  )}
+                                </div>
                               </div>
-                              <span
-                                className={cn(
-                                  "text-sm font-semibold",
-                                  doc.valor === "0,0000"
-                                    ? "text-gray-400"
-                                    : "text-blue-600"
-                                )}
-                              >
-                                {doc.valor === "0,0000"
-                                  ? "-"
-                                  : `$${formatCurrency(doc.valor)}`}
-                              </span>
                             </div>
                           )
                         )}
@@ -896,35 +926,58 @@ export default function InicioDeSoportePage() {
                     </div>
                   )}
 
-                  {result.obtenerDocumentosResult?.documentos?.some(
-                    (r) => r.valor !== "0,0000"
-                  ) && (
-                      <div className="w-full flex flex-col gap-2 md:gap-3">
+                  {/* Botones de acción */}
+                  <div className="pt-1 flex items-center gap-2">
+                    {/* Solo mostrar "Ir a pagar" si hay valor y NO está en reparación */}
+                    {result.obtenerDocumentosResult?.documentos?.some(
+                      (r) => r.valor !== "0,0000"
+                    ) && !result.obtenerDocumentosResult?.documentos?.some(
+                      (d) => d.estadoNombre === "En Reparación" || d.estadoNombre === "Reparado"
+                    ) && (
+                      <Button
+                        onClick={handleGoToPayment}
+                        type="button"
+                        className="flex-1 h-11 bg-gray-900 text-white rounded-xl font-semibold text-sm shadow-sm transition-all cursor-pointer hover:bg-gray-800 hover:shadow-md"
+                      >
+                        Ir a pagar
+                      </Button>
+                    )}
+
+                    {/* Mostrar "Descargar factura" - Cotización si no está reparado, Factura DIAN si está reparado */}
+                    {(() => {
+                      const isReparado = result.obtenerDocumentosResult?.documentos?.some(
+                        (d) => d.estadoNombre === "En Reparación" || d.estadoNombre === "Reparado"
+                      );
+                      const facturaUrl = isReparado
+                        ? result.obtenerDocumentosResult?.documentos?.find(d => d.tipo === "Factura")?.url
+                        : result.obtenerDocumentosResult?.documentos?.find(d => d.tipo === "Cotización")?.url;
+
+                      // Limpiar la URL - quitar / después de documentkey=
+                      const cleanUrl = facturaUrl?.replace('documentkey=/', 'documentkey=');
+
+                      return cleanUrl && (
                         <Link
-                          href={getDocumentoConValor()?.url || "#"}
+                          href={cleanUrl}
                           target="_blank"
-                          className="w-full rounded-lg inline-flex items-center justify-center px-3 md:px-4 py-2 md:py-3 bg-white text-gray-900 border border-gray-950 font-bold text-sm md:text-base shadow-md transition transform hover:scale-105"
+                          className={cn(
+                            "flex-1 h-11 rounded-xl inline-flex items-center justify-center font-semibold text-sm transition-all cursor-pointer",
+                            isReparado
+                              ? "bg-gray-900 text-white shadow-sm hover:bg-gray-800 hover:shadow-md"
+                              : "bg-gray-300 text-gray-700 hover:bg-gray-400"
+                          )}
                         >
                           Descargar factura
                         </Link>
+                      );
+                    })()}
 
-                        <Button
-                          onClick={handleGoToPayment}
-                          type="button"
-                          className="w-full px-4 md:px-6 py-2 md:py-3 bg-black text-white rounded-lg font-bold text-sm md:text-base shadow-md transition transform hover:scale-105"
-                        >
-                          Ir a pagar
-                        </Button>
-                      </div>
-                    )}
-
-                  <Button
-                    onClick={handleCloseModal}
-                    variant="outline"
-                    className="w-full text-sm md:text-base"
-                  >
-                    Cerrar
-                  </Button>
+                    <button
+                      onClick={handleCloseModal}
+                      className="h-11 px-4 text-sm text-blue-900 hover:text-blue-700 font-medium transition-colors cursor-pointer"
+                    >
+                      Cerrar
+                    </button>
+                  </div>
                 </div>
               )}
             </>
@@ -933,37 +986,37 @@ export default function InicioDeSoportePage() {
           {/* PASO 2: Selección de método de pago */}
           {modalStep === "pago" && result && (
             <>
-              <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center gap-3 mb-4">
                 <button
                   onClick={handleBackToResumen}
-                  className="p-2 hover:bg-gray-100 rounded-full transition"
+                  className="p-1.5 hover:bg-gray-100 rounded-full transition"
                 >
-                  <ArrowLeft className="w-5 h-5" />
+                  <ArrowLeft className="w-4 h-4" />
                 </button>
-                <h2 className="text-xl md:text-2xl font-bold">
+                <h2 className="text-lg md:text-xl font-bold">
                   Elige cómo pagar
                 </h2>
               </div>
 
               {/* Resumen del monto */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="bg-gray-50 rounded-lg p-3 mb-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-blue-900">Total a pagar:</span>
-                  <span className="text-2xl font-bold text-blue-900">
+                  <span className="text-sm text-gray-600">Total a pagar:</span>
+                  <span className="text-xl font-bold text-gray-900">
                     ${formatCurrency(getDocumentoConValor()?.valor || "0")}
                   </span>
                 </div>
               </div>
 
               {/* Opciones de pago */}
-              <div className="space-y-3 mb-6">
+              <div className="space-y-2 mb-4">
                 {/* Tarjeta de crédito/débito */}
                 <div>
                   <label
                     className={cn(
-                      "flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all",
+                      "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
                       paymentMethod === "tarjeta"
-                        ? "border-black bg-gray-50"
+                        ? "border-gray-900 bg-gray-50"
                         : "border-gray-200 hover:border-gray-300"
                     )}
                   >
@@ -972,11 +1025,11 @@ export default function InicioDeSoportePage() {
                       name="payment-method"
                       checked={paymentMethod === "tarjeta"}
                       onChange={() => setPaymentMethod("tarjeta")}
-                      className="accent-black w-5 h-5"
+                      className="accent-black w-4 h-4"
                     />
-                    <CreditCard className="w-6 h-6 text-gray-700" />
+                    <CreditCard className="w-5 h-5 text-gray-700" />
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">
+                      <p className="font-medium text-gray-900 text-sm">
                         Tarjeta de crédito o débito
                       </p>
                       <p className="text-xs text-gray-500">
@@ -987,15 +1040,15 @@ export default function InicioDeSoportePage() {
                       <Image
                         src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg"
                         alt="Visa"
-                        width={32}
-                        height={20}
+                        width={28}
+                        height={18}
                         className="object-contain"
                       />
                       <Image
                         src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg"
                         alt="Mastercard"
-                        width={32}
-                        height={20}
+                        width={28}
+                        height={18}
                         className="object-contain"
                       />
                     </div>
@@ -1003,10 +1056,10 @@ export default function InicioDeSoportePage() {
 
                   {/* Formulario de tarjeta */}
                   {paymentMethod === "tarjeta" && (
-                    <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
+                    <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
                       {/* Vista previa de la tarjeta */}
-                      <div className="flex justify-center mb-4">
-                        <div className="w-full max-w-[300px] scale-90">
+                      <div className="flex justify-center">
+                        <div className="w-full max-w-[300px] scale-[0.9] -my-2">
                           <AnimatedCard
                             cardNumber={cardData.number}
                             cardHolder={cardData.holder}
@@ -1022,27 +1075,25 @@ export default function InicioDeSoportePage() {
                       <div>
                         <label
                           htmlFor="card-number"
-                          className="block text-sm font-medium text-gray-700 mb-1"
+                          className="block text-xs font-medium text-gray-700 mb-1"
                         >
                           Número de tarjeta
                         </label>
-                        <div className="relative">
-                          <input
-                            id="card-number"
-                            type="text"
-                            value={formatCardNumber(cardData.number)}
-                            onChange={handleCardNumberChange}
-                            placeholder="1234 5678 9012 3456"
-                            className={cn(
-                              "w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm",
-                              cardErrors.number
-                                ? "border-red-500"
-                                : "border-gray-300"
-                            )}
-                          />
-                        </div>
+                        <input
+                          id="card-number"
+                          type="text"
+                          value={formatCardNumber(cardData.number)}
+                          onChange={handleCardNumberChange}
+                          placeholder="1234 5678 9012 3456"
+                          className={cn(
+                            "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm",
+                            cardErrors.number
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          )}
+                        />
                         {cardErrors.number && (
-                          <p className="text-red-500 text-xs mt-1">
+                          <p className="text-red-500 text-xs mt-0.5">
                             {cardErrors.number}
                           </p>
                         )}
@@ -1052,7 +1103,7 @@ export default function InicioDeSoportePage() {
                       <div>
                         <label
                           htmlFor="card-holder"
-                          className="block text-sm font-medium text-gray-700 mb-1"
+                          className="block text-xs font-medium text-gray-700 mb-1"
                         >
                           Nombre del titular
                         </label>
@@ -1074,26 +1125,26 @@ export default function InicioDeSoportePage() {
                           }}
                           placeholder="JUAN PÉREZ"
                           className={cn(
-                            "w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm uppercase",
+                            "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm uppercase",
                             cardErrors.holder
                               ? "border-red-500"
                               : "border-gray-300"
                           )}
                         />
                         {cardErrors.holder && (
-                          <p className="text-red-500 text-xs mt-1">
+                          <p className="text-red-500 text-xs mt-0.5">
                             {cardErrors.holder}
                           </p>
                         )}
                       </div>
 
                       {/* Fecha de expiración y CVV */}
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-3 gap-2">
                         {/* Mes */}
                         <div>
                           <label
                             htmlFor="expiry-month"
-                            className="block text-sm font-medium text-gray-700 mb-1"
+                            className="block text-xs font-medium text-gray-700 mb-1"
                           >
                             Mes
                           </label>
@@ -1113,7 +1164,7 @@ export default function InicioDeSoportePage() {
                               }
                             }}
                             className={cn(
-                              "w-full px-2 py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm",
+                              "w-full px-2 py-2 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm",
                               cardErrors.expiryMonth
                                 ? "border-red-500"
                                 : "border-gray-300"
@@ -1132,7 +1183,7 @@ export default function InicioDeSoportePage() {
                         <div>
                           <label
                             htmlFor="expiry-year"
-                            className="block text-sm font-medium text-gray-700 mb-1"
+                            className="block text-xs font-medium text-gray-700 mb-1"
                           >
                             Año
                           </label>
@@ -1152,7 +1203,7 @@ export default function InicioDeSoportePage() {
                               }
                             }}
                             className={cn(
-                              "w-full px-2 py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm",
+                              "w-full px-2 py-2 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm",
                               cardErrors.expiryYear
                                 ? "border-red-500"
                                 : "border-gray-300"
@@ -1171,7 +1222,7 @@ export default function InicioDeSoportePage() {
                         <div>
                           <label
                             htmlFor="card-cvv"
-                            className="block text-sm font-medium text-gray-700 mb-1"
+                            className="block text-xs font-medium text-gray-700 mb-1"
                           >
                             CVV
                           </label>
@@ -1190,14 +1241,14 @@ export default function InicioDeSoportePage() {
                               return isAmex ? "1234" : "123";
                             })()}
                             className={cn(
-                              "w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm",
+                              "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm",
                               cardErrors.cvv
                                 ? "border-red-500"
                                 : "border-gray-300"
                             )}
                           />
                           {cardErrors.cvv && (
-                            <p className="text-red-500 text-xs mt-1">
+                            <p className="text-red-500 text-xs mt-0.5">
                               {cardErrors.cvv}
                             </p>
                           )}
@@ -1208,7 +1259,7 @@ export default function InicioDeSoportePage() {
                       <div>
                         <label
                           htmlFor="installments"
-                          className="block text-sm font-medium text-gray-700 mb-1"
+                          className="block text-xs font-medium text-gray-700 mb-1"
                         >
                           Número de cuotas
                         </label>
@@ -1221,7 +1272,7 @@ export default function InicioDeSoportePage() {
                               installments: e.target.value,
                             }))
                           }
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm"
                         >
                           {installmentOptions.map((option) => (
                             <option key={option.value} value={option.value}>
@@ -1232,7 +1283,7 @@ export default function InicioDeSoportePage() {
                       </div>
 
                       {/* Mensaje de seguridad */}
-                      <p className="text-center text-gray-500 text-xs">
+                      <p className="text-center text-gray-400 text-xs">
                         Tu tarjeta está protegida con encriptación SSL
                       </p>
                     </div>
@@ -1243,9 +1294,9 @@ export default function InicioDeSoportePage() {
                 <div>
                   <label
                     className={cn(
-                      "flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all",
+                      "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
                       paymentMethod === "pse"
-                        ? "border-black bg-gray-50"
+                        ? "border-gray-900 bg-gray-50"
                         : "border-gray-200 hover:border-gray-300"
                     )}
                   >
@@ -1254,11 +1305,11 @@ export default function InicioDeSoportePage() {
                       name="payment-method"
                       checked={paymentMethod === "pse"}
                       onChange={() => setPaymentMethod("pse")}
-                      className="accent-black w-5 h-5"
+                      className="accent-black w-4 h-4"
                     />
-                    <Building2 className="w-6 h-6 text-gray-700" />
+                    <Building2 className="w-5 h-5 text-gray-700" />
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">
+                      <p className="font-medium text-gray-900 text-sm">
                         PSE - Débito bancario
                       </p>
                       <p className="text-xs text-gray-500">
@@ -1268,18 +1319,18 @@ export default function InicioDeSoportePage() {
                     <Image
                       src={pseLogo}
                       alt="PSE"
-                      width={40}
-                      height={40}
+                      width={32}
+                      height={32}
                       className="object-contain"
                     />
                   </label>
 
                   {/* Selector de banco */}
                   {paymentMethod === "pse" && (
-                    <div className="mt-3 ml-9 mr-4">
+                    <div className="mt-2 ml-7">
                       <label
                         htmlFor="bank-select"
-                        className="block text-sm font-medium text-gray-700 mb-2"
+                        className="block text-xs font-medium text-gray-700 mb-1"
                       >
                         Selecciona tu banco
                       </label>
@@ -1289,7 +1340,7 @@ export default function InicioDeSoportePage() {
                           value={selectedBank}
                           onChange={(e) => setSelectedBank(e.target.value)}
                           disabled={isLoadingBanks}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black bg-white appearance-none cursor-pointer"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black bg-white appearance-none cursor-pointer text-sm"
                         >
                           <option value="">
                             {isLoadingBanks
@@ -1302,7 +1353,7 @@ export default function InicioDeSoportePage() {
                             </option>
                           ))}
                         </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                       </div>
                     </div>
                   )}
@@ -1310,11 +1361,11 @@ export default function InicioDeSoportePage() {
               </div>
 
               {/* Botones */}
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
                 <Button
                   onClick={() => handleProcessPayment(getDocumentoConValor()!)}
                   disabled={!isPaymentEnabled() || isProcessingPayment}
-                  className="w-full px-6 py-3 bg-black text-white rounded-lg font-bold text-base shadow-md transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  className="w-full h-11 bg-gray-900 text-white rounded-lg font-semibold text-sm cursor-pointer hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isProcessingPayment ? (
                     <span className="flex items-center justify-center gap-2">

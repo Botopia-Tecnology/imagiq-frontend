@@ -37,6 +37,8 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
 }) => {
   // Estado para controlar el cambio de texto
   const [showSecondText, setShowSecondText] = useState(false);
+  // Estado para animar los puntos suspensivos
+  const [dots, setDots] = useState("");
 
   // Callback para finalizar solo cuando la animación SVG termina
   const animationRef = useRef<SVGAnimateElement | null>(null);
@@ -53,16 +55,30 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
     }
   }, [open, onFinish]);
 
-  // Cambiar texto a mitad de la animación (7 segundos)
+  // Cambiar texto a mitad de la animación (4 segundos)
   useEffect(() => {
     if (open) {
       const timer = setTimeout(() => {
         setShowSecondText(true);
-      }, 4000); // Cambia el texto a los 7 segundos
+      }, 4000);
 
       return () => {
         clearTimeout(timer);
         setShowSecondText(false);
+      };
+    }
+  }, [open]);
+
+  // Animar los puntos suspensivos para indicar carga
+  useEffect(() => {
+    if (open) {
+      const interval = setInterval(() => {
+        setDots((prev) => (prev.length >= 3 ? "" : prev + "."));
+      }, 500);
+
+      return () => {
+        clearInterval(interval);
+        setDots("");
       };
     }
   }, [open]);
@@ -192,12 +208,12 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
             lineHeight: 1.1,
           }}
         >
-          {showSecondText ? "Ya casi es tuya..." : "Procesando la compra..."}
+          {showSecondText ? `Ya casi es tuya${dots}` : `Procesando la compra${dots}`}
         </span>
       </div>
     ),
-    [showSecondText]
-  ); // Solo recrea cuando cambia el texto
+    [showSecondText, dots]
+  ); // Recrea cuando cambia el texto o los puntos
 
   // Early return después de todos los hooks para cumplir con Rules of Hooks
   if (!open) return null;

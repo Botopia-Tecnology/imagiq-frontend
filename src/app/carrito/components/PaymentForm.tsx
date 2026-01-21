@@ -333,6 +333,8 @@ export default function PaymentForm({
                           onPaymentMethodChange("tarjeta");
                           onCardSelect(null);
                           onUseNewCardChange(true);
+                          // Limpiar caché de datos de tarjeta por seguridad (no cachear datos de tarjetas nuevas)
+                          localStorage.removeItem("checkout-card-data");
                         }}
                         className="accent-black w-5 h-5 flex-shrink-0"
                       />

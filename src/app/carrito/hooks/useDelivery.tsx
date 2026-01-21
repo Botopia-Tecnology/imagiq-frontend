@@ -140,6 +140,12 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   const allowFetchOnAddressChangeRef = useRef(false); // Flag para permitir peticiones cuando cambia dirección (aunque onlyReadCache=true)
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timeout para reintentar peticiones bloqueadas
 
+  // Ref para siempre tener la versión más reciente de fetchCandidateStores
+  // IMPORTANTE: Declarada antes de fetchCandidateStores para evitar referencias indefinidas
+  // Se actualiza en cada render para que los reintentos usen el closure más reciente
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fetchCandidateStoresRef = useRef<((explicitAddressId?: string) => Promise<void>) | null>(null);
+
   // Flag global compartido para evitar procesar el mismo cambio desde múltiples listeners
   // Se usa en window para que sea compartido entre todos los componentes
   if (typeof globalThis.window !== 'undefined' && !(globalThis.window as unknown as { __imagiqAddressProcessing?: string }).__imagiqAddressProcessing) {
@@ -291,16 +297,32 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       retryTimeoutRef.current = null;
     }
 
-    // CRÍTICO: Si hay un lock global activo, liberarlo INMEDIATAMENTE
-    // Esto evita que llamadas rápidas se queden esperando indefinidamente
+    // Obtener estado global para verificar si hay fetch en curso
     const globalState = globalThis.window as unknown as {
       __imagiqLastFetchTime?: number;
       __imagiqIsFetching?: boolean;
     };
 
+    // PROTECCIÓN: Si ya hay un fetch global en curso, verificar si está bloqueado
     if (globalState.__imagiqIsFetching) {
-
-      globalState.__imagiqIsFetching = false;
+      const timeSinceLastFetch = Date.now() - (globalState.__imagiqLastFetchTime || 0);
+      // Si han pasado más de 3 segundos, liberar el lock (algo falló)
+      if (timeSinceLastFetch > 3000) {
+        console.warn('⚠️ [fetchCandidateStores] Lock global bloqueado por >3s, liberando...');
+        globalState.__imagiqIsFetching = false;
+      } else {
+        // Programar reintento para después de que termine el fetch actual
+        // CRÍTICO: Usar fetchCandidateStoresRef.current para evitar stale closures
+        console.log('⏳ [fetchCandidateStores] Fetch global en curso, programando reintento...');
+        if (!retryTimeoutRef.current) {
+          retryTimeoutRef.current = setTimeout(() => {
+            retryTimeoutRef.current = null;
+            // Usar la referencia actualizada para tomar los productos más recientes
+            fetchCandidateStoresRef.current?.(explicitAddressId);
+          }, 500);
+        }
+        return;
+      }
     }
 
     // PROTECCIÓN CONTRA BUCLES INFINITOS
@@ -311,8 +333,8 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       fetchCountResetTimeRef.current = nowCall;
     }
 
-    if (fetchCountRef.current >= 50) {
-      console.warn('⚠️ [fetchCandidateStores] Protección contra bucles activada (>50 llamadas/10s)');
+    if (fetchCountRef.current >= 10) {
+      console.warn('⚠️ [fetchCandidateStores] Protección contra bucles activada (>10 llamadas/10s)');
       setStoresLoading(false);
 
       // CRÍTICO: Escribir en caché para desbloquear Step4OrderSummary si nos rendimos
@@ -582,38 +604,48 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
     // Prevenir llamadas locales simultáneas
     if (isFetchingRef.current) {
-
-
-      // REINTENTO: Si está ocupado localmente, reintentar en 200ms
-      // Esto asegura que si hubo un cambio rápido (ej. sumar 2 items), la segunda llamada no se pierda
-      retryTimeoutRef.current = setTimeout(() => {
-
-        fetchCandidateStores();
-      }, 200);
-
-      return;
+      const timeSinceLastLocal = Date.now() - lastFetchTimeRef.current;
+      // Si han pasado más de 3 segundos, liberar el lock local (algo falló)
+      if (timeSinceLastLocal > 3000) {
+        console.warn('⚠️ [fetchCandidateStores] Lock local bloqueado por >3s, liberando...');
+        isFetchingRef.current = false;
+      } else {
+        // Programar reintento para después de que termine el fetch actual
+        // CRÍTICO: Usar fetchCandidateStoresRef.current para evitar stale closures
+        console.log('⏳ [fetchCandidateStores] Fetch local en curso, programando reintento...');
+        if (!retryTimeoutRef.current) {
+          retryTimeoutRef.current = setTimeout(() => {
+            retryTimeoutRef.current = null;
+            // Usar la referencia actualizada para tomar los productos más recientes
+            fetchCandidateStoresRef.current?.(explicitAddressId);
+          }, 500);
+        }
+        return;
+      }
     }
 
-    // Prevenir llamadas muy frecuentes (debounce global de 200ms)
-    // Reducido de 500ms a 200ms para mejorar respuesta en UI
+    // Prevenir llamadas muy frecuentes (debounce global de 300ms)
     const now = Date.now();
     const lastGlobalFetch = globalState.__imagiqLastFetchTime || 0;
 
-    if (now - lastGlobalFetch < 200) {
-
+    if (now - lastGlobalFetch < 300) {
+      console.log('⏳ [fetchCandidateStores] Debounce activo, esperando...');
       setStoresLoading(false);
-
-      // REINTENTO: Programar reintento para después del debounce
-      retryTimeoutRef.current = setTimeout(() => {
-
-        fetchCandidateStores();
-      }, 200);
-
+      // Solo programar reintento si no hay uno pendiente
+      // CRÍTICO: Usar fetchCandidateStoresRef.current para evitar stale closures
+      if (!retryTimeoutRef.current) {
+        retryTimeoutRef.current = setTimeout(() => {
+          retryTimeoutRef.current = null;
+          // Usar la referencia actualizada para tomar los productos más recientes
+          fetchCandidateStoresRef.current?.(explicitAddressId);
+        }, 300);
+      }
       return;
     }
 
-    // Actualizar timestamp global
+    // Actualizar timestamp global y local
     globalState.__imagiqLastFetchTime = now;
+    lastFetchTimeRef.current = now;
 
     // Marcar inicio de fetch global
     globalState.__imagiqIsFetching = true;
@@ -1180,9 +1212,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
   }, [products]);
 
-  // Ref para siempre tener la versión más reciente de fetchCandidateStores
-  // Esto soluciona el problema de "stale closures" en los event listeners
-  const fetchCandidateStoresRef = useRef(fetchCandidateStores);
+  // Actualizar ref de fetchCandidateStores cuando cambia
   useEffect(() => {
     fetchCandidateStoresRef.current = fetchCandidateStores;
   }, [fetchCandidateStores]);
@@ -1200,10 +1230,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   const productsHashRef = useRef<string>('');
   // Debounce timer para cambios de productos (evita llamadas múltiples cuando se agregan varios productos rápido)
   const productsChangeDebounceRef = useRef<NodeJS.Timeout | null>(null);
-  // Actualizar ref con la función actual en cada render para que los reintentos usen el closure más reciente
-  useEffect(() => {
-    fetchCandidateStoresRef.current = fetchCandidateStores;
-  });
 
   useEffect(() => {
     // Si no hay productos, no hacer nada
@@ -1238,11 +1264,14 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
           clearTimeout(productsChangeDebounceRef.current);
         }
 
-        // Programar la llamada con un pequeño delay para agrupar cambios rápidos
+        // Programar la llamada con debounce para agrupar cambios rápidos
+        // Si el usuario hace 2 cambios rápidos, solo se ejecuta la última llamada
+        // CRÍTICO: Usar fetchCandidateStoresRef.current para evitar stale closures
         productsChangeDebounceRef.current = setTimeout(() => {
           productsChangeDebounceRef.current = null;
-          fetchCandidateStores();
-        }, 300); // 300ms de debounce para agrupar cambios rápidos de productos
+          // Usar la referencia actualizada para tomar los productos más recientes
+          fetchCandidateStoresRef.current?.();
+        }, 400); // 400ms de debounce - balance entre respuesta rápida y evitar 429
       }
     }
 
@@ -1269,7 +1298,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
           // Reset the products hash to force a new fetch
           productsHashRef.current = '';
           setTimeout(() => {
-            fetchCandidateStoresRef.current();
+            fetchCandidateStoresRef.current?.();
           }, 200);
         }
       }
@@ -1282,7 +1311,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         if (products.length > 0 && stores.length === 0 && !isFetchingRef.current) {
           productsHashRef.current = '';
           setTimeout(() => {
-            fetchCandidateStoresRef.current();
+            fetchCandidateStoresRef.current?.();
           }, 200);
         }
       }
@@ -1542,17 +1571,13 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
           // Actualizar el ref para indicar que la dirección cambió
           lastAddressForStoreSelectionRef.current = null;
 
-          // CRÍTICO: ANTES de limpiar caché, verificar si ya existe en caché NO - Limpiar SIEMPRE por solicitud de usuario
-          // "cada vez que cmabio la direeion... se debe limpar el cahe... y voler a clacualr"
-          console.log('🗑️ [handleAddressChange] Limpiando caché global...');
-          clearGlobalCanPickUpCache();
-
+          // CRÍTICO: Verificar caché ANTES de limpiarlo para obtener datos instantáneos
           const user = safeGetLocalStorage<{ id?: string; user_id?: string }>("imagiq_user", {});
           const userId = user?.id || user?.user_id;
 
           // IMPORTANTE: Usar productsRef.current para obtener la lista más reciente
           const currentProducts = productsRef.current || [];
-          
+
           console.log('🔍 [handleAddressChange] Verificando condiciones:', {
             hasUserId: !!userId,
             productsCount: currentProducts.length,
@@ -1561,7 +1586,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
           if (userId && currentProducts.length > 0) {
             console.log('✅ [handleAddressChange] Condiciones cumplidas, procesando...');
-            
+
             const productsToCheck = currentProducts.map((p) => ({
               sku: p.sku,
               quantity: p.quantity,
@@ -1574,6 +1599,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
               addressId: newAddressId,
             });
 
+            // IMPORTANTE: Verificar caché ANTES de limpiarlo
             const cachedResponse = getFullCandidateStoresResponseFromCache(cacheKey);
 
             if (cachedResponse) {
@@ -1642,7 +1668,8 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
               return; // Salir aquí - datos ya aplicados desde caché
             } else {
               // ❌ NO hay datos en caché - Limpiar caché viejo y llamar al endpoint
-              console.log('❌ [handleAddressChange] NO hay cache - Invalidando y preparando para fetch');
+              console.log('🗑️ [handleAddressChange] NO hay cache - Limpiando caché global y preparando para fetch');
+              clearGlobalCanPickUpCache();
               invalidateCacheOnAddressChange(newAddressId);
             }
 
@@ -1655,10 +1682,10 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
             const explicitId = newAddressId;
 
             console.log('📞 [handleAddressChange] A PUNTO DE LLAMAR fetchCandidateStores con addressId:', explicitId);
-            
+
             // Recalcular canPickUp global y tiendas cuando cambia la dirección
             // IMPORTANTE: Usar fetchCandidateStoresRef.current para siempre llamar a la versión más reciente
-            fetchCandidateStoresRef.current(explicitId).finally(() => {
+            fetchCandidateStoresRef.current?.(explicitId)?.finally(() => {
               setTimeout(() => {
                 allowFetchOnAddressChangeRef.current = false;
               }, 1500);
@@ -1810,7 +1837,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
               // Forzar recarga limpiando flags de fetch en curso
               isFetchingRef.current = false;
               lastFetchTimeRef.current = 0;
-              fetchCandidateStoresRef.current();
+              fetchCandidateStoresRef.current?.();
             }, 50);
           }
         } catch (error) {
@@ -1937,7 +1964,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         }
 
         // Llamar a fetch
-        fetchCandidateStoresRef.current();
+        fetchCandidateStoresRef.current?.();
       }
     } catch (error) {
       console.error("Error refreshing addresses:", error);

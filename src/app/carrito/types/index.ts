@@ -43,6 +43,10 @@ export interface BeneficiosDTO {
   sku?: string;
   descuento_producto?: number;
   descuento_bundle?: number;
+  // Nuevos campos para identificar el producto que aplica trade-in
+  sku_producto?: string;
+  nombre_producto?: string;
+  sku_postback_producto?: string;
 }
 
 export type AddiPaymentData = BasicPaymentData;

@@ -12,6 +12,10 @@ export default function Step4Page() {
 
   // Protección: Solo permitir acceso si hay usuario logueado (invitado o regular con token)
   useEffect(() => {
+    // SEGURIDAD: Limpiar datos de tarjeta temporal al entrar al paso 4
+    // Esto asegura que no queden datos de intentos anteriores
+    localStorage.removeItem("checkout-card-data");
+
     if (!isChecking) return; // Ya se verificó, no volver a verificar
 
     const token = localStorage.getItem("imagiq_token");

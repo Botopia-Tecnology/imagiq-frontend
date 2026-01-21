@@ -21,6 +21,54 @@ import { safeGetLocalStorage, safeSetLocalStorage } from "@/lib/localStorage";
 import { useCardsCache } from "./useCardsCache";
 import useSecureStorage from "@/hooks/useSecureStorage";
 
+/**
+ * Extrae los beneficios de trade-in desde localStorage
+ * Maneja tanto el formato antiguo como el nuevo formato indexado por SKU
+ * @returns Array de beneficios de tipo entrego_y_estreno
+ */
+function extractTradeInBeneficios(): BeneficiosDTO[] {
+  const beneficios: BeneficiosDTO[] = [];
+  try {
+    const tradeStr = localStorage.getItem("imagiq_trade_in");
+    if (!tradeStr) return beneficios;
+
+    const parsedTrade = JSON.parse(tradeStr);
+
+    // Formato antiguo: { deviceName, value, completed, detalles }
+    if (parsedTrade?.completed && parsedTrade?.deviceName) {
+      beneficios.push({
+        type: "entrego_y_estreno",
+        dispositivo_a_recibir: parsedTrade.deviceName,
+        valor_retoma: parsedTrade.value,
+        detalles_dispositivo_a_recibir: parsedTrade.detalles,
+      });
+      return beneficios;
+    }
+
+    // Formato nuevo: { "SKU": { sku, name, skuPostback, deviceName, value, completed, detalles } }
+    if (typeof parsedTrade === 'object' && !parsedTrade.deviceName) {
+      for (const sku of Object.keys(parsedTrade)) {
+        const tradeInData = parsedTrade[sku];
+        if (tradeInData?.completed && tradeInData?.deviceName) {
+          beneficios.push({
+            type: "entrego_y_estreno",
+            dispositivo_a_recibir: tradeInData.deviceName,
+            valor_retoma: tradeInData.value,
+            detalles_dispositivo_a_recibir: tradeInData.detalles,
+            // Datos adicionales del producto que aplica trade-in
+            sku_producto: tradeInData.sku || sku,
+            nombre_producto: tradeInData.name,
+            sku_postback_producto: tradeInData.skuPostback,
+          });
+        }
+      }
+    }
+  } catch {
+    // ignore parsing errors
+  }
+  return beneficios;
+}
+
 export function useCheckoutLogic() {
   const { redirectToError } = usePurchaseFlow();
   const router = useRouter();
@@ -384,21 +432,8 @@ export function useCheckoutLogic() {
         case "addi": {
           // Construir beneficios
           const buildBeneficios = (): BeneficiosDTO[] => {
-            const beneficios: BeneficiosDTO[] = [];
+            const beneficios: BeneficiosDTO[] = extractTradeInBeneficios();
             try {
-              const tradeStr = localStorage.getItem("imagiq_trade_in");
-              if (tradeStr) {
-                const parsedTrade = JSON.parse(tradeStr);
-                if (parsedTrade?.completed) {
-                  beneficios.push({
-                    type: "entrego_y_estreno",
-                    dispositivo_a_recibir: parsedTrade.deviceName,
-                    valor_retoma: parsedTrade.value,
-                    detalles_dispositivo_a_recibir: parsedTrade.detalles,
-                  });
-                }
-              }
-
               const zeroStr = localStorage.getItem("checkout-zero-interest");
               if (zeroStr) {
                 const parsedZero = JSON.parse(zeroStr);
@@ -511,21 +546,8 @@ export function useCheckoutLogic() {
               },
               informacion_facturacion,
               beneficios: (() => {
-                const beneficios: BeneficiosDTO[] = [];
+                const beneficios: BeneficiosDTO[] = extractTradeInBeneficios();
                 try {
-                  const tradeStr = localStorage.getItem("imagiq_trade_in");
-                  if (tradeStr) {
-                    const parsedTrade = JSON.parse(tradeStr);
-                    if (parsedTrade?.completed) {
-                      beneficios.push({
-                        type: "entrego_y_estreno",
-                        dispositivo_a_recibir: parsedTrade.deviceName,
-                        valor_retoma: parsedTrade.value,
-                        detalles_dispositivo_a_recibir: parsedTrade.detalles,
-                      });
-                    }
-                  }
-
                   const zeroStr = localStorage.getItem(
                     "checkout-zero-interest"
                   );
@@ -601,25 +623,8 @@ export function useCheckoutLogic() {
               },
               informacion_facturacion,
               beneficios: (() => {
-                const beneficios: BeneficiosDTO[] = [];
-                try {
-                  const tradeStr = localStorage.getItem("imagiq_trade_in");
-                  if (tradeStr) {
-                    const parsedTrade = JSON.parse(tradeStr);
-                    if (parsedTrade?.completed) {
-                      beneficios.push({
-                        type: "entrego_y_estreno",
-                        dispositivo_a_recibir: parsedTrade.deviceName,
-                        valor_retoma: parsedTrade.value,
-                        detalles_dispositivo_a_recibir: parsedTrade.detalles,
-                      });
-                    }
-                  }
-
-                  // For new cards we don't have a card id to check zero interest eligibility
-                } catch {
-                  // ignore
-                }
+                const beneficios: BeneficiosDTO[] = extractTradeInBeneficios();
+                // For new cards we don't have a card id to check zero interest eligibility
                 if (beneficios.length === 0)
                   return [{ type: "sin_beneficios" }];
                 return beneficios;
@@ -685,23 +690,7 @@ export function useCheckoutLogic() {
             },
             informacion_facturacion,
             beneficios: (() => {
-              const beneficios: BeneficiosDTO[] = [];
-              try {
-                const tradeStr = localStorage.getItem("imagiq_trade_in");
-                if (tradeStr) {
-                  const parsedTrade = JSON.parse(tradeStr);
-                  if (parsedTrade?.completed) {
-                    beneficios.push({
-                      type: "entrego_y_estreno",
-                      dispositivo_a_recibir: parsedTrade.deviceName,
-                      valor_retoma: parsedTrade.value,
-                      detalles_dispositivo_a_recibir: parsedTrade.detalles,
-                    });
-                  }
-                }
-              } catch {
-                // ignore
-              }
+              const beneficios: BeneficiosDTO[] = extractTradeInBeneficios();
               if (beneficios.length === 0) return [{ type: "sin_beneficios" }];
               return beneficios;
             })(),

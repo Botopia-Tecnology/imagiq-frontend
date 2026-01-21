@@ -36,6 +36,8 @@ export interface BeneficiosDTO {
   | "bundle"
   | "soporte"
   | "sin_beneficios";
+  // Indica si el beneficio aplica (usado para 0%_interes)
+  aplica?: boolean;
   // Campos para entrego_y_estreno (Trade-In)
   dispositivo_a_recibir?: string;
   valor_retoma?: number;

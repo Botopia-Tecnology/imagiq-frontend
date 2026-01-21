@@ -20,6 +20,9 @@ interface Props {
     value: string | { min?: number; max?: number; ranges?: string[]; values?: string[] },
     checked?: boolean
   ) => void;
+  // Filtros globales
+  readonly isStockFilterEnabled?: boolean;
+  readonly onStockFilterChange?: (enabled: boolean) => void;
   // Props comunes
   readonly expandedFilters?: Set<string>;
   readonly onToggleFilter?: (filterKey: string) => void;
@@ -34,6 +37,9 @@ export default function MobileFilterSidebar({
   dynamicFilters,
   dynamicFilterState,
   onDynamicFilterChange,
+  // Filtros globales
+  isStockFilterEnabled,
+  onStockFilterChange,
   // Props comunes
   expandedFilters,
   onToggleFilter,
@@ -72,6 +78,9 @@ export default function MobileFilterSidebar({
               dynamicFilters={dynamicFilters}
               dynamicFilterState={dynamicFilterState}
               onDynamicFilterChange={onDynamicFilterChange}
+              // Filtros globales
+              isStockFilterEnabled={isStockFilterEnabled}
+              onStockFilterChange={onStockFilterChange}
               // Props comunes
               expandedFilters={expandedFilters}
               onToggleFilter={onToggleFilter}

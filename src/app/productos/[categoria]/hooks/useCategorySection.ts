@@ -170,7 +170,9 @@ export function useCategoryProducts(
   categoryCode?: string,
   // Filtros dinámicos (nuevo)
   dynamicFilters?: DynamicFilterConfig[],
-  dynamicFilterState?: DynamicFilterState
+  dynamicFilterState?: DynamicFilterState,
+  // Filtros globales (stock, etc.)
+  globalFilters?: Record<string, string | number | boolean>
 ) {
   // Inicializar con el estado de sección actual
   const [previousSeccion, setPreviousSeccion] = useState(seccion);
@@ -256,25 +258,15 @@ export function useCategoryProducts(
   // Mover hierarchyFilters antes de appliedFilters para que los filtros dinámicos no sobrescriban los de jerarquía
   const apiFilters = useMemo(() => {
     // Asegurar que los filtros de jerarquía siempre estén presentes
-    const combined = { 
-      ...baseFilters, 
-      ...hierarchyFilters,  // Mover hierarchyFilters antes de appliedFilters para que no se sobrescriban
-      ...appliedFilters 
+    const combined = {
+      ...baseFilters,
+      ...hierarchyFilters,
+      ...appliedFilters,
+      ...(globalFilters || {})
     };
-    
-    // Debug: Verificar que los filtros de jerarquía están presentes
-    console.log('[useCategoryProducts] apiFilters combinados:', {
-      baseFilters,
-      hierarchyFilters,
-      appliedFilters,
-      combined,
-      hasCategory: !!combined.category,
-      hasMenuUuid: !!combined.menuUuid,
-      hasSubmenuUuid: !!combined.submenuUuid
-    });
-    
+
     return combined;
-  }, [baseFilters, appliedFilters, hierarchyFilters]);
+  }, [baseFilters, appliedFilters, hierarchyFilters, globalFilters]);
 
   // Evitar llamadas API hasta que tengamos los datos críticos
   const shouldMakeApiCall = useMemo(() => {

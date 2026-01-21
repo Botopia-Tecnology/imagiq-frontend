@@ -63,12 +63,12 @@ export default function Step4({
 
   // Debug: Log cuando cambia isCardFormValid
   React.useEffect(() => {
-    console.log('💳 [Step4] isCardFormValid changed to:', isCardFormValid);
+    // console.log('💳 [Step4] isCardFormValid changed to:', isCardFormValid);
   }, [isCardFormValid]);
 
   // Wrapper para setIsCardFormValid con logging
   const handleCardFormValidityChange = React.useCallback((isValid: boolean) => {
-    console.log('💳 [Step4] handleCardFormValidityChange called with:', isValid);
+    // console.log('💳 [Step4] handleCardFormValidityChange called with:', isValid);
     setIsCardFormValid(isValid);
   }, []);
 
@@ -194,9 +194,9 @@ export default function Step4({
       const fromHeader = customEvent.detail?.fromHeader;
 
       if (fromHeader) {
-        console.log(
-          "🔄 Dirección cambiada desde header en Step4, redirigiendo a Step3..."
-        );
+        // console.log(
+//           "🔄 Dirección cambiada desde header en Step4, redirigiendo a Step3..."
+//         );
         router.push("/carrito/step3");
       }
     };
@@ -218,7 +218,7 @@ export default function Step4({
   const isPaymentMethodValid = React.useMemo(() => {
     // Si no hay método de pago seleccionado
     if (!paymentMethod) {
-      console.log('🔴 [Step4] isPaymentMethodValid: false - no paymentMethod');
+      // console.log('🔴 [Step4] isPaymentMethodValid: false - no paymentMethod');
       return false;
     }
 
@@ -228,28 +228,28 @@ export default function Step4({
       // entonces estamos usando tarjeta nueva y debemos verificar isCardFormValid
       const isUsingNewCard = !selectedCardId;
 
-      console.log('🔍 [Step4] isPaymentMethodValid check:', {
-        paymentMethod,
-        selectedCardId,
-        useNewCard,
-        isUsingNewCard,
-        isCardFormValid
-      });
+      // console.log('🔍 [Step4] isPaymentMethodValid check:', {
+//         paymentMethod,
+//         selectedCardId,
+//         useNewCard,
+//         isUsingNewCard,
+//         isCardFormValid
+//       });
 
       if (isUsingNewCard && !isCardFormValid) {
-        console.log('🔴 [Step4] isPaymentMethodValid: false - new card but form not valid');
+        // console.log('🔴 [Step4] isPaymentMethodValid: false - new card but form not valid');
         return false;
       }
     }
 
     // Si es PSE, debe tener un banco seleccionado
     if (paymentMethod === "pse" && !selectedBank) {
-      console.log('🔴 [Step4] isPaymentMethodValid: false - PSE but no bank');
+      // console.log('🔴 [Step4] isPaymentMethodValid: false - PSE but no bank');
       return false;
     }
 
     // Si es Addi, siempre está válido (no requiere más datos)
-    console.log('🟢 [Step4] isPaymentMethodValid: true');
+    // console.log('🟢 [Step4] isPaymentMethodValid: true');
     return true;
   }, [paymentMethod, selectedCardId, selectedBank, useNewCard, isCardFormValid]);
 
@@ -268,15 +268,15 @@ export default function Step4({
     // IMPORTANTE: Si no hay selectedCardId, significa que estamos usando tarjeta nueva
     // No depender de useNewCard porque puede no estar sincronizado
     const isUsingNewCard = paymentMethod === "tarjeta" && !selectedCardId;
-    console.log("💳 [Step4] handleContinueToNextStep:", { paymentMethod, selectedCardId, useNewCard, isUsingNewCard, hasFormRef: !!formRef.current });
+    // console.log("💳 [Step4] handleContinueToNextStep:", { paymentMethod, selectedCardId, useNewCard, isUsingNewCard, hasFormRef: !!formRef.current });
 
     if (isUsingNewCard && formRef.current) {
-      console.log("💳 [Step4] Processing inline new card...");
+      // console.log("💳 [Step4] Processing inline new card...");
       setIsValidatingCard(true);
       try {
         // Enviar formulario (saveInfo determina si se tokeniza y guarda en perfil o solo en LS)
         const success = await formRef.current.submitForm(saveInfo);
-        console.log("💳 [Step4] Inline card submission result:", success);
+        // console.log("💳 [Step4] Inline card submission result:", success);
         if (!success) {
           e.preventDefault();
           setIsValidatingCard(false);
@@ -286,7 +286,7 @@ export default function Step4({
         // Si tuvo éxito, los datos están en localStorage (checkout-card-data).
         // Necesitamos sincronizarlos con el estado 'card' de useCheckoutLogic para que el pago funcione.
         const tempCardData = localStorage.getItem("checkout-card-data");
-        console.log("💳 [Step4] Temp card data found after submission:", !!tempCardData);
+        // console.log("💳 [Step4] Temp card data found after submission:", !!tempCardData);
         if (tempCardData) {
           const parsed = JSON.parse(tempCardData);
           handleCardChange({
@@ -309,10 +309,10 @@ export default function Step4({
     }
 
     const isValid = await handleSavePaymentData(e);
-    console.log("💳 [Step4] handleSavePaymentData result:", isValid);
+    // console.log("💳 [Step4] handleSavePaymentData result:", isValid);
     setIsValidatingCard(false); // Reset here in case validation failed or we are just moving on
     if (isValid && onContinue) {
-      console.log("💳 [Step4] isValid is true, calling onContinue()");
+      // console.log("💳 [Step4] isValid is true, calling onContinue()");
       onContinue();
     } else {
       console.warn("💳 [Step4] Validation failed or onContinue missing", { isValid, hasOnContinue: !!onContinue });
@@ -384,13 +384,13 @@ export default function Step4({
             buttonText="Continuar"
             disabled={(() => {
               const isDisabled = isProcessing || isValidatingCard || !tradeInValidation.isValid || !isPaymentMethodValid;
-              console.log('🔘 [Step4] Button disabled check:', {
-                isProcessing,
-                isValidatingCard,
-                tradeInIsValid: tradeInValidation.isValid,
-                isPaymentMethodValid,
-                finalDisabled: isDisabled
-              });
+              // console.log('🔘 [Step4] Button disabled check:', {
+//                 isProcessing,
+//                 isValidatingCard,
+//                 tradeInIsValid: tradeInValidation.isValid,
+//                 isPaymentMethodValid,
+//                 finalDisabled: isDisabled
+//               });
               return isDisabled;
             })()}
             isSticky={false}

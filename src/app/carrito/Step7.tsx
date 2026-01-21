@@ -496,7 +496,7 @@ export default function Step7({ onBack }: Step7Props) {
       tradeInValidationDoneRef.current = true;
       setIsValidatingTradeIn(true);
 
-      console.log('[Step7] 🔍 Validando Trade-Ins activos:', tradeInKeys);
+      // console.log('[Step7] 🔍 Validando Trade-Ins activos:', tradeInKeys);
 
       const skusToRemove: string[] = [];
 
@@ -505,18 +505,18 @@ export default function Step7({ onBack }: Step7Props) {
         if (!tradeIn?.completed) continue;
 
         try {
-          console.log(`[Step7] 🔍 Verificando SKU: ${sku}`);
+          // console.log(`[Step7] 🔍 Verificando SKU: ${sku}`);
           const response = await tradeInEndpoints.checkSkuForTradeIn({ sku });
 
-          console.log(`[Step7] 📋 Respuesta checkSkuForTradeIn para ${sku}:`, response);
+          // console.log(`[Step7] 📋 Respuesta checkSkuForTradeIn para ${sku}:`, response);
 
           if (response.success && response.data) {
             const indRetoma = response.data.indRetoma ?? (response.data.aplica ? 1 : 0);
-            console.log(`[Step7] ✅ SKU ${sku} - indRetoma: ${indRetoma}`);
+            // console.log(`[Step7] ✅ SKU ${sku} - indRetoma: ${indRetoma}`);
 
             // Si indRetoma === 0, el producto ya no aplica para Trade-In
             if (indRetoma === 0) {
-              console.log(`[Step7] ❌ SKU ${sku} ya NO aplica para Trade-In, marcando para eliminar`);
+              // console.log(`[Step7] ❌ SKU ${sku} ya NO aplica para Trade-In, marcando para eliminar`);
               skusToRemove.push(sku);
             }
           } else {
@@ -532,7 +532,7 @@ export default function Step7({ onBack }: Step7Props) {
 
       // Eliminar Trade-Ins que ya no aplican
       if (skusToRemove.length > 0) {
-        console.log('[Step7] 🗑️ Eliminando Trade-Ins que ya no aplican:', skusToRemove);
+        // console.log('[Step7] 🗑️ Eliminando Trade-Ins que ya no aplican:', skusToRemove);
 
         const updatedMap = { ...tradeInDataMap };
         for (const sku of skusToRemove) {
@@ -566,7 +566,7 @@ export default function Step7({ onBack }: Step7Props) {
           }
         }
       } else {
-        console.log('[Step7] ✅ Todos los Trade-Ins siguen activos');
+        // console.log('[Step7] ✅ Todos los Trade-Ins siguen activos');
       }
 
       setIsValidatingTradeIn(false);
@@ -1057,7 +1057,7 @@ export default function Step7({ onBack }: Step7Props) {
           console.error(`🚫 Petición a candidate-stores falló. Hash bloqueado: ${requestHash.substring(0, 50)}...`);
           console.error("🚫 Esta petición NO se reintentará automáticamente para proteger la base de datos.");
           // Si falla la petición de candidate-stores, usar Coordinadora
-          console.log("🚛 Error en candidate-stores, usando Coordinadora");
+          // console.log("🚛 Error en candidate-stores, usando Coordinadora");
           const verification = {
             envio_imagiq: false,
             todos_productos_im_it: false,
@@ -1199,13 +1199,13 @@ export default function Step7({ onBack }: Step7Props) {
       // Filtrar mensajes que no sean de nuestra aplicación o del proceso 3DS
       if (!event.data) return;
 
-      console.log("📨 [Step7] Mensaje recibido:", event.data);
+      // console.log("📨 [Step7] Mensaje recibido:", event.data);
 
       let data = event.data;
       if (typeof data === 'string') {
         try {
           data = JSON.parse(data);
-          console.log("📨 [Step7] Mensaje parseado:", data);
+          // console.log("📨 [Step7] Mensaje parseado:", data);
         } catch (e) {
           // Si no es JSON válido, ignorar o usar data original si aplica
         }
@@ -1220,11 +1220,11 @@ export default function Step7({ onBack }: Step7Props) {
         (data.MessageType === 'profile.completed');
 
       if (isEpaycoEvent) {
-        console.log("🔐 [Step7] Evento 3DS detectado:", data);
+        // console.log("🔐 [Step7] Evento 3DS detectado:", data);
 
         // Si ya estamos redirigiendo, ignorar eventos subsiguientes para evitar doble procesamiento
         if (isRedirectingRef.current) {
-          console.log("⏳ [Step7] Redirección en progreso, ignorando evento duplicado.");
+          // console.log("⏳ [Step7] Redirección en progreso, ignorando evento duplicado.");
           return;
         }
 
@@ -1234,16 +1234,16 @@ export default function Step7({ onBack }: Step7Props) {
           (data.success && data.success !== "false") || // Allow truthy success but not string "false"
           (data.data && data.data.ref_payco)
         ) {
-          console.log("Se obtuvo la ref_payco. Consulta la transacción para verificar su estado.");
-          console.log("✅ [Step7] 3DS Exitoso");
+          // console.log("Se obtuvo la ref_payco. Consulta la transacción para verificar su estado.");
+          // console.log("✅ [Step7] 3DS Exitoso");
 
           const orderId = localStorage.getItem('pending_order_id');
           if (orderId) {
-            console.log("🔄 [Step7] Redirigiendo a verificación para orden:", orderId);
+            // console.log("🔄 [Step7] Redirigiendo a verificación para orden:", orderId);
             isRedirectingRef.current = true; // Marcar que ya estamos redirigiendo
             localStorage.removeItem('pending_order_id');
 
-            console.log("🔄 [Step7] Redirigiendo a verificación para orden:", orderId);
+            // console.log("🔄 [Step7] Redirigiendo a verificación para orden:", orderId);
             localStorage.removeItem('pending_order_id');
 
             // Se eliminó la limpieza manual de artefactos 3DS a petición del usuario
@@ -1446,17 +1446,17 @@ export default function Step7({ onBack }: Step7Props) {
         try {
           // Trade-In (entrego_y_estreno) - soporta nuevo formato de mapa
           const tradeStr = localStorage.getItem("imagiq_trade_in");
-          console.log('[Step7 buildBeneficios] Raw trade-in localStorage:', tradeStr);
+          // console.log('[Step7 buildBeneficios] Raw trade-in localStorage:', tradeStr);
           if (tradeStr) {
             const parsedTrade = JSON.parse(tradeStr);
-            console.log('[Step7 buildBeneficios] Parsed trade-in:', parsedTrade);
+            // console.log('[Step7 buildBeneficios] Parsed trade-in:', parsedTrade);
             // Verificar si es formato nuevo (mapa) o antiguo (objeto único)
             if (typeof parsedTrade === 'object' && !parsedTrade.deviceName) {
               // Formato nuevo: { "SKU1": { completed, deviceName, value, detalles }, ... }
-              console.log('[Step7 buildBeneficios] Detected NEW format (map), keys:', Object.keys(parsedTrade));
+              // console.log('[Step7 buildBeneficios] Detected NEW format (map), keys:', Object.keys(parsedTrade));
               for (const [sku, tradeIn] of Object.entries(parsedTrade)) {
                 const t = tradeIn as { completed?: boolean; deviceName?: string; value?: number; detalles?: DetalleDispositivoRetoma };
-                console.log(`[Step7 buildBeneficios] Processing SKU: ${sku}, completed: ${t?.completed}, deviceName: ${t?.deviceName}, value: ${t?.value}`);
+                // console.log(`[Step7 buildBeneficios] Processing SKU: ${sku}, completed: ${t?.completed}, deviceName: ${t?.deviceName}, value: ${t?.value}`);
                 // Aceptar si completed es true O si tiene deviceName y value (para compatibilidad)
                 if (t?.completed || (t?.deviceName && t?.value)) {
                   const beneficio = {
@@ -1466,13 +1466,13 @@ export default function Step7({ onBack }: Step7Props) {
                     detalles_dispositivo_a_recibir: t.detalles,
                     sku: sku, // SKU del producto (backend espera 'sku', no 'sku_producto')
                   };
-                  console.log('[Step7 buildBeneficios] Adding trade-in beneficio:', beneficio);
+                  // console.log('[Step7 buildBeneficios] Adding trade-in beneficio:', beneficio);
                   beneficios.push(beneficio);
                 }
               }
             } else if (parsedTrade?.completed || (parsedTrade?.deviceName && parsedTrade?.value)) {
               // Formato antiguo: { completed, deviceName, value }
-              console.log('[Step7 buildBeneficios] Detected OLD format');
+              // console.log('[Step7 buildBeneficios] Detected OLD format');
               beneficios.push({
                 type: "entrego_y_estreno",
                 dispositivo_a_recibir: parsedTrade.deviceName,
@@ -1515,7 +1515,7 @@ export default function Step7({ onBack }: Step7Props) {
         } catch (err) {
           console.error('[Step7 buildBeneficios] Error:', err);
         }
-        console.log('[Step7 buildBeneficios] BENEFICIOS FINALES:', JSON.stringify(beneficios, null, 2));
+        // console.log('[Step7 buildBeneficios] BENEFICIOS FINALES:', JSON.stringify(beneficios, null, 2));
         if (beneficios.length === 0) return [{ type: "sin_beneficios" }];
         return beneficios;
       };
@@ -1713,11 +1713,11 @@ export default function Step7({ onBack }: Step7Props) {
           // Verificar si requiere 3DS
           if (res.requires3DS) {
             if (res.data3DS) {
-              console.log("═".repeat(80));
-              console.log("🎬 PROCESO 3D SECURE - FRONTEND");
-              console.log("═".repeat(80));
+              // console.log("═".repeat(80));
+              // console.log("🎬 PROCESO 3D SECURE - FRONTEND");
+              // console.log("═".repeat(80));
               // ... logs ...
-              console.log("📦 RESPUESTA COMPLETA DEL BACKEND:", JSON.stringify(res, null, 2));
+              // console.log("📦 RESPUESTA COMPLETA DEL BACKEND:", JSON.stringify(res, null, 2));
 
               const data3DS = res.data3DS as { resultCode?: string; ref_payco?: number; franquicia?: string; '3DS'?: { success: boolean; data: unknown } };
 
@@ -1728,10 +1728,10 @@ export default function Step7({ onBack }: Step7Props) {
               }
 
               if (typeof window !== 'undefined' && window.validate3ds) {
-                console.log("🚀 EJECUTANDO window.validate3ds()...");
+                // console.log("🚀 EJECUTANDO window.validate3ds()...");
                 try {
                   window.validate3ds(data3DS);
-                  console.log("✅ window.validate3ds() ejecutado correctamente");
+                  // console.log("✅ window.validate3ds() ejecutado correctamente");
 
                   // RETONAR AQUÍ PARA EVITAR REDIRECCIÓN AUTOMÁTICA
                   // La redirección ocurrirá en el event listener handle3DSMessage

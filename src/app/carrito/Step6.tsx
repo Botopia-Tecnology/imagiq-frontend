@@ -124,7 +124,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       const fromHeader = customEvent.detail?.fromHeader;
 
       if (fromHeader) {
-        console.log('🔄 Dirección cambiada desde header en Step6, redirigiendo a Step3...');
+        // console.log('🔄 Dirección cambiada desde header en Step6, redirigiendo a Step3...');
         router.push('/carrito/step3');
       }
     };

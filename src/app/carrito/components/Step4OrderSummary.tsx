@@ -183,7 +183,7 @@ export default function Step4OrderSummary({
         userId = user.id || user.user_id;
       }
 
-      console.log('🔍 [Step4OrderSummary INIT globalCanPickUp] userId:', userId);
+      // console.log('🔍 [Step4OrderSummary INIT globalCanPickUp] userId:', userId);
 
       if (!userId) return null;
 
@@ -203,12 +203,12 @@ export default function Step4OrderSummary({
           const userData = JSON.parse(userDataStr);
           if (userData?.defaultAddress?.id) {
             savedAddress = JSON.stringify(userData.defaultAddress);
-            console.log('📍 [Step4OrderSummary INIT] Usando defaultAddress de imagiq_user:', userData.defaultAddress.id);
+            // console.log('📍 [Step4OrderSummary INIT] Usando defaultAddress de imagiq_user:', userData.defaultAddress.id);
           }
         }
       }
 
-      console.log('🔍 [Step4OrderSummary INIT] savedAddress:', savedAddress?.substring(0, 50));
+      // console.log('🔍 [Step4OrderSummary INIT] savedAddress:', savedAddress?.substring(0, 50));
 
       if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
         const parsed = JSON.parse(savedAddress);
@@ -217,11 +217,11 @@ export default function Step4OrderSummary({
         }
       }
 
-      console.log('🔍 [Step4OrderSummary INIT] addressId:', addressId);
+      // console.log('🔍 [Step4OrderSummary INIT] addressId:', addressId);
 
       // 3. Obtener productos
       if (!products || products.length === 0) {
-        console.log('🔍 [Step4OrderSummary INIT] No products');
+        // console.log('🔍 [Step4OrderSummary INIT] No products');
         return null;
       }
 
@@ -230,7 +230,7 @@ export default function Step4OrderSummary({
         quantity: p.quantity,
       }));
 
-      console.log('🔍 [Step4OrderSummary INIT] productsToCheck:', productsToCheck.length);
+      // console.log('🔍 [Step4OrderSummary INIT] productsToCheck:', productsToCheck.length);
 
       // 4. Construir clave y buscar en caché
       const cacheKey = buildGlobalCanPickUpKey({
@@ -239,11 +239,11 @@ export default function Step4OrderSummary({
         addressId,
       });
 
-      console.log('🔍 [Step4OrderSummary INIT] cacheKey:', cacheKey.substring(0, 80) + '...');
+      // console.log('🔍 [Step4OrderSummary INIT] cacheKey:', cacheKey.substring(0, 80) + '...');
 
       // Primero intentar obtener el valor simple
       const cachedValue = getGlobalCanPickUpFromCache(cacheKey);
-      console.log('🔍 [Step4OrderSummary INIT] cachedValue (simple):', cachedValue);
+      // console.log('🔍 [Step4OrderSummary INIT] cachedValue (simple):', cachedValue);
 
       if (cachedValue !== null) {
         return cachedValue;
@@ -251,13 +251,13 @@ export default function Step4OrderSummary({
 
       // Si no hay valor simple, intentar obtener de fullResponse
       const fullResponse = getFullCandidateStoresResponseFromCache(cacheKey);
-      console.log('🔍 [Step4OrderSummary INIT] fullResponse:', {
-        exists: !!fullResponse,
-        canPickUp: fullResponse?.canPickUp
-      });
+      // console.log('🔍 [Step4OrderSummary INIT] fullResponse:', {
+//         exists: !!fullResponse,
+//         canPickUp: fullResponse?.canPickUp
+//       });
 
       if (fullResponse && typeof fullResponse.canPickUp === 'boolean') {
-        console.log('✅ [Step4OrderSummary INIT] Usando canPickUp de fullResponse:', fullResponse.canPickUp);
+        // console.log('✅ [Step4OrderSummary INIT] Usando canPickUp de fullResponse:', fullResponse.canPickUp);
         return fullResponse.canPickUp;
       }
 
@@ -279,11 +279,11 @@ export default function Step4OrderSummary({
   const [isLoadingCanPickUp, setIsLoadingCanPickUp] = React.useState(() => {
     if (typeof window === 'undefined') return false;
 
-    console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] shouldCalculateCanPickUp:', shouldCalculateCanPickUp, 'isStep1:', isStep1);
+    // console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] shouldCalculateCanPickUp:', shouldCalculateCanPickUp, 'isStep1:', isStep1);
 
     // Si shouldCalculateCanPickUp es false (e.g. Step7), no mostrar loading
     if (!shouldCalculateCanPickUp) {
-      console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (shouldCalculateCanPickUp=false)');
+      // console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (shouldCalculateCanPickUp=false)');
       return false;
     }
 
@@ -297,12 +297,12 @@ export default function Step4OrderSummary({
       }
 
       if (!userId) {
-        console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (no userId)');
+        // console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (no userId)');
         return false; // Sin usuario no podemos validar, no bloquear
       }
 
       if (!products || products.length === 0) {
-        console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (no products)');
+        // console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (no products)');
         return false;
       }
 
@@ -321,7 +321,7 @@ export default function Step4OrderSummary({
           const userData = JSON.parse(storedUser);
           if (userData?.defaultAddress?.id) {
             savedAddress = JSON.stringify(userData.defaultAddress);
-            console.log('📍 [Step4OrderSummary INIT isLoadingCanPickUp] Usando defaultAddress de imagiq_user');
+            // console.log('📍 [Step4OrderSummary INIT isLoadingCanPickUp] Usando defaultAddress de imagiq_user');
           }
         }
       }
@@ -333,14 +333,14 @@ export default function Step4OrderSummary({
         }
       }
 
-      console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] addressId:', addressId);
+      // console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] addressId:', addressId);
 
       // Si no tenemos dirección válida y estamos en Steps 1-6 (shouldCalculateCanPickUp=true),
       // NO mostrar loading porque setGlobalCanPickUp pondrá null automáticamente más tarde
       // A MENOS QUE sea Step1, donde useDelivery maneja la lógica.
       // Pero aquí solo VALIDAMOS si ya tenemos un valor en caché.
       if (!addressId && !isStep1) {
-        console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (no addressId and not Step1)');
+        // console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (no addressId and not Step1)');
         return false;
       }
 
@@ -355,29 +355,29 @@ export default function Step4OrderSummary({
         addressId,
       });
 
-      console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] cacheKey:', cacheKey.substring(0, 80) + '...');
+      // console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] cacheKey:', cacheKey.substring(0, 80) + '...');
 
       const cachedValue = getGlobalCanPickUpFromCache(cacheKey);
-      console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] cachedValue:', cachedValue);
+      // console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] cachedValue:', cachedValue);
 
       // Si tenemos valor en caché, NO estamos cargando
       if (cachedValue !== null) {
-        console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (cache hit)');
+        // console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (cache hit)');
         return false;
       }
 
       // NUEVO: También verificar fullResponse
       const fullResponse = getFullCandidateStoresResponseFromCache(cacheKey);
       if (fullResponse && typeof fullResponse.canPickUp === 'boolean') {
-        console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (fullResponse cache hit)');
+        // console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (fullResponse cache hit)');
         return false;
       }
 
       // Si no tenemos valor en caché y shouldCalculateCanPickUp es true, estamos cargando
-      console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> true (no cache, shouldCalculate=true)');
+      // console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> true (no cache, shouldCalculate=true)');
       return true;
     } catch {
-      console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (error)');
+      // console.log('🔍 [Step4OrderSummary INIT isLoadingCanPickUp] -> false (error)');
       return false; // Ante error, no bloquear
     }
   });
@@ -499,7 +499,7 @@ export default function Step4OrderSummary({
   // IMPORTANTE: Esta función SOLO lee del caché, NO hace llamadas al endpoint
   const fetchGlobalCanPickUp = React.useCallback(async () => {
     // DEBUG: Log para rastrear llamadas
-    console.log('🔍🔍🔍 [fetchGlobalCanPickUp] LLAMADA - Stack trace:', new Error().stack?.split('\n').slice(1, 5).join('\n'));
+    // console.log('🔍🔍🔍 [fetchGlobalCanPickUp] LLAMADA - Stack trace:', new Error().stack?.split('\n').slice(1, 5).join('\n'));
 
     // Generar ID único para esta ejecución y actualizar ref para evitar race conditions
     const requestId = Date.now();
@@ -592,7 +592,7 @@ export default function Step4OrderSummary({
             const userData = JSON.parse(userDataStr);
             if (userData?.defaultAddress?.id) {
               savedAddress = JSON.stringify(userData.defaultAddress);
-              console.log('📍 [fetchGlobalCanPickUp] Usando defaultAddress de imagiq_user:', userData.defaultAddress.id);
+              // console.log('📍 [fetchGlobalCanPickUp] Usando defaultAddress de imagiq_user:', userData.defaultAddress.id);
             }
           }
         }
@@ -643,7 +643,7 @@ export default function Step4OrderSummary({
     // Esto es crítico para Steps 4-7 donde el caché ya fue poblado por useDelivery
     const fullResponse = getFullCandidateStoresResponseFromCache(cacheKey);
     if (fullResponse && typeof fullResponse.canPickUp === 'boolean') {
-      console.log(`📦 [Step4OrderSummary] Usando fullResponse CACHEADA. canPickUp=${fullResponse.canPickUp}`);
+      // console.log(`📦 [Step4OrderSummary] Usando fullResponse CACHEADA. canPickUp=${fullResponse.canPickUp}`);
       setGlobalCanPickUp(fullResponse.canPickUp);
       setIsLoadingCanPickUp(false);
       return;
@@ -751,7 +751,7 @@ export default function Step4OrderSummary({
     if (typeof window === 'undefined') return;
 
     const handleCacheUpdate = async () => {
-      console.log('🔔 [Step4] LISTENER #1 (línea 710) - canPickUpCache-updated disparado');
+      // console.log('🔔 [Step4] LISTENER #1 (línea 710) - canPickUpCache-updated disparado');
       // Usar la ref para evitar stale closures
       if (fetchGlobalCanPickUpRef.current) {
         await fetchGlobalCanPickUpRef.current();
@@ -770,7 +770,7 @@ export default function Step4OrderSummary({
     if (typeof window === 'undefined') return;
 
     const updateDebugInfoFromCache = () => {
-      console.log('🔍 [Step4OrderSummary] updateDebugInfoFromCache llamada');
+      // console.log('🔍 [Step4OrderSummary] updateDebugInfoFromCache llamada');
       try {
         // Obtener userId
         const storedUser = localStorage.getItem("imagiq_user");
@@ -779,9 +779,9 @@ export default function Step4OrderSummary({
           const user = JSON.parse(storedUser);
           userId = user.id || user.user_id;
         }
-        console.log('🔍 [Step4OrderSummary] userId:', userId);
+        // console.log('🔍 [Step4OrderSummary] userId:', userId);
         if (!userId) {
-          console.log('🔍 [Step4OrderSummary] No userId, saliendo');
+          // console.log('🔍 [Step4OrderSummary] No userId, saliendo');
           return;
         }
 
@@ -801,22 +801,22 @@ export default function Step4OrderSummary({
             const userData = JSON.parse(userDataStr);
             if (userData?.defaultAddress?.id) {
               savedAddress = JSON.stringify(userData.defaultAddress);
-              console.log('📍 [updateDebugInfoFromCache] Usando defaultAddress de imagiq_user:', userData.defaultAddress.id);
+              // console.log('📍 [updateDebugInfoFromCache] Usando defaultAddress de imagiq_user:', userData.defaultAddress.id);
             }
           }
         }
 
-        console.log('🔍 [Step4OrderSummary] savedAddress raw:', savedAddress?.substring(0, 100));
+        // console.log('🔍 [Step4OrderSummary] savedAddress raw:', savedAddress?.substring(0, 100));
         if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
           const parsed = JSON.parse(savedAddress);
           if (parsed?.id) {
             addressId = parsed.id;
           }
         }
-        console.log('🔍 [Step4OrderSummary] addressId:', addressId);
+        // console.log('🔍 [Step4OrderSummary] addressId:', addressId);
 
         if (!products || products.length === 0) {
-          console.log('🔍 [Step4OrderSummary] No products, saliendo');
+          // console.log('🔍 [Step4OrderSummary] No products, saliendo');
           return;
         }
 
@@ -824,23 +824,23 @@ export default function Step4OrderSummary({
           sku: p.sku,
           quantity: p.quantity,
         }));
-        console.log('🔍 [Step4OrderSummary] productsToCheck:', productsToCheck.length, 'productos');
+        // console.log('🔍 [Step4OrderSummary] productsToCheck:', productsToCheck.length, 'productos');
 
         const cacheKey = buildGlobalCanPickUpKey({
           userId,
           products: productsToCheck,
           addressId,
         });
-        console.log('🔍 [Step4OrderSummary] cacheKey construida:', cacheKey.substring(0, 80) + '...');
+        // console.log('🔍 [Step4OrderSummary] cacheKey construida:', cacheKey.substring(0, 80) + '...');
 
         // Obtener respuesta completa del caché
         const fullResponse = getFullCandidateStoresResponseFromCache(cacheKey);
-        console.log('🔍 [Step4OrderSummary] fullResponse del caché:', {
-          exists: !!fullResponse,
-          hasStores: !!fullResponse?.stores,
-          canPickUp: fullResponse?.canPickUp,
-          storesKeys: fullResponse?.stores ? Object.keys(fullResponse.stores) : []
-        });
+        // console.log('🔍 [Step4OrderSummary] fullResponse del caché:', {
+//           exists: !!fullResponse,
+//           hasStores: !!fullResponse?.stores,
+//           canPickUp: fullResponse?.canPickUp,
+//           storesKeys: fullResponse?.stores ? Object.keys(fullResponse.stores) : []
+//         });
 
         if (fullResponse && fullResponse.stores) {
           // stores es Record<string, CandidateStore[]> - necesitamos aplanar todas las tiendas
@@ -848,11 +848,11 @@ export default function Step4OrderSummary({
           const totalStores = allStores.length;
           const availableCitiesCount = Object.keys(fullResponse.stores).length;
 
-          console.log('🔍 [Step4OrderSummary] Datos de tiendas:', {
-            totalStores,
-            availableCitiesCount,
-            canPickUp: fullResponse.canPickUp
-          });
+          // console.log('🔍 [Step4OrderSummary] Datos de tiendas:', {
+//             totalStores,
+//             availableCitiesCount,
+//             canPickUp: fullResponse.canPickUp
+//           });
 
           // Según la lógica de useDelivery:
           // - Si canPickUp es true: stores = todas las tiendas, availableStoresWhenCanPickUpFalse = 0
@@ -869,16 +869,16 @@ export default function Step4OrderSummary({
 
           // CRÍTICO: También actualizar globalCanPickUp desde el caché completo
           // Esto asegura que el panel DEBUG muestre el valor correcto
-          console.log('🔍 [Step4OrderSummary] fullResponse.canPickUp tipo:', typeof fullResponse.canPickUp, 'valor:', fullResponse.canPickUp);
+          // console.log('🔍 [Step4OrderSummary] fullResponse.canPickUp tipo:', typeof fullResponse.canPickUp, 'valor:', fullResponse.canPickUp);
           if (typeof fullResponse.canPickUp === 'boolean') {
-            console.log('✅ [Step4OrderSummary] Actualizando globalCanPickUp a:', fullResponse.canPickUp);
+            // console.log('✅ [Step4OrderSummary] Actualizando globalCanPickUp a:', fullResponse.canPickUp);
             setGlobalCanPickUp(fullResponse.canPickUp);
             setIsLoadingCanPickUp(false);
           } else {
-            console.log('⚠️ [Step4OrderSummary] fullResponse.canPickUp NO es boolean, no actualizo globalCanPickUp');
+            // console.log('⚠️ [Step4OrderSummary] fullResponse.canPickUp NO es boolean, no actualizo globalCanPickUp');
           }
         } else {
-          console.log('⚠️ [Step4OrderSummary] No hay fullResponse o no tiene stores');
+          // console.log('⚠️ [Step4OrderSummary] No hay fullResponse o no tiene stores');
         }
       } catch (e) {
         console.error("Error reading full cache for debug info:", e);
@@ -967,7 +967,7 @@ export default function Step4OrderSummary({
     // y disparará el evento 'canPickUpCache-updated' cuando esté listo.
     // Leer aquí causaría un race condition donde leemos null antes de que se escriba.
     if (!isStep1) {
-      console.log('🔔 [Step4] EFFECT directo (línea 908) - llamando fetchGlobalCanPickUp');
+      // console.log('🔔 [Step4] EFFECT directo (línea 908) - llamando fetchGlobalCanPickUp');
       fetchGlobalCanPickUp();
     }
   }, [
@@ -980,7 +980,7 @@ export default function Step4OrderSummary({
   // Escuchar cuando el caché se actualiza para volver a leer
   React.useEffect(() => {
     const handleCacheUpdate = () => {
-      console.log('🔔 [Step4] LISTENER #2 (línea 926) - canPickUpCache-updated disparado');
+      // console.log('🔔 [Step4] LISTENER #2 (línea 926) - canPickUpCache-updated disparado');
       // Ejecutar inmediatamente para máxima fluidez
       fetchGlobalCanPickUp();
     };
@@ -1120,7 +1120,7 @@ export default function Step4OrderSummary({
 
     // Escuchar cambios en el caché de candidate stores
     const handleCacheUpdate = () => {
-      console.log('🔔 [Step4] LISTENER #3 (línea 1062) - canPickUpCache-updated disparado');
+      // console.log('🔔 [Step4] LISTENER #3 (línea 1062) - canPickUpCache-updated disparado');
       fetchGlobalCanPickUp();
     };
     globalThis.window.addEventListener("canPickUpCache-updated", handleCacheUpdate);
@@ -1539,15 +1539,15 @@ export default function Step4OrderSummary({
           <div className="mt-3 p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
             {/* Log de debug para consola */}
             {(() => {
-              console.log('🎨 [Step4OrderSummary DEBUG RENDER]', {
-                globalCanPickUp,
-                isLoadingCanPickUp,
-                shouldCalculateCanPickUp,
-                hasDefaultAddress,
-                debugStoresInfo,
-                cachedDebugStoresInfo,
-                productCount: products.length
-              });
+              // console.log('🎨 [Step4OrderSummary DEBUG RENDER]', {
+//                 globalCanPickUp,
+//                 isLoadingCanPickUp,
+//                 shouldCalculateCanPickUp,
+//                 hasDefaultAddress,
+//                 debugStoresInfo,
+//                 cachedDebugStoresInfo,
+//                 productCount: products.length
+//               });
               return null;
             })()}
             <p className="text-[10px] font-bold text-yellow-900 mb-1">

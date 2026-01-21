@@ -52,7 +52,7 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
 
   // Cargar cuotas guardadas de localStorage
   useEffect(() => {
-    console.log("🚀 [Step5] Mounting Step5 component");
+    // console.log("🚀 [Step5] Mounting Step5 component");
 
     const savedInstallments = localStorage.getItem("checkout-installments");
     if (savedInstallments) {
@@ -72,13 +72,13 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
 
     // Cargar ID de tarjeta seleccionada
     const cardId = localStorage.getItem("checkout-saved-card-id");
-    console.log("💳 [Step5] Saved Card ID:", cardId);
+    // console.log("💳 [Step5] Saved Card ID:", cardId);
     setSelectedCardId(cardId);
 
     // Cargar tarjeta temporal si no hay tarjeta guardada
     if (!cardId) {
       const tempCardData = localStorage.getItem("checkout-card-data");
-      console.log("💳 [Step5] Temp Card Data exists:", !!tempCardData);
+      // console.log("💳 [Step5] Temp Card Data exists:", !!tempCardData);
       if (tempCardData) {
         try {
           const parsed = JSON.parse(tempCardData);
@@ -188,7 +188,7 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
       const fromHeader = customEvent.detail?.fromHeader;
 
       if (fromHeader) {
-        console.log('🔄 Dirección cambiada desde header en Step5, redirigiendo a Step3...');
+        // console.log('🔄 Dirección cambiada desde header en Step5, redirigiendo a Step3...');
         router.push('/carrito/step3');
       }
     };

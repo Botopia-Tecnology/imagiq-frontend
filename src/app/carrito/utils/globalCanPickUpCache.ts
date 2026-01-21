@@ -43,14 +43,14 @@ export function buildGlobalCanPickUpKey(input: CacheKeyInput): string {
     .join("|");
 
   const key = `${userPart}::${addressPart}::${productsPart}`;
-  console.log('🔑 [Cache] buildGlobalCanPickUpKey:', {
-    userId: userPart,
-    addressId: addressPart,
-    productsCount: input.products.length,
-    productsPart: productsPart, // Mostrar los productos exactos
-    keyLength: key.length,
-    keyPreview: key.substring(0, 100) + (key.length > 100 ? '...' : '')
-  });
+  // console.log('🔑 [Cache] buildGlobalCanPickUpKey:', {
+//     userId: userPart,
+//     addressId: addressPart,
+//     productsCount: input.products.length,
+//     productsPart: productsPart, // Mostrar los productos exactos
+//     keyLength: key.length,
+//     keyPreview: key.substring(0, 100) + (key.length > 100 ? '...' : '')
+//   });
   return key;
 }
 
@@ -117,44 +117,44 @@ export function getGlobalCanPickUpFromCache(key: string): boolean | null {
  * Útil para evitar skeleton al cambiar a "recoger en tienda"
  */
 export function getFullCandidateStoresResponseFromCache(key: string): CandidateStoresResponse | null {
-  console.log('🔍 [Cache] getFullCandidateStoresResponseFromCache llamada');
-  console.log('🔍 [Cache] key solicitada:', key.substring(0, 80) + '...');
+  // console.log('🔍 [Cache] getFullCandidateStoresResponseFromCache llamada');
+  // console.log('🔍 [Cache] key solicitada:', key.substring(0, 80) + '...');
 
   // Si no hay caché en memoria, intentar cargar de localStorage
   if (!cache) {
-    console.log('🔍 [Cache] No hay caché en memoria, intentando localStorage...');
+    // console.log('🔍 [Cache] No hay caché en memoria, intentando localStorage...');
     loadFromLocalStorage();
   }
 
   if (!cache) {
-    console.log('⚠️ [Cache] No hay caché disponible');
+    // console.log('⚠️ [Cache] No hay caché disponible');
     return null;
   }
 
-  console.log('🔍 [Cache] cache.key actual:', cache.key.substring(0, 80) + '...');
-  console.log('🔍 [Cache] Keys coinciden?', cache.key === key);
+  // console.log('🔍 [Cache] cache.key actual:', cache.key.substring(0, 80) + '...');
+  // console.log('🔍 [Cache] Keys coinciden?', cache.key === key);
 
   if (cache.key !== key) {
-    console.log('⚠️ [Cache] Keys NO coinciden, retornando null');
-    console.log('🔍 [Cache] Diferencias:', {
-      keyLength: key.length,
-      cacheKeyLength: cache.key.length,
-      first50Match: key.substring(0, 50) === cache.key.substring(0, 50)
-    });
+    // console.log('⚠️ [Cache] Keys NO coinciden, retornando null');
+    // console.log('🔍 [Cache] Diferencias:', {
+//       keyLength: key.length,
+//       cacheKeyLength: cache.key.length,
+//       first50Match: key.substring(0, 50) === cache.key.substring(0, 50)
+//     });
     // DEBUG DETALLADO: Mostrar keys completas para identificar la diferencia exacta
-    console.log('🔍 [Cache] KEY SOLICITADA COMPLETA:', key);
-    console.log('🔍 [Cache] KEY EN CACHÉ COMPLETA:', cache.key);
+    // console.log('🔍 [Cache] KEY SOLICITADA COMPLETA:', key);
+    // console.log('🔍 [Cache] KEY EN CACHÉ COMPLETA:', cache.key);
     // Encontrar el primer carácter diferente
     for (let i = 0; i < Math.max(key.length, cache.key.length); i++) {
       if (key[i] !== cache.key[i]) {
-        console.log('🔍 [Cache] PRIMERA DIFERENCIA en posición', i, ':', {
-          keyChar: key[i],
-          cacheChar: cache.key[i],
-          keyCharCode: key.charCodeAt(i),
-          cacheCharCode: cache.key.charCodeAt(i),
-          contextoKey: key.substring(Math.max(0, i-5), i+10),
-          contextoCacheKey: cache.key.substring(Math.max(0, i-5), i+10)
-        });
+        // console.log('🔍 [Cache] PRIMERA DIFERENCIA en posición', i, ':', {
+//           keyChar: key[i],
+//           cacheChar: cache.key[i],
+//           keyCharCode: key.charCodeAt(i),
+//           cacheCharCode: cache.key.charCodeAt(i),
+//           contextoKey: key.substring(Math.max(0, i-5), i+10),
+//           contextoCacheKey: cache.key.substring(Math.max(0, i-5), i+10)
+//         });
         break;
       }
     }
@@ -163,7 +163,7 @@ export function getFullCandidateStoresResponseFromCache(key: string): CandidateS
 
   const isExpired = Date.now() - cache.timestamp > TTL_MS;
   if (isExpired) {
-    console.log('⚠️ [Cache] Caché expirado');
+    // console.log('⚠️ [Cache] Caché expirado');
     cache = null;
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(LOCAL_STORAGE_KEY);
@@ -171,10 +171,10 @@ export function getFullCandidateStoresResponseFromCache(key: string): CandidateS
     return null;
   }
 
-  console.log('✅ [Cache] Retornando fullResponse:', {
-    hasStores: !!cache.fullResponse?.stores,
-    canPickUp: cache.fullResponse?.canPickUp
-  });
+  // console.log('✅ [Cache] Retornando fullResponse:', {
+//     hasStores: !!cache.fullResponse?.stores,
+//     canPickUp: cache.fullResponse?.canPickUp
+//   });
   return cache.fullResponse;
 }
 
@@ -188,15 +188,15 @@ export function setGlobalCanPickUpCache(
   fullResponse?: CandidateStoresResponse | null,
   addressId?: string | null
 ): void {
-  console.log('💾 [Cache] setGlobalCanPickUpCache:', {
-    keyPreview: key.substring(0, 80) + '...',
-    value,
-    hasFullResponse: !!fullResponse,
-    fullResponseCanPickUp: fullResponse?.canPickUp,
-    addressId
-  });
+  // console.log('💾 [Cache] setGlobalCanPickUpCache:', {
+//     keyPreview: key.substring(0, 80) + '...',
+//     value,
+//     hasFullResponse: !!fullResponse,
+//     fullResponseCanPickUp: fullResponse?.canPickUp,
+//     addressId
+//   });
   // DEBUG DETALLADO: Mostrar key completa al guardar
-  console.log('💾 [Cache] KEY COMPLETA AL GUARDAR:', key);
+  // console.log('💾 [Cache] KEY COMPLETA AL GUARDAR:', key);
 
   cache = {
     key,

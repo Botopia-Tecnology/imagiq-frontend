@@ -365,44 +365,44 @@ export default function Step2({
    * Si el teléfono/email ya está verificado, intenta auto-login del usuario existente
    */
   const handleSendOTP = async (method?: 'email' | 'whatsapp') => {
-    console.log("🔄 [Step2 handleSendOTP] Iniciando...", { guestUserId, method, sendMethod });
+    // console.log("🔄 [Step2 handleSendOTP] Iniciando...", { guestUserId, method, sendMethod });
 
     if (!guestUserId) {
-      console.log("❌ [Step2 handleSendOTP] No hay guestUserId");
+      // console.log("❌ [Step2 handleSendOTP] No hay guestUserId");
       setError("No hay un proceso de registro en curso");
       return;
     }
 
     const methodToUse = method || sendMethod;
-    console.log("📧 [Step2 handleSendOTP] Método seleccionado:", methodToUse);
+    // console.log("📧 [Step2 handleSendOTP] Método seleccionado:", methodToUse);
     setLoading(true);
     setError("");
 
     try {
       if (methodToUse === 'email') {
-        console.log("📧 [Step2 handleSendOTP] Enviando OTP por email a:", guestForm.email);
+        // console.log("📧 [Step2 handleSendOTP] Enviando OTP por email a:", guestForm.email);
         await apiPost("/api/auth/otp/send-email-register", {
           email: guestForm.email,
           userId: guestUserId, // Enviar userId para evitar conflictos con teléfonos duplicados
         });
       } else {
-        console.log("📱 [Step2 handleSendOTP] Enviando OTP por WhatsApp a:", guestForm.celular);
+        // console.log("📱 [Step2 handleSendOTP] Enviando OTP por WhatsApp a:", guestForm.celular);
         await apiPost("/api/auth/otp/send-register", {
           telefono: guestForm.celular,
           metodo: "whatsapp",
           userId: guestUserId, // Enviar userId para evitar conflictos con teléfonos duplicados
         });
       }
-      console.log("✅ [Step2 handleSendOTP] OTP enviado exitosamente");
+      // console.log("✅ [Step2 handleSendOTP] OTP enviado exitosamente");
       setOtpSent(true);
       setSendMethod(methodToUse);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      console.log("⚠️ [Step2 handleSendOTP] Error:", errorMsg);
+      // console.log("⚠️ [Step2 handleSendOTP] Error:", errorMsg);
 
       // Si el teléfono o email ya está verificado, intentar auto-login
       if (errorMsg.toLowerCase().includes("ya está verificado")) {
-        console.log("🔐 [Step2] Usuario ya verificado detectado, intentando auto-login con userId:", guestUserId);
+        // console.log("🔐 [Step2] Usuario ya verificado detectado, intentando auto-login con userId:", guestUserId);
         try {
           // Usar el userId que ya tenemos del registro
           const autoLoginResult = await apiPost<{
@@ -420,11 +420,11 @@ export default function Step2({
             userId: guestUserId,
           });
 
-          console.log("📦 [Step2] Respuesta auto-login:", {
-            hasToken: !!autoLoginResult.access_token,
-            hasUser: !!autoLoginResult.user,
-            userRol: autoLoginResult.user?.rol
-          });
+          // console.log("📦 [Step2] Respuesta auto-login:", {
+//             hasToken: !!autoLoginResult.access_token,
+//             hasUser: !!autoLoginResult.user,
+//             userRol: autoLoginResult.user?.rol
+//           });
 
           if (autoLoginResult.access_token && autoLoginResult.user) {
             // Preservar el carrito antes de guardar el usuario
@@ -445,15 +445,15 @@ export default function Step2({
               rol: autoLoginResult.user.rol || 3
             };
 
-            console.log("💾 [Step2] Guardando usuario con rol:", userWithRole.rol);
+            // console.log("💾 [Step2] Guardando usuario con rol:", userWithRole.rol);
             localStorage.setItem("imagiq_token", autoLoginResult.access_token);
             localStorage.setItem("imagiq_user", JSON.stringify(userWithRole));
-            console.log("✅ [Step2] Token y usuario guardados en localStorage");
+            // console.log("✅ [Step2] Token y usuario guardados en localStorage");
 
             // Guardar userId de forma consistente
             const { saveUserId } = await import('@/app/carrito/utils/getUserId');
             saveUserId(autoLoginResult.user.id, autoLoginResult.user.email, false);
-            console.log('✅ [Step2] Auto-login exitoso, userId:', autoLoginResult.user.id);
+            // console.log('✅ [Step2] Auto-login exitoso, userId:', autoLoginResult.user.id);
 
             // Guardar cédula para autocompletar
             if (globalThis.window !== undefined) {
@@ -503,16 +503,16 @@ export default function Step2({
    * Maneja la verificación del OTP y completa el registro del invitado
    */
   const handleVerifyOTP = async () => {
-    console.log("🔐 [Step2 handleVerifyOTP] Iniciando verificación...", { otpCode, guestUserId, sendMethod });
+    // console.log("🔐 [Step2 handleVerifyOTP] Iniciando verificación...", { otpCode, guestUserId, sendMethod });
 
     if (!otpCode || otpCode.length !== 6) {
-      console.log("❌ [Step2 handleVerifyOTP] Código inválido:", otpCode);
+      // console.log("❌ [Step2 handleVerifyOTP] Código inválido:", otpCode);
       setError("El código debe tener 6 dígitos");
       return;
     }
 
     if (!guestUserId) {
-      console.log("❌ [Step2 handleVerifyOTP] No hay guestUserId");
+      // console.log("❌ [Step2 handleVerifyOTP] No hay guestUserId");
       setError("No hay un proceso de registro en curso");
       return;
     }
@@ -534,24 +534,24 @@ export default function Step2({
       };
 
       if (sendMethod === 'email') {
-        console.log("📧 [Step2 handleVerifyOTP] Verificando OTP por email:", guestForm.email);
+        // console.log("📧 [Step2 handleVerifyOTP] Verificando OTP por email:", guestForm.email);
         result = await apiPost("/api/auth/otp/verify-email", {
           email: guestForm.email,
           codigo: otpCode,
         });
       } else {
-        console.log("📱 [Step2 handleVerifyOTP] Verificando OTP por WhatsApp:", guestForm.celular);
+        // console.log("📱 [Step2 handleVerifyOTP] Verificando OTP por WhatsApp:", guestForm.celular);
         result = await apiPost("/api/auth/otp/verify-register", {
           telefono: guestForm.celular,
           codigo: otpCode,
         });
       }
 
-      console.log("✅ [Step2 handleVerifyOTP] OTP verificado, resultado:", {
-        hasToken: !!result.access_token,
-        hasUser: !!result.user,
-        userId: result.user?.id
-      });
+      // console.log("✅ [Step2 handleVerifyOTP] OTP verificado, resultado:", {
+//         hasToken: !!result.access_token,
+//         hasUser: !!result.user,
+//         userId: result.user?.id
+//       });
 
       // IMPORTANTE: Solo ahora guardamos en localStorage después de verificar OTP
       if (result.access_token && result.user) {
@@ -561,9 +561,9 @@ export default function Step2({
         // CRÍTICO: Limpiar datos de usuario anterior ANTES de guardar invitado
         try {
           const { clearPreviousUserData } = await import('@/app/carrito/utils/getUserId');
-          console.log('🧹 [Step2] Limpiando datos de usuario anterior...');
+          // console.log('🧹 [Step2] Limpiando datos de usuario anterior...');
           clearPreviousUserData();
-          console.log('✅ [Step2] Datos anteriores limpiados');
+          // console.log('✅ [Step2] Datos anteriores limpiados');
         } catch (error) {
           console.error('❌ [Step2] Error limpiando datos anteriores:', error);
         }
@@ -582,7 +582,7 @@ export default function Step2({
         // CRÍTICO: Guardar userId de forma consistente en todas las fuentes
         const { saveUserId } = await import('@/app/carrito/utils/getUserId');
         saveUserId(result.user.id, result.user.email, false); // false = no limpiar de nuevo
-        console.log('✅ [Step2] UserId guardado de forma consistente:', result.user.id);
+        // console.log('✅ [Step2] UserId guardado de forma consistente:', result.user.id);
 
         // Guardar cédula para autocompletar
         if (globalThis.window !== undefined) {
@@ -670,7 +670,7 @@ export default function Step2({
     // PRIORIDAD 1: Si ya tiene dirección agregada (invitado O regular), continuar a Step3
     // Esto cubre tanto usuarios invitados como regulares que agregaron dirección
     if (hasAddedAddress && typeof onContinue === "function") {
-      console.log("✅ [STEP2 handleContinue] Usuario con dirección agregada, avanzando a Step3");
+      // console.log("✅ [STEP2 handleContinue] Usuario con dirección agregada, avanzando a Step3");
       onContinue();
       return;
     }
@@ -685,7 +685,7 @@ export default function Step2({
           const user = JSON.parse(userInfo);
           const userRole = user.rol ?? user.role;
           if (userRole === 2) {
-            console.log("⚠️ [STEP2 handleContinue] Usuario regular sin dirección en step2 (no debería ocurrir)");
+            // console.log("⚠️ [STEP2 handleContinue] Usuario regular sin dirección en step2 (no debería ocurrir)");
             toast.error("Por favor agrega una dirección de envío para continuar");
             return;
           }
@@ -812,7 +812,7 @@ export default function Step2({
       // Marcar que ya se solicitó para evitar múltiples llamadas
       geoLocationRequestedRef.current = true;
 
-      console.log('📍 Detectado formulario de dirección, solicitando geolocalización...');
+      // console.log('📍 Detectado formulario de dirección, solicitando geolocalización...');
       setIsRequestingLocation(true);
 
       // Solicitar permiso de geolocalización
@@ -820,7 +820,7 @@ export default function Step2({
         // Éxito: se obtuvo la ubicación
         async (position) => {
           const { latitude, longitude } = position.coords;
-          console.log('✅ Geolocalización obtenida:', { latitude, longitude });
+          // console.log('✅ Geolocalización obtenida:', { latitude, longitude });
 
           try {
             // Llamar al endpoint de reverse geocoding con autenticación
@@ -840,10 +840,10 @@ export default function Step2({
             }
 
             const data = await response.json();
-            console.log('✅ Datos de geolocalización recibidos:', data);
+            // console.log('✅ Datos de geolocalización recibidos:', data);
 
             // Procesar y mapear los datos de respuesta al formato esperado
-            console.log('🗺️ Datos recibidos del endpoint:', data);
+            // console.log('🗺️ Datos recibidos del endpoint:', data);
             
             // Extraer información de address_components para completar campos
             let departamento = data.departamento || '';
@@ -888,10 +888,10 @@ export default function Step2({
               }
             }
             
-            console.log('📝 Datos procesados para formulario:', {
-              departamento, ciudad, tipo_via, numero_principal, 
-              numero_secundario, numero_complementario, barrio
-            });
+            // console.log('📝 Datos procesados para formulario:', {
+//               departamento, ciudad, tipo_via, numero_principal, 
+//               numero_secundario, numero_complementario, barrio
+//             });
 
             // Guardar los datos procesados en el estado
             setGeoLocationData({
@@ -913,7 +913,7 @@ export default function Step2({
         },
         // Error: el usuario denegó el permiso o hubo un error
         (error) => {
-          console.log('ℹ️ Geolocalización no disponible:', error.message);
+          // console.log('ℹ️ Geolocalización no disponible:', error.message);
           setIsRequestingLocation(false);
           // Continuar con el flujo normal - el usuario llenará el formulario manualmente
         },
@@ -1003,7 +1003,7 @@ export default function Step2({
             // Reintentar
             localStorage.setItem("imagiq_trade_in", tradeInString);
           } else {
-            console.log("✅ Trade-In guardado correctamente en Step2");
+            // console.log("✅ Trade-In guardado correctamente en Step2");
           }
           
           // Disparar eventos de storage
@@ -1042,7 +1042,7 @@ export default function Step2({
           // Reintentar
           localStorage.setItem("imagiq_trade_in", tradeInString);
         } else {
-          console.log("✅ Trade-In guardado correctamente en Step2 (fallback)");
+          // console.log("✅ Trade-In guardado correctamente en Step2 (fallback)");
         }
         
         // Disparar eventos de storage
@@ -1075,20 +1075,20 @@ export default function Step2({
 
   // Handler para cuando se agrega una dirección exitosamente
   const handleAddressAdded = async (address: Address) => {
-    console.log("🎯 [handleAddressAdded] INICIO - Dirección recibida:", {
-      id: address.id,
-      ciudad: address.ciudad,
-      hasId: !!address.id
-    });
-    console.log("✅ Dirección agregada exitosamente:", address);
-    console.log("📦 DEBUG - Productos en carrito:", {
-      length: cartProducts.length,
-      products: cartProducts.map(p => ({ sku: p.sku, quantity: p.quantity, name: p.name }))
-    });
+    // console.log("🎯 [handleAddressAdded] INICIO - Dirección recibida:", {
+//       id: address.id,
+//       ciudad: address.ciudad,
+//       hasId: !!address.id
+//     });
+    // console.log("✅ Dirección agregada exitosamente:", address);
+    // console.log("📦 DEBUG - Productos en carrito:", {
+//       length: cartProducts.length,
+//       products: cartProducts.map(p => ({ sku: p.sku, quantity: p.quantity, name: p.name }))
+//     });
 
     // CRÍTICO: Guardar la dirección en checkout-address INMEDIATAMENTE
     // Esto es necesario para que Step3 y Step4 puedan leer la dirección
-    console.log("💾 [handleAddressAdded] Guardando dirección en checkout-address...");
+    // console.log("💾 [handleAddressAdded] Guardando dirección en checkout-address...");
     try {
       // IMPORTANTE: Obtener userId de forma consistente
       const { getUserId } = await import('@/app/carrito/utils/getUserId');
@@ -1109,17 +1109,17 @@ export default function Step2({
         esPredeterminada: address.esPredeterminada || true,
       };
       localStorage.setItem('checkout-address', JSON.stringify(checkoutAddress));
-      console.log('✅ Dirección guardada en checkout-address con userId consistente:', {
-        ...checkoutAddress,
-        usuario_id: checkoutAddress.usuario_id
-      });
+      // console.log('✅ Dirección guardada en checkout-address con userId consistente:', {
+//         ...checkoutAddress,
+//         usuario_id: checkoutAddress.usuario_id
+//       });
     } catch (error) {
       console.error('❌ Error guardando dirección en checkout-address:', error);
     }
 
     // Activar estado de loading
     setIsSavingAddress(true);
-    console.log("🔄 Estado isSavingAddress activado");
+    // console.log("🔄 Estado isSavingAddress activado");
 
     // NO mostrar toast ni avanzar automáticamente
     // El formulario mantiene el loading hasta que termine la consulta de candidate stores
@@ -1136,38 +1136,38 @@ export default function Step2({
     // IMPORTANTE: Limpiar el caché de candidate stores ANTES de calcular los nuevos
     // Esto es crucial porque la dirección cambió y necesitamos datos frescos
     try {
-      console.log("🗑️ Intentando limpiar caché...");
+      // console.log("🗑️ Intentando limpiar caché...");
       const { invalidateCacheOnAddressChange } = await import('@/app/carrito/utils/globalCanPickUpCache');
       const wasInvalidated = invalidateCacheOnAddressChange(address.id);
-      console.log('🗑️ Caché de candidate stores:', wasInvalidated ? 'limpiado' : 'ya estaba limpio');
+      // console.log('🗑️ Caché de candidate stores:', wasInvalidated ? 'limpiado' : 'ya estaba limpio');
     } catch (error) {
       console.error('❌ Error limpiando caché:', error);
     }
 
     // IMPORTANTE: Esperar un momento para que la dirección se guarde completamente en la BD
     // antes de consultar candidate stores
-    console.log('⏳ Esperando a que la dirección se guarde completamente...');
+    // console.log('⏳ Esperando a que la dirección se guarde completamente...');
     await new Promise(resolve => setTimeout(resolve, 500));
-    console.log('✅ Delay completado');
+    // console.log('✅ Delay completado');
 
     // Llamar al endpoint de candidate stores y esperar la respuesta
     try {
-      console.log('🔄 Iniciando consulta de candidate stores...');
+      // console.log('🔄 Iniciando consulta de candidate stores...');
       const { productEndpoints } = await import('@/lib/api');
-      console.log('✅ Módulo productEndpoints importado');
+      // console.log('✅ Módulo productEndpoints importado');
 
       // IMPORTANTE: Obtener userId de forma consistente usando la utilidad centralizada
       const { getUserId } = await import('@/app/carrito/utils/getUserId');
       const userId = getUserId();
 
-      console.log('👤 DEBUG - Usuario obtenido:', {
-        userId,
-        hasUserId: !!userId
-      });
+      // console.log('👤 DEBUG - Usuario obtenido:', {
+//         userId,
+//         hasUserId: !!userId
+//       });
 
       if (!userId) {
         console.error('❌ No se encontró user_id para consultar candidate stores');
-        console.log('⚠️ Avanzando al Step3 sin consultar candidate stores (no hay userId)');
+        // console.log('⚠️ Avanzando al Step3 sin consultar candidate stores (no hay userId)');
         // Avanzar sin candidate stores si no hay userId
         setHasAddedAddress(true);
         setIsSavingAddress(false);
@@ -1183,10 +1183,10 @@ export default function Step2({
         quantity: p.quantity || 1,
       }));
 
-      console.log('📦 DEBUG - Productos preparados:', {
-        productsCount: products.length,
-        products
-      });
+      // console.log('📦 DEBUG - Productos preparados:', {
+//         productsCount: products.length,
+//         products
+//       });
 
       // IMPORTANTE: Usar el addressId de la dirección recién agregada
       // Si no hay ID en address, intentar leer de checkout-address que acabamos de guardar
@@ -1197,42 +1197,42 @@ export default function Step2({
           try {
             const parsed = JSON.parse(storedAddress);
             addressId = parsed.id;
-            console.log('📦 [handleAddressAdded] addressId obtenido de checkout-address:', addressId);
+            // console.log('📦 [handleAddressAdded] addressId obtenido de checkout-address:', addressId);
           } catch (e) {
             console.error('❌ Error leyendo checkout-address para addressId:', e);
           }
         }
       }
 
-      console.log('📦 Consultando candidate stores con:', {
-        userId,
-        addressId,
-        productsCount: products.length,
-        products: products.map(p => ({ sku: p.sku, quantity: p.quantity }))
-      });
+      // console.log('📦 Consultando candidate stores con:', {
+//         userId,
+//         addressId,
+//         productsCount: products.length,
+//         products: products.map(p => ({ sku: p.sku, quantity: p.quantity }))
+//       });
 
-      console.log('🌐 Llamando a productEndpoints.getCandidateStores...');
+      // console.log('🌐 Llamando a productEndpoints.getCandidateStores...');
       // Llamar al endpoint de candidate stores y procesar la respuesta
       const response = await productEndpoints.getCandidateStores({
         products,
         user_id: userId,
       });
-      console.log('✅ Respuesta recibida del endpoint');
+      // console.log('✅ Respuesta recibida del endpoint');
 
-      console.log('✅ Candidate stores consultados exitosamente:', {
-        canPickUp: response?.data?.canPickUp,
-        storesCount: response?.data?.stores ? Object.keys(response.data.stores).length : 0,
-        hasData: !!response?.data,
-        responseKeys: response?.data ? Object.keys(response.data) : []
-      });
+      // console.log('✅ Candidate stores consultados exitosamente:', {
+//         canPickUp: response?.data?.canPickUp,
+//         storesCount: response?.data?.stores ? Object.keys(response.data.stores).length : 0,
+//         hasData: !!response?.data,
+//         responseKeys: response?.data ? Object.keys(response.data) : []
+//       });
 
       // IMPORTANTE: Procesar y guardar la respuesta en el caché
       // Esto es crucial para que Step3 pueda leer los datos del caché
       if (response?.data) {
-        console.log('💾 [handleAddressAdded] Guardando respuesta en caché...');
+        // console.log('💾 [handleAddressAdded] Guardando respuesta en caché...');
         // Importar las funciones de caché
         const { buildGlobalCanPickUpKey, setGlobalCanPickUpCache } = await import('@/app/carrito/utils/globalCanPickUpCache');
-        console.log('📦 [handleAddressAdded] Funciones de caché importadas');
+        // console.log('📦 [handleAddressAdded] Funciones de caché importadas');
 
         // Construir la clave de caché con el addressId correcto
         const cacheKey = buildGlobalCanPickUpKey({
@@ -1240,21 +1240,21 @@ export default function Step2({
           products,
           addressId,
         });
-        console.log('🔑 [handleAddressAdded] Clave de caché construida:', cacheKey);
-        console.log('🔍 [handleAddressAdded] DEBUG COMPLETO AL GUARDAR:');
-        console.log('  - userId:', userId);
-        console.log('  - addressId:', addressId);
-        console.log('  - products:', products);
-        console.log('  - canPickUp:', response.data.canPickUp);
-        console.log('  - cacheKey completa:', cacheKey);
+        // console.log('🔑 [handleAddressAdded] Clave de caché construida:', cacheKey);
+        // console.log('🔍 [handleAddressAdded] DEBUG COMPLETO AL GUARDAR:');
+        // console.log('  - userId:', userId);
+        // console.log('  - addressId:', addressId);
+        // console.log('  - products:', products);
+        // console.log('  - canPickUp:', response.data.canPickUp);
+        // console.log('  - cacheKey completa:', cacheKey);
 
         // Guardar en caché con la respuesta completa
         setGlobalCanPickUpCache(cacheKey, response.data.canPickUp, response.data, addressId);
-        console.log('✅ [handleAddressAdded] Respuesta guardada en caché:', {
-          cacheKey,
-          canPickUp: response.data.canPickUp,
-          addressId
-        });
+        // console.log('✅ [handleAddressAdded] Respuesta guardada en caché:', {
+//           cacheKey,
+//           canPickUp: response.data.canPickUp,
+//           addressId
+//         });
 
         // Verificar que se guardó correctamente
         if (typeof window !== 'undefined') {
@@ -1262,11 +1262,11 @@ export default function Step2({
           if (stored) {
             try {
               const parsed = JSON.parse(stored);
-              console.log('✅ [handleAddressAdded] VERIFICACIÓN - Caché guardado en localStorage:');
-              console.log('  - key en caché:', parsed.key);
-              console.log('  - addressId en caché:', parsed.addressId);
-              console.log('  - canPickUp en caché:', parsed.value);
-              console.log('  - ¿Las claves coinciden?', parsed.key === cacheKey);
+              // console.log('✅ [handleAddressAdded] VERIFICACIÓN - Caché guardado en localStorage:');
+              // console.log('  - key en caché:', parsed.key);
+              // console.log('  - addressId en caché:', parsed.addressId);
+              // console.log('  - canPickUp en caché:', parsed.value);
+              // console.log('  - ¿Las claves coinciden?', parsed.key === cacheKey);
             } catch (e) {
               console.error('  - Error verificando caché:', e);
             }
@@ -1279,14 +1279,14 @@ export default function Step2({
       }
 
       // IMPORTANTE: Solo avanzar DESPUÉS de guardar en caché exitosamente
-      console.log('🏁 [handleAddressAdded] Candidate stores calculado y guardado en caché, ahora sí avanzando a Step3');
+      // console.log('🏁 [handleAddressAdded] Candidate stores calculado y guardado en caché, ahora sí avanzando a Step3');
       
       // Marcar que se agregó la dirección exitosamente
       setHasAddedAddress(true);
       setIsSavingAddress(false);
       
       if (typeof onContinue === "function") {
-        console.log("✅ Avanzando automáticamente a Step3");
+        // console.log("✅ Avanzando automáticamente a Step3");
         onContinue();
       } else {
         console.warn("⚠️ No se puede avanzar - onContinue no es una función");
@@ -1300,7 +1300,7 @@ export default function Step2({
         stack: error instanceof Error ? error.stack : undefined
       });
       // IMPORTANTE: Avanzar de todas formas al Step3 a pesar del error
-      console.log('⚠️ Avanzando al Step3 a pesar del error en candidate stores');
+      // console.log('⚠️ Avanzando al Step3 a pesar del error en candidate stores');
       setHasAddedAddress(true);
       setIsSavingAddress(false);
       if (typeof onContinue === "function") {

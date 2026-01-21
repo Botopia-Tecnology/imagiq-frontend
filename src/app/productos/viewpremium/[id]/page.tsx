@@ -462,6 +462,8 @@ export default function ProductViewPage({ params }) {
                 // Aquí puedes agregar lógica adicional si necesitas hacer algo cuando se completa el trade-in
               }}
               productSku={productSelection.selectedSku || undefined}
+              productName={productToUse.name}
+              skuPostback={productSelection.selectedSkuPostback || undefined}
             />
           </div>
         </div>

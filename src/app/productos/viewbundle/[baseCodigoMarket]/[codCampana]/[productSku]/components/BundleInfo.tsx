@@ -258,6 +258,7 @@ export function BundleInfo({
           onCancelWithoutCompletion={handleCancelWithoutCompletion}
           onCompleteTradeIn={handleCompleteTradeIn}
           productSku={productSku}
+          productName={bundleName}
         />
       )}
     </div>

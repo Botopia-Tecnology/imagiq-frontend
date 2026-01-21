@@ -48,6 +48,8 @@ export default function TrackingService({
   // Ref para cancelar peticiones anteriores y evitar race conditions
   const guideChangeAbortRef = useRef<AbortController | null>(null);
   const currentGuideRef = useRef<string | null>(null);
+  // Ref para tracking del último índice procesado y evitar re-ejecuciones
+  const lastProcessedIndexRef = useRef<number>(-1);
 
   // Helper functions
   const formatDate = (
@@ -162,12 +164,40 @@ export default function TrackingService({
   }, [envios]);
 
   // Efecto para actualizar la vista cuando cambia la selección de envío
+  // OPTIMIZACIÓN: Separar actualizaciones síncronas (UI) de asíncronas (API)
   useEffect(() => {
     if (envios.length > 0 && fechaCreacion) {
-      // Solo si es modo coordinadora (envios populated)
-      updateCoordinadoraView(envios[selectedEnvioIndex], fechaCreacion);
+      const envio = envios[selectedEnvioIndex];
+      if (!envio) return;
+
+      // 1. Actualizaciones SÍNCRONAS inmediatas (para respuesta rápida de UI)
+      const guia = envio.numero_guia || "...";
+      setOrderNumber(guia);
+      setPdfBase64(envio.pdf_base64 || "");
+
+      // Actualizar fechas estimadas inmediatamente
+      if (envio.tiempo_entrega_estimado && fechaCreacion) {
+        const f = new Date(fechaCreacion);
+        const dias = Number.parseInt(String(envio.tiempo_entrega_estimado));
+        f.setDate(f.getDate() + dias);
+        setEstimatedInitDate(formatDate(f.toISOString()));
+        f.setDate(f.getDate() + dias + 2);
+        setEstimatedFinalDate(formatDate(f.toISOString()));
+      }
+
+      // Usar eventos locales inmediatamente si existen
+      if (envio.eventos && envio.eventos.length > 0) {
+        setTrackingSteps(envio.eventos);
+      }
+
+      // 2. Actualización ASÍNCRONA en segundo plano (eventos detallados)
+      // Solo ejecutar la llamada API si el índice realmente cambió (evitar duplicados)
+      if (envio.numero_guia && lastProcessedIndexRef.current !== selectedEnvioIndex) {
+        lastProcessedIndexRef.current = selectedEnvioIndex;
+        handleGuideChange(envio.numero_guia);
+      }
     }
-  }, [selectedEnvioIndex, envios, fechaCreacion, updateCoordinadoraView]);
+  }, [selectedEnvioIndex, envios, fechaCreacion, handleGuideChange]);
 
   // Efecto para cargar eventos de la primera guía al inicializar
   useEffect(() => {

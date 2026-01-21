@@ -26,10 +26,10 @@ import {
   validateTradeInProducts,
   getTradeInValidationMessage,
 } from "./utils/validateTradeIn";
-import { CheckZeroInterestResponse, BeneficiosDTO } from "./types";
+import { CheckZeroInterestResponse, BeneficiosDTO, DetalleDispositivoRetoma } from "./types";
 import { apiPost } from "@/lib/api-client";
 import { safeGetLocalStorage } from "@/lib/localStorage";
-import { productEndpoints, deliveryEndpoints } from "@/lib/api";
+import { productEndpoints, deliveryEndpoints, tradeInEndpoints } from "@/lib/api";
 import useSecureStorage from "@/hooks/useSecureStorage";
 import { User } from "@/types/user";
 import RegisterGuestPasswordModal from "./components/RegisterGuestPasswordModal";
@@ -220,12 +220,15 @@ export default function Step7({ onBack }: Step7Props) {
   // } | null>(null);
   // const [currentOrderId, setCurrentOrderId] = useState<string>("");
 
-  // Trade-In state management
-  const [tradeInData, setTradeInData] = useState<{
+  // Trade-In state management - soporta múltiples productos
+  const [tradeInDataMap, setTradeInDataMap] = useState<Record<string, {
     completed: boolean;
-    deviceName: string;
+    deviceName: string; // Nombre del dispositivo que se entrega
     value: number;
-  } | null>(null);
+    sku?: string; // SKU del producto que se compra
+    name?: string; // Nombre del producto que se compra
+    skuPostback?: string; // SKU Postback del producto que se compra
+  }>>({});
 
   // Cargar datos de localStorage
   useEffect(() => {
@@ -456,13 +459,18 @@ export default function Step7({ onBack }: Step7Props) {
       setRecipientData({ receivedByClient: true });
     }
 
-    // Load Trade-In data
+    // Load Trade-In data (nuevo formato de mapa)
     const storedTradeIn = localStorage.getItem("imagiq_trade_in");
     if (storedTradeIn) {
       try {
         const parsed = JSON.parse(storedTradeIn);
-        if (parsed.completed) {
-          setTradeInData(parsed);
+        // Verificar si es formato nuevo (mapa con SKUs como keys) o antiguo (objeto único)
+        if (typeof parsed === 'object' && !parsed.deviceName) {
+          // Formato nuevo: { "SKU1": { completed, deviceName, value }, ... }
+          setTradeInDataMap(parsed);
+        } else if (parsed.completed) {
+          // Formato antiguo: { completed, deviceName, value } - convertir a mapa
+          setTradeInDataMap({ "legacy_tradein": parsed });
         }
       } catch (error) {
         console.error("Error parsing Trade-In data:", error);
@@ -471,10 +479,121 @@ export default function Step7({ onBack }: Step7Props) {
 
   }, [authContext.user?.id, loggedUser?.id, loadSavedCards]);
 
-  // Handle Trade-In removal
-  const handleRemoveTradeIn = () => {
-    localStorage.removeItem("imagiq_trade_in");
-    setTradeInData(null);
+  // Estado para tracking de validación de Trade-In
+  const [isValidatingTradeIn, setIsValidatingTradeIn] = useState(false);
+  const tradeInValidationDoneRef = useRef(false);
+
+  // CRÍTICO: Validar Trade-Ins activos al cargar Step7
+  // Llama al endpoint checkSkuForTradeIn para verificar si el producto aún aplica para Trade-In
+  useEffect(() => {
+    const validateActiveTradeIns = async () => {
+      // Solo ejecutar una vez y si hay Trade-Ins activos
+      if (tradeInValidationDoneRef.current) return;
+
+      const tradeInKeys = Object.keys(tradeInDataMap);
+      if (tradeInKeys.length === 0) return;
+
+      tradeInValidationDoneRef.current = true;
+      setIsValidatingTradeIn(true);
+
+      // console.log('[Step7] 🔍 Validando Trade-Ins activos:', tradeInKeys);
+
+      const skusToRemove: string[] = [];
+
+      for (const sku of tradeInKeys) {
+        const tradeIn = tradeInDataMap[sku];
+        if (!tradeIn?.completed) continue;
+
+        try {
+          // console.log(`[Step7] 🔍 Verificando SKU: ${sku}`);
+          const response = await tradeInEndpoints.checkSkuForTradeIn({ sku });
+
+          // console.log(`[Step7] 📋 Respuesta checkSkuForTradeIn para ${sku}:`, response);
+
+          if (response.success && response.data) {
+            const indRetoma = response.data.indRetoma ?? (response.data.aplica ? 1 : 0);
+            // console.log(`[Step7] ✅ SKU ${sku} - indRetoma: ${indRetoma}`);
+
+            // Si indRetoma === 0, el producto ya no aplica para Trade-In
+            if (indRetoma === 0) {
+              // console.log(`[Step7] ❌ SKU ${sku} ya NO aplica para Trade-In, marcando para eliminar`);
+              skusToRemove.push(sku);
+            }
+          } else {
+            // Si la respuesta no es exitosa, asumir que no aplica
+            console.warn(`[Step7] ⚠️ No se pudo validar SKU ${sku}, respuesta:`, response);
+            skusToRemove.push(sku);
+          }
+        } catch (error) {
+          console.error(`[Step7] ❌ Error validando Trade-In para SKU ${sku}:`, error);
+          // En caso de error, NO eliminar el Trade-In para no afectar al usuario
+        }
+      }
+
+      // Eliminar Trade-Ins que ya no aplican
+      if (skusToRemove.length > 0) {
+        // console.log('[Step7] 🗑️ Eliminando Trade-Ins que ya no aplican:', skusToRemove);
+
+        const updatedMap = { ...tradeInDataMap };
+        for (const sku of skusToRemove) {
+          delete updatedMap[sku];
+        }
+
+        setTradeInDataMap(updatedMap);
+
+        // Actualizar localStorage
+        if (Object.keys(updatedMap).length > 0) {
+          localStorage.setItem("imagiq_trade_in", JSON.stringify(updatedMap));
+        } else {
+          localStorage.removeItem("imagiq_trade_in");
+        }
+
+        // Mostrar notificación al usuario
+        toast.error("Beneficio no disponible", {
+          description: "El beneficio Estreno y Entrego ya no está disponible para este producto. Se ha removido de tu orden.",
+          duration: 6000,
+        });
+
+        // Si se eliminaron todos los Trade-Ins y el método de envío es "tienda", cambiar a "domicilio"
+        if (Object.keys(updatedMap).length === 0) {
+          const currentMethod = localStorage.getItem("checkout-delivery-method");
+          if (currentMethod === "tienda") {
+            localStorage.setItem("checkout-delivery-method", "domicilio");
+            window.dispatchEvent(
+              new CustomEvent("delivery-method-changed", { detail: { method: "domicilio" } })
+            );
+            window.dispatchEvent(new Event("storage"));
+          }
+        }
+      } else {
+        // console.log('[Step7] ✅ Todos los Trade-Ins siguen activos');
+      }
+
+      setIsValidatingTradeIn(false);
+    };
+
+    validateActiveTradeIns();
+  }, [tradeInDataMap]);
+
+  // Handle Trade-In removal (ahora soporta eliminar por SKU)
+  const handleRemoveTradeIn = (skuToRemove?: string) => {
+    if (skuToRemove) {
+      // Eliminar solo el SKU específico
+      const updatedMap = { ...tradeInDataMap };
+      delete updatedMap[skuToRemove];
+      setTradeInDataMap(updatedMap);
+
+      // Actualizar localStorage
+      if (Object.keys(updatedMap).length > 0) {
+        localStorage.setItem("imagiq_trade_in", JSON.stringify(updatedMap));
+      } else {
+        localStorage.removeItem("imagiq_trade_in");
+      }
+    } else {
+      // Eliminar todos los trade-ins
+      localStorage.removeItem("imagiq_trade_in");
+      setTradeInDataMap({});
+    }
 
     // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
     if (typeof globalThis.window !== "undefined") {
@@ -512,7 +631,7 @@ export default function Step7({ onBack }: Step7Props) {
       localStorage.removeItem("imagiq_trade_in");
 
       // Quitar el banner inmediatamente
-      setTradeInData(null);
+      setTradeInDataMap({});
 
       // Mostrar notificación toast
       toast.error("Cupón removido", {
@@ -938,7 +1057,7 @@ export default function Step7({ onBack }: Step7Props) {
           console.error(`🚫 Petición a candidate-stores falló. Hash bloqueado: ${requestHash.substring(0, 50)}...`);
           console.error("🚫 Esta petición NO se reintentará automáticamente para proteger la base de datos.");
           // Si falla la petición de candidate-stores, usar Coordinadora
-          console.log("🚛 Error en candidate-stores, usando Coordinadora");
+          // console.log("🚛 Error en candidate-stores, usando Coordinadora");
           const verification = {
             envio_imagiq: false,
             todos_productos_im_it: false,
@@ -1080,13 +1199,13 @@ export default function Step7({ onBack }: Step7Props) {
       // Filtrar mensajes que no sean de nuestra aplicación o del proceso 3DS
       if (!event.data) return;
 
-      console.log("📨 [Step7] Mensaje recibido:", event.data);
+      // console.log("📨 [Step7] Mensaje recibido:", event.data);
 
       let data = event.data;
       if (typeof data === 'string') {
         try {
           data = JSON.parse(data);
-          console.log("📨 [Step7] Mensaje parseado:", data);
+          // console.log("📨 [Step7] Mensaje parseado:", data);
         } catch (e) {
           // Si no es JSON válido, ignorar o usar data original si aplica
         }
@@ -1101,11 +1220,11 @@ export default function Step7({ onBack }: Step7Props) {
         (data.MessageType === 'profile.completed');
 
       if (isEpaycoEvent) {
-        console.log("🔐 [Step7] Evento 3DS detectado:", data);
+        // console.log("🔐 [Step7] Evento 3DS detectado:", data);
 
         // Si ya estamos redirigiendo, ignorar eventos subsiguientes para evitar doble procesamiento
         if (isRedirectingRef.current) {
-          console.log("⏳ [Step7] Redirección en progreso, ignorando evento duplicado.");
+          // console.log("⏳ [Step7] Redirección en progreso, ignorando evento duplicado.");
           return;
         }
 
@@ -1115,16 +1234,16 @@ export default function Step7({ onBack }: Step7Props) {
           (data.success && data.success !== "false") || // Allow truthy success but not string "false"
           (data.data && data.data.ref_payco)
         ) {
-          console.log("Se obtuvo la ref_payco. Consulta la transacción para verificar su estado.");
-          console.log("✅ [Step7] 3DS Exitoso");
+          // console.log("Se obtuvo la ref_payco. Consulta la transacción para verificar su estado.");
+          // console.log("✅ [Step7] 3DS Exitoso");
 
           const orderId = localStorage.getItem('pending_order_id');
           if (orderId) {
-            console.log("🔄 [Step7] Redirigiendo a verificación para orden:", orderId);
+            // console.log("🔄 [Step7] Redirigiendo a verificación para orden:", orderId);
             isRedirectingRef.current = true; // Marcar que ya estamos redirigiendo
             localStorage.removeItem('pending_order_id');
 
-            console.log("🔄 [Step7] Redirigiendo a verificación para orden:", orderId);
+            // console.log("🔄 [Step7] Redirigiendo a verificación para orden:", orderId);
             localStorage.removeItem('pending_order_id');
 
             // Se eliminó la limpieza manual de artefactos 3DS a petición del usuario
@@ -1325,11 +1444,35 @@ export default function Step7({ onBack }: Step7Props) {
       const buildBeneficios = (): BeneficiosDTO[] => {
         const beneficios: BeneficiosDTO[] = [];
         try {
-          // Trade-In (entrego_y_estreno)
+          // Trade-In (entrego_y_estreno) - soporta nuevo formato de mapa
           const tradeStr = localStorage.getItem("imagiq_trade_in");
+          // console.log('[Step7 buildBeneficios] Raw trade-in localStorage:', tradeStr);
           if (tradeStr) {
             const parsedTrade = JSON.parse(tradeStr);
-            if (parsedTrade?.completed) {
+            // console.log('[Step7 buildBeneficios] Parsed trade-in:', parsedTrade);
+            // Verificar si es formato nuevo (mapa) o antiguo (objeto único)
+            if (typeof parsedTrade === 'object' && !parsedTrade.deviceName) {
+              // Formato nuevo: { "SKU1": { completed, deviceName, value, detalles }, ... }
+              // console.log('[Step7 buildBeneficios] Detected NEW format (map), keys:', Object.keys(parsedTrade));
+              for (const [sku, tradeIn] of Object.entries(parsedTrade)) {
+                const t = tradeIn as { completed?: boolean; deviceName?: string; value?: number; detalles?: DetalleDispositivoRetoma };
+                // console.log(`[Step7 buildBeneficios] Processing SKU: ${sku}, completed: ${t?.completed}, deviceName: ${t?.deviceName}, value: ${t?.value}`);
+                // Aceptar si completed es true O si tiene deviceName y value (para compatibilidad)
+                if (t?.completed || (t?.deviceName && t?.value)) {
+                  const beneficio = {
+                    type: "entrego_y_estreno" as const,
+                    dispositivo_a_recibir: t.deviceName,
+                    valor_retoma: t.value,
+                    detalles_dispositivo_a_recibir: t.detalles,
+                    sku: sku, // SKU del producto (backend espera 'sku', no 'sku_producto')
+                  };
+                  // console.log('[Step7 buildBeneficios] Adding trade-in beneficio:', beneficio);
+                  beneficios.push(beneficio);
+                }
+              }
+            } else if (parsedTrade?.completed || (parsedTrade?.deviceName && parsedTrade?.value)) {
+              // Formato antiguo: { completed, deviceName, value }
+              // console.log('[Step7 buildBeneficios] Detected OLD format');
               beneficios.push({
                 type: "entrego_y_estreno",
                 dispositivo_a_recibir: parsedTrade.deviceName,
@@ -1369,9 +1512,10 @@ export default function Step7({ onBack }: Step7Props) {
               }
             }
           }
-        } catch {
-          // ignore
+        } catch (err) {
+          console.error('[Step7 buildBeneficios] Error:', err);
         }
+        // console.log('[Step7 buildBeneficios] BENEFICIOS FINALES:', JSON.stringify(beneficios, null, 2));
         if (beneficios.length === 0) return [{ type: "sin_beneficios" }];
         return beneficios;
       };
@@ -1569,11 +1713,11 @@ export default function Step7({ onBack }: Step7Props) {
           // Verificar si requiere 3DS
           if (res.requires3DS) {
             if (res.data3DS) {
-              console.log("═".repeat(80));
-              console.log("🎬 PROCESO 3D SECURE - FRONTEND");
-              console.log("═".repeat(80));
+              // console.log("═".repeat(80));
+              // console.log("🎬 PROCESO 3D SECURE - FRONTEND");
+              // console.log("═".repeat(80));
               // ... logs ...
-              console.log("📦 RESPUESTA COMPLETA DEL BACKEND:", JSON.stringify(res, null, 2));
+              // console.log("📦 RESPUESTA COMPLETA DEL BACKEND:", JSON.stringify(res, null, 2));
 
               const data3DS = res.data3DS as { resultCode?: string; ref_payco?: number; franquicia?: string; '3DS'?: { success: boolean; data: unknown } };
 
@@ -1584,10 +1728,10 @@ export default function Step7({ onBack }: Step7Props) {
               }
 
               if (typeof window !== 'undefined' && window.validate3ds) {
-                console.log("🚀 EJECUTANDO window.validate3ds()...");
+                // console.log("🚀 EJECUTANDO window.validate3ds()...");
                 try {
                   window.validate3ds(data3DS);
-                  console.log("✅ window.validate3ds() ejecutado correctamente");
+                  // console.log("✅ window.validate3ds() ejecutado correctamente");
 
                   // RETONAR AQUÍ PARA EVITAR REDIRECCIÓN AUTOMÁTICA
                   // La redirección ocurrirá en el event listener handle3DSMessage
@@ -2472,7 +2616,7 @@ export default function Step7({ onBack }: Step7Props) {
                 onFinishPayment={handleConfirmOrder}
                 onBack={onBack}
                 buttonText="Confirmar y pagar"
-                disabled={isProcessing || !tradeInValidation.isValid}
+                disabled={isProcessing || isValidatingTradeIn || !tradeInValidation.isValid}
                 isSticky={false}
                 shippingVerification={shippingVerification}
                 deliveryMethod={shippingData?.type}
@@ -2640,19 +2784,23 @@ export default function Step7({ onBack }: Step7Props) {
               </div>
             )}
 
-            {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
-            {tradeInData?.completed && (
-              <TradeInCompletedSummary
-                deviceName={tradeInData.deviceName}
-                tradeInValue={tradeInData.value}
-                onEdit={handleRemoveTradeIn}
-                validationError={
-                  tradeInValidation.isValid === false
-                    ? getTradeInValidationMessage(tradeInValidation)
-                    : undefined
-                }
-              />
-            )}
+            {/* Banner de Trade-In - Mostrar para cada producto con trade-in */}
+            {Object.entries(tradeInDataMap).map(([sku, tradeIn]) => {
+              if (!tradeIn?.completed) return null;
+              return (
+                <TradeInCompletedSummary
+                  key={sku}
+                  deviceName={tradeIn.deviceName}
+                  tradeInValue={tradeIn.value}
+                  onEdit={() => handleRemoveTradeIn(sku)}
+                  validationError={
+                    tradeInValidation.isValid === false
+                      ? getTradeInValidationMessage(tradeInValidation)
+                      : undefined
+                  }
+                />
+              );
+            })}
           </aside>
         </div>
       </div>
@@ -2675,14 +2823,14 @@ export default function Step7({ onBack }: Step7Props) {
 
           {/* Botón confirmar */}
           <button
-            className={`w-full font-bold py-3 rounded-lg text-base transition text-white flex items-center justify-center gap-4 ${isProcessing || !tradeInValidation.isValid
+            className={`w-full font-bold py-3 rounded-lg text-base transition text-white flex items-center justify-center gap-4 ${isProcessing || isValidatingTradeIn || !tradeInValidation.isValid
               ? "bg-gray-400 cursor-not-allowed opacity-70"
               : "bg-[#222] hover:bg-[#333] cursor-pointer"
               }`}
             onClick={handleConfirmOrder}
-            disabled={isProcessing || !tradeInValidation.isValid}
+            disabled={isProcessing || isValidatingTradeIn || !tradeInValidation.isValid}
           >
-            {(isProcessing || isCalculatingShipping) && (
+            {(isProcessing || isCalculatingShipping || isValidatingTradeIn) && (
               <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>

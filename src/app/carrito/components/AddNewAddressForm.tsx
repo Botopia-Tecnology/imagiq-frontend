@@ -1063,12 +1063,12 @@ export default function AddNewAddressForm({
 
       {/* Indicador de geolocalización */}
       {isRequestingLocation && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <div className="bg-gray-300 border border-gray-400 rounded-lg p-4 mb-4">
           <div className="flex items-center gap-3">
-            <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
-            <div className="text-blue-700">
-              <div className="font-medium">🌍 Detectando tu ubicación...</div>
-              <div className="text-sm text-blue-600">Completaremos automáticamente: departamento, ciudad, barrio y tipo de vía</div>
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-700 border-t-transparent"></div>
+            <div className="text-black">
+              <div className="font-medium">Detectando tu ubicación...</div>
+              <div className="text-sm text-gray-700">Completaremos automáticamente: departamento, ciudad, barrio y tipo de vía</div>
             </div>
           </div>
         </div>

@@ -12,24 +12,49 @@ export default function Step4Page() {
 
   // Protección: Solo permitir acceso si hay usuario logueado (invitado o regular con token)
   useEffect(() => {
+    // SEGURIDAD: Limpiar datos de tarjeta temporal al entrar al paso 4
+    // Esto asegura que no queden datos de intentos anteriores
+    localStorage.removeItem("checkout-card-data");
+    // Limpiar cuotas seleccionadas para que siempre inicie en 1 al volver a seleccionar tarjeta
+    localStorage.removeItem("checkout-installments");
+
     if (!isChecking) return; // Ya se verificó, no volver a verificar
 
     const token = localStorage.getItem("imagiq_token");
 
-    // Intentar obtener usuario desde el hook o localStorage directamente
-    const userToCheck = loggedUser || (() => {
+    // Intentar obtener usuario desde múltiples fuentes (fallback robusto)
+    let userToCheck = loggedUser;
+
+    // Fallback 1: Leer directamente de localStorage
+    if (!userToCheck) {
       try {
         const userInfo = localStorage.getItem("imagiq_user");
-        return userInfo ? JSON.parse(userInfo) : null;
+        if (userInfo && userInfo !== "null" && userInfo !== "undefined") {
+          userToCheck = JSON.parse(userInfo);
+        }
       } catch {
-        return null;
+        // Ignorar error de parse
       }
-    })();
+    }
+
+    // Fallback 2: Buscar en sessionStorage por si se usó ahí
+    if (!userToCheck) {
+      try {
+        const sessionUser = sessionStorage.getItem("imagiq_user");
+        if (sessionUser && sessionUser !== "null" && sessionUser !== "undefined") {
+          userToCheck = JSON.parse(sessionUser);
+        }
+      } catch {
+        // Ignorar error de parse
+      }
+    }
 
     console.log("🔍 [STEP4] Verificando acceso:", {
       hasToken: !!token,
       hasUser: !!userToCheck,
-      userRol: userToCheck ? ((userToCheck as User & { rol?: number }).rol ?? (userToCheck as User).role) : null
+      userRol: userToCheck ? ((userToCheck as User & { rol?: number }).rol ?? (userToCheck as User).role) : null,
+      loggedUserFromHook: loggedUser,
+      checkoutAddress: localStorage.getItem("checkout-address")?.substring(0, 50)
     });
 
     // CASO 1: Usuario autenticado con token (rol 2 o rol 3) - SIEMPRE permitir acceso
@@ -40,25 +65,56 @@ export default function Step4Page() {
       return;
     }
 
-    // CASO 2: Usuario invitado sin token pero CON dirección agregada
-    const savedAddress = localStorage.getItem("checkout-address");
-    if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
-      try {
-        const address = JSON.parse(savedAddress);
-        // Validar que tenga los campos mínimos
-        if (address && address.ciudad && address.linea_uno) {
-          console.log("✅ [STEP4] Usuario invitado con dirección válida, permitiendo acceso");
-          setIsChecking(false);
-          return;
+    // CASO 2: Solo hay token pero no usuario aún (puede estar hidratándose)
+    // Esperar un poco antes de redirigir para dar tiempo a la hidratación
+    if (token && !userToCheck) {
+      console.log("⏳ [STEP4] Hay token pero no usuario, esperando hidratación...");
+      const timer = setTimeout(() => {
+        // Re-intentar leer usuario después del delay
+        let retryUser = null;
+        try {
+          const userInfo = localStorage.getItem("imagiq_user");
+          if (userInfo && userInfo !== "null" && userInfo !== "undefined") {
+            retryUser = JSON.parse(userInfo);
+          }
+        } catch {
+          // Ignorar
         }
-      } catch (err) {
-        console.error("❌ [STEP4] Error al parsear dirección:", err);
-      }
+
+        if (retryUser) {
+          console.log("✅ [STEP4] Usuario encontrado después de delay, permitiendo acceso");
+          setIsChecking(false);
+        } else {
+          // Verificar si hay dirección como último recurso
+          verifyAddressOrRedirect();
+        }
+      }, 300);
+      return () => clearTimeout(timer);
     }
 
-    // CASO 3: Sin sesión activa ni dirección - redirigir
-    console.warn("⚠️ [STEP4] Acceso denegado: No hay sesión activa ni dirección. Redirigiendo a step2...");
-    router.push("/carrito/step2");
+    // CASO 3: Usuario invitado sin token pero CON dirección agregada
+    verifyAddressOrRedirect();
+
+    function verifyAddressOrRedirect() {
+      const savedAddress = localStorage.getItem("checkout-address");
+      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
+        try {
+          const address = JSON.parse(savedAddress);
+          // Validar que tenga los campos mínimos
+          if (address && address.ciudad && address.linea_uno) {
+            console.log("✅ [STEP4] Usuario invitado con dirección válida, permitiendo acceso");
+            setIsChecking(false);
+            return;
+          }
+        } catch (err) {
+          console.error("❌ [STEP4] Error al parsear dirección:", err);
+        }
+      }
+
+      // CASO 4: Sin sesión activa ni dirección - redirigir
+      console.warn("⚠️ [STEP4] Acceso denegado: No hay sesión activa ni dirección. Redirigiendo a step2...");
+      router.push("/carrito/step2");
+    }
   }, [router, loggedUser, isChecking]);
 
   const handleBack = () => router.push("/carrito/step3");

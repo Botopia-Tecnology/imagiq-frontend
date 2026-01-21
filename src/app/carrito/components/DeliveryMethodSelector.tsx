@@ -142,8 +142,8 @@ export const DeliveryMethodSelector: React.FC<DeliveryMethodSelectorProps> = ({
             </div>
           </div>
 
-          {/* Mostrar dirección seleccionada cuando está activo el envío a domicilio */}
-          {deliveryMethod === "domicilio" && !disableHomeDelivery && (
+          {/* Mostrar dirección seleccionada - SIEMPRE visible cuando no está deshabilitado */}
+          {!disableHomeDelivery && (
             <>
               <div className="ml-9 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 bg-white rounded-lg border border-gray-200">
                 <div className="flex-1">
@@ -179,6 +179,10 @@ export const DeliveryMethodSelector: React.FC<DeliveryMethodSelectorProps> = ({
                     className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition self-start sm:self-center cursor-pointer"
                     onClick={(e) => {
                       e.preventDefault();
+                      // Si no está seleccionado "domicilio", cambiarlo primero
+                      if (deliveryMethod !== "domicilio") {
+                        onMethodChange("domicilio");
+                      }
                       onEditToggle(true);
                     }}
                     disabled={addressLoading}
@@ -188,102 +192,104 @@ export const DeliveryMethodSelector: React.FC<DeliveryMethodSelectorProps> = ({
                 )}
               </div>
 
-              {/* Checkbox para indicar quién recibirá el producto */}
-              <div className="ml-9 mt-4 space-y-4">
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={receivedByClient}
-                    onChange={(e) => handleReceivedByClientChange(e.target.checked)}
-                    className="mt-1 w-4 h-4 accent-blue-600"
-                  />
-                  <div>
-                    <div className="font-semibold text-gray-900">Será recibido por el cliente</div>
-                    <div className="text-sm text-gray-600">
-                      El producto será recibido por la persona que está realizando la compra
-                    </div>
-                  </div>
-                </label>
-
-                {/* Formulario para datos del receptor alternativo */}
-                {!receivedByClient && (
-                  <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-4">
-                    <h3 className="font-semibold text-gray-900 mb-3">
-                      Datos de la persona que recibirá el producto
-                    </h3>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Nombre */}
-                      <div>
-                        <label htmlFor="recipient-firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                          Nombre <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          id="recipient-firstName"
-                          type="text"
-                          value={recipientData.firstName}
-                          onChange={(e) => handleRecipientDataChange("firstName", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                          placeholder="Ingresa el nombre"
-                          required
-                        />
-                      </div>
-
-                      {/* Apellido */}
-                      <div>
-                        <label htmlFor="recipient-lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                          Apellido <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          id="recipient-lastName"
-                          type="text"
-                          value={recipientData.lastName}
-                          onChange={(e) => handleRecipientDataChange("lastName", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                          placeholder="Ingresa el apellido"
-                          required
-                        />
-                      </div>
-
-                      {/* Correo electrónico */}
-                      <div>
-                        <label htmlFor="recipient-email" className="block text-sm font-medium text-gray-700 mb-1">
-                          Correo electrónico <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          id="recipient-email"
-                          type="email"
-                          value={recipientData.email}
-                          onChange={(e) => handleRecipientDataChange("email", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                          placeholder="ejemplo@correo.com"
-                          required
-                        />
-                      </div>
-
-                      {/* Número de celular */}
-                      <div>
-                        <label htmlFor="recipient-phone" className="block text-sm font-medium text-gray-700 mb-1">
-                          Número de celular <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          id="recipient-phone"
-                          type="tel"
-                          value={recipientData.phone}
-                          onChange={(e) => handleRecipientDataChange("phone", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                          placeholder="300 123 4567"
-                          required
-                        />
+              {/* Checkbox para indicar quién recibirá el producto - solo visible con envío a domicilio */}
+              {deliveryMethod === "domicilio" && (
+                <div className="ml-9 mt-4 space-y-4">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={receivedByClient}
+                      onChange={(e) => handleReceivedByClientChange(e.target.checked)}
+                      className="mt-1 w-4 h-4 accent-blue-600"
+                    />
+                    <div>
+                      <div className="font-semibold text-gray-900">Será recibido por el cliente</div>
+                      <div className="text-sm text-gray-600">
+                        El producto será recibido por la persona que está realizando la compra
                       </div>
                     </div>
+                  </label>
 
-                    <p className="text-xs text-gray-500 mt-2">
-                      * Campos obligatorios
-                    </p>
-                  </div>
-                )}
-              </div>
+                  {/* Formulario para datos del receptor alternativo */}
+                  {!receivedByClient && (
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-4">
+                      <h3 className="font-semibold text-gray-900 mb-3">
+                        Datos de la persona que recibirá el producto
+                      </h3>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Nombre */}
+                        <div>
+                          <label htmlFor="recipient-firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                            Nombre <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            id="recipient-firstName"
+                            type="text"
+                            value={recipientData.firstName}
+                            onChange={(e) => handleRecipientDataChange("firstName", e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                            placeholder="Ingresa el nombre"
+                            required
+                          />
+                        </div>
+
+                        {/* Apellido */}
+                        <div>
+                          <label htmlFor="recipient-lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                            Apellido <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            id="recipient-lastName"
+                            type="text"
+                            value={recipientData.lastName}
+                            onChange={(e) => handleRecipientDataChange("lastName", e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                            placeholder="Ingresa el apellido"
+                            required
+                          />
+                        </div>
+
+                        {/* Correo electrónico */}
+                        <div>
+                          <label htmlFor="recipient-email" className="block text-sm font-medium text-gray-700 mb-1">
+                            Correo electrónico <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            id="recipient-email"
+                            type="email"
+                            value={recipientData.email}
+                            onChange={(e) => handleRecipientDataChange("email", e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                            placeholder="ejemplo@correo.com"
+                            required
+                          />
+                        </div>
+
+                        {/* Número de celular */}
+                        <div>
+                          <label htmlFor="recipient-phone" className="block text-sm font-medium text-gray-700 mb-1">
+                            Número de celular <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            id="recipient-phone"
+                            type="tel"
+                            value={recipientData.phone}
+                            onChange={(e) => handleRecipientDataChange("phone", e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                            placeholder="300 123 4567"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-gray-500 mt-2">
+                        * Campos obligatorios
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
         </label>

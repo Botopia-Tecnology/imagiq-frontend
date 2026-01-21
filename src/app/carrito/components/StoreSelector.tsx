@@ -74,9 +74,7 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
     // Llamar a onAddressAdded y esperar si devuelve una promesa (consulta de candidate stores)
     const result = onAddressAdded?.(newAddress);
     if (result instanceof Promise) {
-      console.log('⏳ Esperando consulta de candidate stores en StoreSelector...');
       await result;
-      console.log('✅ Candidate stores consultados en StoreSelector');
     }
 
     setShowAddAddressModal(false);
@@ -282,8 +280,6 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
                 <div className="space-y-3">
                   <NearbyLocationButton
                     onAddressAdded={(newAddress: Address) => {
-                      console.log('📍 Dirección obtenida por geolocalización:', newAddress);
-
                       // Actualizar la dirección y refrescar tiendas
                       if (onAddressChange) {
                         onAddressChange(newAddress);
@@ -403,7 +399,7 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
 
         {/* Modal para agregar dirección - usando Portal para renderizar fuera del componente */}
         {showAddAddressModal && isMounted && createPortal(
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/50">
+          <div className="fixed inset-0 z-[100001] flex items-center justify-center p-4 bg-black/50">
             <button
               type="button"
               aria-label="Cerrar modal"

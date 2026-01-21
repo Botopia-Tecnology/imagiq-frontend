@@ -1,11 +1,24 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
+import dynamic from "next/dynamic";
 
-// Configure worker using local file to ensure compatibility with Next.js 15+
+// Dynamically import react-pdf components with SSR disabled to avoid DOMMatrix error
+// pdf.js uses browser-only APIs that aren't available during server-side rendering
+const Document = dynamic(
+  () => import("react-pdf").then((mod) => mod.Document),
+  { ssr: false }
+);
+const Page = dynamic(
+  () => import("react-pdf").then((mod) => mod.Page),
+  { ssr: false }
+);
+
+// Configure worker only on client side
 if (typeof window !== "undefined") {
-  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf-worker/pdf.worker.min.mjs";
+  import("react-pdf").then((pdfModule) => {
+    pdfModule.pdfjs.GlobalWorkerOptions.workerSrc = "/pdf-worker/pdf.worker.min.mjs";
+  });
 }
 
 interface PDFViewerProps {
@@ -29,6 +42,12 @@ export function PDFViewer({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [containerWidth, setContainerWidth] = useState<number>(600); // Default width
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Track client-side mounting
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Convert base64 to File object/BlobUrl for react-pdf
   // react-pdf can handle base64 data URI directly: "data:application/pdf;base64,..."
@@ -76,6 +95,18 @@ export function PDFViewer({
   useEffect(() => {
     setPageNumber(1);
   }, [selectedShipmentIndex]);
+
+  // Show loading state during SSR
+  if (!isMounted) {
+    return (
+      <div className="w-full rounded-xl bg-white overflow-hidden min-h-[400px] flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full border-4 border-gray-300 border-t-black animate-spin" />
+          <span className="text-gray-600 text-sm font-medium">Cargando visor PDF...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
@@ -152,7 +183,7 @@ export function PDFViewer({
         >
           <Page
             pageNumber={pageNumber}
-            width={Math.min(containerWidth - 32, 600)} // Responsive width, max 600px
+            width={Math.min(containerWidth - 32, 520)} // Responsive width, max 520px para guías de envío
             renderTextLayer={false}
             renderAnnotationLayer={false}
             className="bg-white"

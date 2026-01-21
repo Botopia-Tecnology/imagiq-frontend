@@ -183,7 +183,7 @@ export function PDFViewer({
         >
           <Page
             pageNumber={pageNumber}
-            width={Math.min(containerWidth - 32, 600)} // Responsive width, max 600px
+            width={Math.min(containerWidth - 32, 520)} // Responsive width, max 520px para guías de envío
             renderTextLayer={false}
             renderAnnotationLayer={false}
             className="bg-white"

@@ -61,6 +61,8 @@ export default function Step1({
 
   // Estado para rastrear el SKU del producto para el cual se está completando el trade-in
   const [currentTradeInSku, setCurrentTradeInSku] = useState<string | null>(null);
+  const [currentTradeInProductName, setCurrentTradeInProductName] = useState<string | null>(null);
+  const [currentTradeInSkuPostback, setCurrentTradeInSkuPostback] = useState<string | null>(null);
 
   // Usar el hook centralizado useCart
   const {
@@ -380,6 +382,8 @@ export default function Step1({
           localStorage.removeItem("open_trade_in_modal_sku");
           // Guardar el SKU del producto o bundle para el cual se abre el modal
           setCurrentTradeInSku(targetSku);
+          setCurrentTradeInProductName(targetProduct.name);
+          setCurrentTradeInSkuPostback(targetProduct.skuPostback || null);
           // Abrir el modal para este producto específico
           setIsTradeInModalOpen(true);
           return true; // Indicar que se abrió
@@ -718,7 +722,7 @@ export default function Step1({
     try {
       // Cargar trade-ins existentes
       const raw = localStorage.getItem("imagiq_trade_in");
-      let tradeIns: Record<string, { deviceName: string; value: number; completed: boolean; detalles?: unknown }> = {};
+      let tradeIns: Record<string, { deviceName: string; value: number; completed: boolean; detalles?: unknown; sku?: string; name?: string; skuPostback?: string }> = {};
 
       if (raw) {
         try {
@@ -737,10 +741,14 @@ export default function Step1({
       }
 
       // Agregar/actualizar el trade-in para este SKU
+      // Incluir sku, name y skuPostback del producto que se está comprando
       tradeIns[currentTradeInSku] = {
         deviceName,
         value,
         completed: true,
+        sku: currentTradeInSku,
+        name: currentTradeInProductName || undefined,
+        skuPostback: currentTradeInSkuPostback || undefined,
       };
 
       // FORZAR guardado en localStorage como respaldo (el modal también guarda, pero esto asegura persistencia)
@@ -750,11 +758,17 @@ export default function Step1({
         if (existingRaw) {
           try {
             const existing = JSON.parse(existingRaw);
-            // Si ya existe un trade-in para este SKU con detalles, preservarlos
-            if (existing[currentTradeInSku] && existing[currentTradeInSku].detalles) {
+            // Si ya existe un trade-in para este SKU con detalles u otros campos, preservarlos
+            if (existing[currentTradeInSku]) {
+              const existingTradeIn = existing[currentTradeInSku];
               tradeIns[currentTradeInSku] = {
                 ...tradeIns[currentTradeInSku],
-                detalles: existing[currentTradeInSku].detalles as unknown,
+                // Preservar detalles si existen
+                ...(existingTradeIn.detalles && { detalles: existingTradeIn.detalles as unknown }),
+                // Preservar sku, name, skuPostback si existen y no fueron establecidos
+                ...(existingTradeIn.sku && !tradeIns[currentTradeInSku].sku && { sku: existingTradeIn.sku }),
+                ...(existingTradeIn.name && !tradeIns[currentTradeInSku].name && { name: existingTradeIn.name }),
+                ...(existingTradeIn.skuPostback && !tradeIns[currentTradeInSku].skuPostback && { skuPostback: existingTradeIn.skuPostback }),
               };
             }
           } catch {
@@ -852,6 +866,10 @@ export default function Step1({
                     tradeInData={bundleTradeInData}
                     onOpenTradeInModal={() => {
                       setCurrentTradeInSku(group.bundleInfo.productSku);
+                      // Para bundles, usar el nombre del primer item o el nombre del bundle
+                      const bundleMainProduct = group.items[0];
+                      setCurrentTradeInProductName(bundleMainProduct?.name || null);
+                      setCurrentTradeInSkuPostback(bundleMainProduct?.skuPostback || null);
                       handleOpenTradeInModal();
                     }}
                     onRemoveTradeIn={() => handleRemoveTradeIn(group.bundleInfo.productSku)}
@@ -896,6 +914,8 @@ export default function Step1({
                         onRemove={() => handleRemove(idx)}
                         onOpenTradeInModal={() => {
                           setCurrentTradeInSku(product.sku);
+                          setCurrentTradeInProductName(product.name);
+                          setCurrentTradeInSkuPostback(product.skuPostback || null);
                           handleOpenTradeInModal();
                         }}
                         onRemoveTradeIn={() => handleRemoveTradeIn(product.sku)}
@@ -1026,6 +1046,8 @@ export default function Step1({
           onCancelWithoutCompletion={handleCancelWithoutCompletion}
           onCompleteTradeIn={handleCompleteTradeIn}
           productSku={currentTradeInSku}
+          productName={currentTradeInProductName}
+          skuPostback={currentTradeInSkuPostback}
         />
       )}
 

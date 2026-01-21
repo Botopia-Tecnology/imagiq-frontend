@@ -10,11 +10,15 @@ import {
 interface TradeInSectionProps {
   onTradeInComplete?: (deviceName: string, value: number) => void;
   productSku?: string;
+  productName?: string;
+  skuPostback?: string;
 }
 
 const TradeInSection: React.FC<TradeInSectionProps> = ({
   onTradeInComplete,
   productSku,
+  productName,
+  skuPostback,
 }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -247,6 +251,8 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({
         onCancelWithoutCompletion={handleCancelWithoutCompletion}
         onCompleteTradeIn={handleCompleteTradeIn}
         productSku={productSku}
+        productName={productName}
+        skuPostback={skuPostback}
       />
     </div>
   );

@@ -34,6 +34,8 @@ interface UseTradeInHandlersProps {
     goodConditionAnswer?: boolean | null;
   };
   productSku?: string | null; // SKU del producto para asociar el trade-in
+  productName?: string | null; // Nombre del producto que se está comprando
+  skuPostback?: string | null; // SKU Postback del producto
 }
 
 export function useTradeInHandlers({
@@ -51,6 +53,8 @@ export function useTradeInHandlers({
   selectedCapacity,
   flowState,
   productSku,
+  productName,
+  skuPostback,
 }: UseTradeInHandlersProps) {
   const handleClose = useCallback(() => {
     resetForm();
@@ -97,6 +101,9 @@ export function useTradeInHandlers({
     if (globalThis.window !== undefined) {
       try {
         const tradeInData = {
+          sku: productSku || undefined,
+          name: productName || undefined,
+          skuPostback: skuPostback || undefined,
           deviceName,
           value: tradeInValue,
           completed: true,
@@ -174,6 +181,9 @@ export function useTradeInHandlers({
         try {
           // Recrear tradeInData en el catch porque está fuera del scope del try anterior
           const tradeInDataRetry = {
+            sku: productSku || undefined,
+            name: productName || undefined,
+            skuPostback: skuPostback || undefined,
             deviceName,
             value: tradeInValue,
             completed: true,
@@ -211,7 +221,7 @@ export function useTradeInHandlers({
     resetFlow();
     onContinue?.();
     onClose();
-  }, [resetForm, resetFlow, onContinue, onClose, onCompleteTradeIn, tradeInValue, selectedBrand, selectedModel, selectedCapacity, flowState, productSku]);
+  }, [resetForm, resetFlow, onContinue, onClose, onCompleteTradeIn, tradeInValue, selectedBrand, selectedModel, selectedCapacity, flowState, productSku, productName, skuPostback]);
 
   const getStepTitle = useCallback((currentStep: TradeInStep): StepTitle => {
     switch (currentStep) {

@@ -38,9 +38,9 @@ export default function Step3({
   const { trackAddPaymentInfo } = useAnalyticsWithUser();
   const { user, login } = useAuthContext();
 
-  // OPTIMIZACIÓN CRÍTICA: Step3 SOLO lee del caché si ya existe
+  // OPTIMIZACIÓN: Step3 prefiere leer del caché, pero permite fetch como fallback
   // Si viene de Step1, ya debería existir el caché de candidate-stores
-  // NUNCA debe hacer llamadas al endpoint en Step3, solo leer del caché
+  // Si el caché está vacío (ej: por cambio de dirección desde header), permite hacer fetch
   const {
     address,
     setAddress,
@@ -68,21 +68,21 @@ export default function Step3({
     lastResponse,
     setAddresses, // New function from useDelivery
   } = useDelivery({
-    canFetchFromEndpoint: false, // ❌ NUNCA hacer fetch en Step3
-    onlyReadCache: true, // ✅ Solo leer del caché (ya calculado en Step1)
+    canFetchFromEndpoint: true, // ✅ Permitir fetch como fallback si el caché está vacío
+    onlyReadCache: false, // ✅ Intentar caché primero, pero permitir fetch si está vacío
   });
 
   // DEBUG: Verificar valores retornados por useDelivery en Step3
   React.useEffect(() => {
-    console.log('🔍 [STEP3] useDelivery retornó:', {
-      canPickUp,
-      storesCount: stores.length,
-      storesLoading,
-      availableStoresWhenCanPickUpFalseCount: availableStoresWhenCanPickUpFalse.length,
-      availableCitiesCount: availableCities.length,
-      deliveryMethod,
-      hasAddress: !!address,
-    });
+    // console.log('🔍 [STEP3] useDelivery retornó:', {
+//       canPickUp,
+//       storesCount: stores.length,
+//       storesLoading,
+//       availableStoresWhenCanPickUpFalseCount: availableStoresWhenCanPickUpFalse.length,
+//       availableCitiesCount: availableCities.length,
+//       deliveryMethod,
+//       hasAddress: !!address,
+//     });
   }, [canPickUp, stores.length, storesLoading, availableStoresWhenCanPickUpFalse.length, availableCities.length, deliveryMethod, address]);
 
   // Hook para precarga de tarjetas y zero interest
@@ -247,7 +247,7 @@ export default function Step3({
       // Si es usuario regular (rol !== 3) con token, NO redirigir
       // Permitir que agregue dirección en step3
       if (token && userRole !== 3) {
-        console.log("✅ [STEP3] Usuario regular puede agregar dirección aquí, NO redirigir");
+        // console.log("✅ [STEP3] Usuario regular puede agregar dirección aquí, NO redirigir");
         return;
       }
 
@@ -259,7 +259,7 @@ export default function Step3({
 
       // Si es invitado sin dirección y el método de entrega es domicilio, redirigir a Step2
       if (!savedAddress && deliveryMethod === "domicilio" && userRole === 3) {
-        console.log("⚠️ Usuario invitado sin dirección, redirigiendo a Step2");
+        // console.log("⚠️ Usuario invitado sin dirección, redirigiendo a Step2");
         toast.error("Por favor selecciona una dirección para continuar");
         router.push("/carrito/step2");
         return;
@@ -267,7 +267,7 @@ export default function Step3({
 
       // También verificar el estado de address del hook useDelivery (solo para invitados)
       if (!address && deliveryMethod === "domicilio" && hasCompletedInitialLoadRef.current && userRole === 3) {
-        console.log("⚠️ Usuario invitado sin dirección en useDelivery, redirigiendo a Step2");
+        // console.log("⚠️ Usuario invitado sin dirección en useDelivery, redirigiendo a Step2");
         toast.error("Por favor selecciona una dirección para continuar");
         router.push("/carrito/step2");
       }
@@ -624,7 +624,7 @@ export default function Step3({
         !tradeInStoresLoadedRef.current &&
         !hasStoresLoaded) {
 
-        console.log('🔄 Trade-in activo: verificando caché antes de cargar tiendas');
+        // console.log('🔄 Trade-in activo: verificando caché antes de cargar tiendas');
         tradeInStoresLoadedRef.current = true;
         // NO activar isInitialTradeInLoading aquí - forceRefreshStores lo manejará si es necesario
         // Si hay datos en caché, forceRefreshStores los usará inmediatamente sin skeleton
@@ -826,17 +826,22 @@ export default function Step3({
   }, [hasActiveTradeIn, stores.length, availableStoresWhenCanPickUpFalse.length, storesLoading, forceRefreshStores]);
 
   // Marcar que ya se cargó el pickup por primera vez cuando termine de cargar
-  // IMPORTANTE: Solo marcar como cargado cuando realmente termine (storesLoading es false)
-  // y haya pasado un pequeño delay para asegurar que la UI se actualizó
+  // IMPORTANTE: Solo marcar como cargado cuando:
+  // 1. storesLoading es false (terminó de cargar)
+  // 2. Y HAY datos de tiendas (stores.length > 0 o availableStoresWhenCanPickUpFalse.length > 0)
+  //    O canPickUp es false (no hay tiendas disponibles pero el cálculo terminó)
   React.useEffect(() => {
-    if (!storesLoading && !hasLoadedPickupOnceRef.current) {
+    const hasData = stores.length > 0 || availableStoresWhenCanPickUpFalse.length > 0;
+    const finishedWithNoStores = canPickUp === false && !storesLoading;
+
+    if (!storesLoading && !hasLoadedPickupOnceRef.current && (hasData || finishedWithNoStores)) {
       // Pequeño delay para asegurar que el skeleton se muestre antes de ocultarlo
       const timer = setTimeout(() => {
         hasLoadedPickupOnceRef.current = true;
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [storesLoading]);
+  }, [storesLoading, stores.length, availableStoresWhenCanPickUpFalse.length, canPickUp]);
 
   // IMPORTANTE: Cuando termine de cargar después de cambiar dirección, ocultar skeleton de recálculo
   // Esperar a que termine de cargar canPickUp Y las tiendas antes de ocultar el skeleton
@@ -951,7 +956,7 @@ export default function Step3({
   React.useEffect(() => {
     // CRÍTICO: NO cambiar mientras esté cargando - esperar a que termine de cargar
     if (storesLoading || isLoadingCanPickUp) {
-      console.log('⏸️ Esperando a que termine de cargar antes de decidir método de entrega');
+      // console.log('⏸️ Esperando a que termine de cargar antes de decidir método de entrega');
       return;
     }
 
@@ -964,14 +969,14 @@ export default function Step3({
     // aunque las tiendas aún no se hayan cargado (pueden estar cargando)
     // PERMITIR que el usuario seleccione "tienda" manualmente
     if (effectiveCanPickUp === true) {
-      console.log('✅ canPickUp es true - permitir seleccionar tienda');
+      // console.log('✅ canPickUp es true - permitir seleccionar tienda');
       return; // canPickUp es true, permitir seleccionar tienda
     }
 
     // CRÍTICO: Si canPickUp es false PERO hay tiendas disponibles en availableStoresWhenCanPickUpFalse,
     // NO cambiar a domicilio. El usuario debe poder ver esas tiendas.
     if (effectiveCanPickUp === false && availableStoresWhenCanPickUpFalse.length > 0) {
-      console.log('✅ canPickUp es false pero hay tiendas disponibles - NO cambiar a domicilio');
+      // console.log('✅ canPickUp es false pero hay tiendas disponibles - NO cambiar a domicilio');
       return; // Hay tiendas disponibles, mantener en tienda
     }
 
@@ -982,7 +987,7 @@ export default function Step3({
 
     // Si no hay tiendas disponibles y el método actual es "tienda", cambiar a "domicilio"
     if (noStoresAvailable && deliveryMethod === "tienda") {
-      console.log('❌ No hay tiendas disponibles (después de cargar) - cambiando a domicilio');
+      // console.log('❌ No hay tiendas disponibles (después de cargar) - cambiando a domicilio');
       setDeliveryMethod("domicilio");
     }
   }, [hasActiveTradeIn, effectiveCanPickUp, stores.length, availableStoresWhenCanPickUpFalse.length, storesLoading, isLoadingCanPickUp, deliveryMethod, setDeliveryMethod]);
@@ -1121,7 +1126,7 @@ export default function Step3({
     }
   };
   const handleAddressChange = async (newAddress: Address) => {
-    console.log('📍 [Step3] handleAddressChange invocada:', newAddress);
+    // console.log('📍 [Step3] handleAddressChange invocada:', newAddress);
 
     // IMPORTANTE: Si cambió la dirección, marcar que estamos recalculando INMEDIATAMENTE
     // Esto asegura que el skeleton se muestre antes de que se oculte el contenido anterior
@@ -1150,7 +1155,7 @@ export default function Step3({
         // (por si acaso addAddress no hubiera terminado de actualizar el estado por race condition)
         const exists = addressesList.some(a => a.id === newAddress.id);
         if (!exists) {
-          console.log('⚠️ [Step3] Adding missing new address to state in handleAddressChange');
+          // console.log('⚠️ [Step3] Adding missing new address to state in handleAddressChange');
           addressesList = [newAddress, ...addressesList];
         }
 
@@ -1163,7 +1168,7 @@ export default function Step3({
 
     // Si la dirección tiene id, sincronizar con el backend y otros componentes
     if (newAddress.id) {
-      console.log('🔄 [Step3] Sincronizando dirección con backend:', newAddress.id);
+      // console.log('🔄 [Step3] Sincronizando dirección con backend:', newAddress.id);
       try {
         // Usar utility centralizada para sincronizar dirección
         // IMPORTANTE: fromHeader: true para forzar recálculo de tiendas y mostrar skeleton
@@ -1174,7 +1179,7 @@ export default function Step3({
           loginFn: login,
           fromHeader: true,
         });
-        console.log('✅ [Step3] Dirección sincronizada correctamente');
+        // console.log('✅ [Step3] Dirección sincronizada correctamente');
       } catch (error) {
         console.error('⚠️ Error al sincronizar dirección predeterminada en Step3:', error);
         // No bloquear el flujo si falla la sincronización
@@ -1196,7 +1201,7 @@ export default function Step3({
     }
   };
   const handleDeliveryMethodChange = (method: string) => {
-    console.log('🔄 handleDeliveryMethodChange llamado con método:', method);
+    // console.log('🔄 handleDeliveryMethodChange llamado con método:', method);
 
     // Si hay trade-in activo, no permitir cambiar a domicilio
     if (hasActiveTradeIn && method === "domicilio") {
@@ -1210,13 +1215,13 @@ export default function Step3({
     if (method === "tienda") {
       setStoreEdit(true); // Abrir el selector de tiendas
 
-      console.log('🏪 Usuario seleccionó "tienda" - verificando caché antes de cargar');
-      console.log('   Estado actual:', {
-        storesLength: stores.length,
-        availableStoresWhenCanPickUpFalseLength: availableStoresWhenCanPickUpFalse.length,
-        storesLoading,
-        isInitialTradeInLoading
-      });
+      // console.log('🏪 Usuario seleccionó "tienda" - verificando caché antes de cargar');
+      // console.log('   Estado actual:', {
+//         storesLength: stores.length,
+//         availableStoresWhenCanPickUpFalseLength: availableStoresWhenCanPickUpFalse.length,
+//         storesLoading,
+//         isInitialTradeInLoading
+//       });
 
       // Si no hay tiendas cargadas Y no está cargando, intentar cargar desde caché
       // forceRefreshStores ahora lee del caché primero, así que no activamos skeleton aquí
@@ -1225,7 +1230,7 @@ export default function Step3({
         // NO activar isInitialTradeInLoading aquí - forceRefreshStores lo manejará si es necesario
         // Si hay datos en caché, forceRefreshStores los usará inmediatamente sin skeleton
         setTimeout(() => {
-          console.log('✅ Llamando forceRefreshStores después de seleccionar tienda (leerá del caché primero)');
+          // console.log('✅ Llamando forceRefreshStores después de seleccionar tienda (leerá del caché primero)');
           forceRefreshStores();
         }, 100);
       }
@@ -1260,10 +1265,28 @@ export default function Step3({
   // IMPORTANTE: Mostrar skeleton INMEDIATAMENTE si no hay datos, para evitar parpadeo
   const hasStoreData = stores.length > 0 || availableStoresWhenCanPickUpFalse.length > 0;
 
+  // IMPORTANTE: Si canPickUp es false y no estamos cargando, significa que el cálculo terminó
+  // aunque no haya tiendas disponibles. No debemos mostrar skeleton en este caso.
+  const finishedCalculationWithNoPickup = canPickUp === false && !storesLoading && !isLoadingCanPickUp;
+
   // Mostrar skeleton si:
   // 1. Está cargando stores (siempre mostrar skeleton mientras carga, incluso si hay datos previos)
-  // 2. O si no hay datos Y no se ha cargado pickup al menos una vez (carga inicial)
-  const shouldShowSkeleton = storesLoading || (!hasStoreData && !hasLoadedPickupOnceRef.current);
+  // 2. O si está cargando canPickUp (esperando datos del caché o endpoint)
+  // 3. O si no hay datos Y no se ha cargado pickup al menos una vez (carga inicial) Y NO terminamos con canPickUp=false
+  const shouldShowSkeleton = storesLoading || isLoadingCanPickUp || (!hasStoreData && !hasLoadedPickupOnceRef.current && !finishedCalculationWithNoPickup);
+
+  // DEBUG TEMPORAL - Remover después de debuguear
+  console.log('🔍 [Step3 SKELETON DEBUG]', {
+    shouldShowSkeleton,
+    storesLoading,
+    isLoadingCanPickUp,
+    hasStoreData,
+    hasLoadedPickupOnce: hasLoadedPickupOnceRef.current,
+    finishedCalculationWithNoPickup,
+    canPickUp,
+    storesLength: stores.length,
+    availableStoresWhenCanPickUpFalseLength: availableStoresWhenCanPickUpFalse.length,
+  });
 
   // NOTE: REMOVED isRecalculatingPickup conditions to keep UI visible.
   // The loading state is now handled by individual components via isLoading prop.
@@ -1380,15 +1403,15 @@ export default function Step3({
                   {/* El StoreSelector manejará internamente si mostrar el mensaje (canPickUp=false) o el selector (canPickUp=true) */}
                   {deliveryMethod === "tienda" && storeEdit && (() => {
                     // DEBUG: Log para ver qué se está pasando a StoreSelector
-                    console.log('📍 Step3 - Pasando props a StoreSelector:', {
-                      effectiveCanPickUp,
-                      storesLength: stores.length,
-                      availableStoresWhenCanPickUpFalseLength: availableStoresWhenCanPickUpFalse.length,
-                      availableCitiesLength: availableCities.length,
-                      hasActiveTradeIn,
-                      storesLoading,
-                      availableStoresWhenCanPickUpFalseData: availableStoresWhenCanPickUpFalse.map(s => ({ nombre: s.descripcion, ciudad: s.ciudad })),
-                    });
+                    // console.log('📍 Step3 - Pasando props a StoreSelector:', {
+//                       effectiveCanPickUp,
+//                       storesLength: stores.length,
+//                       availableStoresWhenCanPickUpFalseLength: availableStoresWhenCanPickUpFalse.length,
+//                       availableCitiesLength: availableCities.length,
+//                       hasActiveTradeIn,
+//                       storesLoading,
+//                       availableStoresWhenCanPickUpFalseData: availableStoresWhenCanPickUpFalse.map(s => ({ nombre: s.descripcion, ciudad: s.ciudad })),
+//                     });
 
                     return (
                       <div className="mt-6">

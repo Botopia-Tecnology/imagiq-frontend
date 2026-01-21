@@ -66,12 +66,15 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     direccion: null,
   });
 
-  // Trade-In state management
-  const [tradeInData, setTradeInData] = useState<{
+  // Trade-In state management - soporta múltiples productos
+  const [tradeInDataMap, setTradeInDataMap] = useState<Record<string, {
     completed: boolean;
-    deviceName: string;
+    deviceName: string; // Nombre del dispositivo que se entrega
     value: number;
-  } | null>(null);
+    sku?: string; // SKU del producto que se compra
+    name?: string; // Nombre del producto que se compra
+    skuPostback?: string; // SKU Postback del producto que se compra
+  }>>({});
 
   // Estado para validación de Trade-In
   const [tradeInValidation, setTradeInValidation] = useState<{
@@ -104,7 +107,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       localStorage.removeItem("imagiq_trade_in");
 
       // Quitar el banner inmediatamente
-      setTradeInData(null);
+      setTradeInDataMap({});
 
       // Mostrar notificación toast
       toast.error("Cupón removido", {
@@ -121,7 +124,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       const fromHeader = customEvent.detail?.fromHeader;
 
       if (fromHeader) {
-        console.log('🔄 Dirección cambiada desde header en Step6, redirigiendo a Step3...');
+        // console.log('🔄 Dirección cambiada desde header en Step6, redirigiendo a Step3...');
         router.push('/carrito/step3');
       }
     };
@@ -283,14 +286,19 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     }
   }, [useShippingData]);
 
-  // Load Trade-In data from localStorage
+  // Load Trade-In data from localStorage (nuevo formato de mapa)
   useEffect(() => {
     const storedTradeIn = localStorage.getItem("imagiq_trade_in");
     if (storedTradeIn) {
       try {
         const parsed = JSON.parse(storedTradeIn);
-        if (parsed.completed) {
-          setTradeInData(parsed);
+        // Verificar si es formato nuevo (mapa con SKUs como keys) o antiguo (objeto único)
+        if (typeof parsed === 'object' && !parsed.deviceName) {
+          // Formato nuevo: { "SKU1": { completed, deviceName, value }, ... }
+          setTradeInDataMap(parsed);
+        } else if (parsed.completed) {
+          // Formato antiguo: { completed, deviceName, value } - convertir a mapa
+          setTradeInDataMap({ "legacy_tradein": parsed });
         }
       } catch (error) {
         console.error("Error parsing Trade-In data:", error);
@@ -298,11 +306,26 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     }
   }, []);
 
-  // Handle Trade-In removal
-  const handleRemoveTradeIn = () => {
-    localStorage.removeItem("imagiq_trade_in");
-    setTradeInData(null);
-    
+  // Handle Trade-In removal (ahora soporta eliminar por SKU)
+  const handleRemoveTradeIn = (skuToRemove?: string) => {
+    if (skuToRemove) {
+      // Eliminar solo el SKU específico
+      const updatedMap = { ...tradeInDataMap };
+      delete updatedMap[skuToRemove];
+      setTradeInDataMap(updatedMap);
+
+      // Actualizar localStorage
+      if (Object.keys(updatedMap).length > 0) {
+        localStorage.setItem("imagiq_trade_in", JSON.stringify(updatedMap));
+      } else {
+        localStorage.removeItem("imagiq_trade_in");
+      }
+    } else {
+      // Eliminar todos los trade-ins
+      localStorage.removeItem("imagiq_trade_in");
+      setTradeInDataMap({});
+    }
+
     // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
     if (typeof globalThis.window !== "undefined") {
       const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
@@ -918,15 +941,19 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
               }
             />
 
-            {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
-            {tradeInData?.completed && (
-              <TradeInCompletedSummary
-                deviceName={tradeInData.deviceName}
-                tradeInValue={tradeInData.value}
-                onEdit={handleRemoveTradeIn}
-                validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
-              />
-            )}
+            {/* Banner de Trade-In - Mostrar para cada producto con trade-in */}
+            {Object.entries(tradeInDataMap).map(([sku, tradeIn]) => {
+              if (!tradeIn?.completed) return null;
+              return (
+                <TradeInCompletedSummary
+                  key={sku}
+                  deviceName={tradeIn.deviceName}
+                  tradeInValue={tradeIn.value}
+                  onEdit={() => handleRemoveTradeIn(sku)}
+                  validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
+                />
+              );
+            })}
           </aside>
         </div>
       </div>

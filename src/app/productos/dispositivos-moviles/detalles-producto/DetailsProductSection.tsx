@@ -370,6 +370,8 @@ const DetailsProductSection: React.FC<{
         onCancelWithoutCompletion={handleCancelTradeIn}
         onCompleteTradeIn={handleCompleteTradeIn}
         productSku={productSelection.selectedSku || undefined}
+        productName={product.name}
+        skuPostback={productSelection.selectedSkuPostback || undefined}
       />
       <StockNotificationModal
         isOpen={stockNotification.isModalOpen}

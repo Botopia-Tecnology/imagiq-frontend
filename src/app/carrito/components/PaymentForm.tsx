@@ -321,6 +321,14 @@ export default function PaymentForm({
               const hasTempCard = !!tempCardData;
               const isNewCardSelected = paymentMethod === "tarjeta" && !selectedCardId;
 
+              console.log('🎯 [PaymentForm] Rendering card option:', {
+                paymentMethod,
+                selectedCardId,
+                isNewCardSelected,
+                hasOnValidityChange: !!onValidityChange,
+                hasFormRef: !!formRef
+              });
+
               return (
                 <div>
                   <label className="flex items-center gap-3 justify-between py-3 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors px-3 -mx-3">
@@ -333,6 +341,8 @@ export default function PaymentForm({
                           onPaymentMethodChange("tarjeta");
                           onCardSelect(null);
                           onUseNewCardChange(true);
+                          // Limpiar caché de datos de tarjeta por seguridad (no cachear datos de tarjetas nuevas)
+                          localStorage.removeItem("checkout-card-data");
                         }}
                         className="accent-black w-5 h-5 flex-shrink-0"
                       />

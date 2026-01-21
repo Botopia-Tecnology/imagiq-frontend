@@ -22,6 +22,8 @@ interface TradeInModalProps {
   readonly onCancelWithoutCompletion?: () => void;
   readonly onCompleteTradeIn?: (deviceName: string, value: number) => void;
   readonly productSku?: string | null; // SKU del producto para el cual se está completando el trade-in
+  readonly productName?: string | null; // Nombre del producto que se está comprando
+  readonly skuPostback?: string | null; // SKU Postback del producto
 }
 
 export default function TradeInModal({
@@ -31,6 +33,8 @@ export default function TradeInModal({
   onCancelWithoutCompletion,
   onCompleteTradeIn,
   productSku,
+  productName,
+  skuPostback,
 }: TradeInModalProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -114,6 +118,8 @@ export default function TradeInModal({
         goodConditionAnswer: flowState.goodConditionAnswer,
       },
       productSku,
+      productName,
+      skuPostback,
     });
 
   useEffect(() => {

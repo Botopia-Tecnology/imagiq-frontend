@@ -61,32 +61,84 @@ export default function Step4({
   const [isCardFormValid, setIsCardFormValid] = React.useState(false);
   const formRef = React.useRef<AddCardFormHandle>(null);
 
-  // Trade-In state management
-  const [tradeInData, setTradeInData] = React.useState<{
-    completed: boolean;
-    deviceName: string;
-    value: number;
-  } | null>(null);
+  // Debug: Log cuando cambia isCardFormValid
+  React.useEffect(() => {
+    // console.log('💳 [Step4] isCardFormValid changed to:', isCardFormValid);
+  }, [isCardFormValid]);
 
-  // Load Trade-In data from localStorage
+  // Wrapper para setIsCardFormValid con logging
+  const handleCardFormValidityChange = React.useCallback((isValid: boolean) => {
+    // console.log('💳 [Step4] handleCardFormValidityChange called with:', isValid);
+    setIsCardFormValid(isValid);
+  }, []);
+
+  // Trade-In state management - soporta múltiples productos
+  const [tradeInDataMap, setTradeInDataMap] = React.useState<Record<string, {
+    completed: boolean;
+    deviceName: string; // Nombre del dispositivo que se entrega
+    value: number;
+    sku?: string; // SKU del producto que se compra
+    name?: string; // Nombre del producto que se compra
+    skuPostback?: string; // SKU Postback del producto que se compra
+  }>>({});
+
+  // Load Trade-In data from localStorage (nuevo formato de mapa)
   React.useEffect(() => {
     const storedTradeIn = localStorage.getItem("imagiq_trade_in");
     if (storedTradeIn) {
       try {
         const parsed = JSON.parse(storedTradeIn);
-        if (parsed.completed) {
-          setTradeInData(parsed);
+        // Verificar si es formato nuevo (mapa con SKUs como keys) o antiguo (objeto único)
+        if (typeof parsed === 'object' && !parsed.deviceName) {
+          // Formato nuevo: { "SKU1": { completed, deviceName, value }, ... }
+          setTradeInDataMap(parsed);
+        } else if (parsed.completed) {
+          // Formato antiguo: { completed, deviceName, value } - convertir a mapa
+          // Usar el primer producto del carrito como key si está disponible
+          const firstProductSku = products.length > 0 ? products[0].sku : "legacy_tradein";
+          setTradeInDataMap({ [firstProductSku]: parsed });
         }
       } catch (error) {
         console.error("Error parsing Trade-In data:", error);
       }
     }
-  }, []);
+  }, [products]);
 
-  // Handle Trade-In removal
-  const handleRemoveTradeIn = () => {
-    localStorage.removeItem("imagiq_trade_in");
-    setTradeInData(null);
+  // Helper para verificar si hay trade-in activo
+  const hasActiveTradeIn = React.useMemo(() => {
+    return Object.values(tradeInDataMap).some(t => t.completed);
+  }, [tradeInDataMap]);
+
+  // Helper para obtener los productos con trade-in activo
+  const productsWithTradeIn = React.useMemo(() => {
+    const tradeInSkus = new Set(Object.keys(tradeInDataMap).filter(sku => tradeInDataMap[sku]?.completed));
+    return products.filter(p => {
+      // Verificar sku, id y skuPostback para matching
+      return tradeInSkus.has(p.sku) ||
+             (p.id && tradeInSkus.has(p.id)) ||
+             (p.skuPostback && tradeInSkus.has(p.skuPostback));
+    });
+  }, [products, tradeInDataMap]);
+
+  // Handle Trade-In removal (ahora soporta eliminar por SKU)
+  const handleRemoveTradeIn = (skuToRemove?: string) => {
+    if (skuToRemove) {
+      // Eliminar solo el SKU específico
+      const updatedMap = { ...tradeInDataMap };
+      delete updatedMap[skuToRemove];
+      setTradeInDataMap(updatedMap);
+
+      // Actualizar localStorage
+      if (Object.keys(updatedMap).length > 0) {
+        localStorage.setItem("imagiq_trade_in", JSON.stringify(updatedMap));
+      } else {
+        localStorage.removeItem("imagiq_trade_in");
+      }
+    } else {
+      // Eliminar todos los trade-ins
+      localStorage.removeItem("imagiq_trade_in");
+      setTradeInDataMap({});
+    }
 
     // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
     if (typeof globalThis.window !== "undefined") {
@@ -124,7 +176,7 @@ export default function Step4({
       localStorage.removeItem("imagiq_trade_in");
 
       // Quitar el banner inmediatamente
-      setTradeInData(null);
+      setTradeInDataMap({});
 
       // Mostrar notificación toast
       toast.error("Cupón removido", {
@@ -142,9 +194,9 @@ export default function Step4({
       const fromHeader = customEvent.detail?.fromHeader;
 
       if (fromHeader) {
-        console.log(
-          "🔄 Dirección cambiada desde header en Step4, redirigiendo a Step3..."
-        );
+        // console.log(
+//           "🔄 Dirección cambiada desde header en Step4, redirigiendo a Step3..."
+//         );
         router.push("/carrito/step3");
       }
     };
@@ -165,18 +217,39 @@ export default function Step4({
   // Validar si el método de pago está seleccionado correctamente
   const isPaymentMethodValid = React.useMemo(() => {
     // Si no hay método de pago seleccionado
-    if (!paymentMethod) return false;
+    if (!paymentMethod) {
+      // console.log('🔴 [Step4] isPaymentMethodValid: false - no paymentMethod');
+      return false;
+    }
 
     // Si es tarjeta, debe tener una tarjeta seleccionada O estar usando una nueva Y que el formulario sea válido
     if (paymentMethod === "tarjeta") {
-      if (!selectedCardId && !useNewCard) return false;
-      if (useNewCard && !selectedCardId && !isCardFormValid) return false;
+      // IMPORTANTE: Si no hay tarjeta guardada seleccionada (!selectedCardId),
+      // entonces estamos usando tarjeta nueva y debemos verificar isCardFormValid
+      const isUsingNewCard = !selectedCardId;
+
+      // console.log('🔍 [Step4] isPaymentMethodValid check:', {
+//         paymentMethod,
+//         selectedCardId,
+//         useNewCard,
+//         isUsingNewCard,
+//         isCardFormValid
+//       });
+
+      if (isUsingNewCard && !isCardFormValid) {
+        // console.log('🔴 [Step4] isPaymentMethodValid: false - new card but form not valid');
+        return false;
+      }
     }
 
     // Si es PSE, debe tener un banco seleccionado
-    if (paymentMethod === "pse" && !selectedBank) return false;
+    if (paymentMethod === "pse" && !selectedBank) {
+      // console.log('🔴 [Step4] isPaymentMethodValid: false - PSE but no bank');
+      return false;
+    }
 
     // Si es Addi, siempre está válido (no requiere más datos)
+    // console.log('🟢 [Step4] isPaymentMethodValid: true');
     return true;
   }, [paymentMethod, selectedCardId, selectedBank, useNewCard, isCardFormValid]);
 
@@ -192,13 +265,18 @@ export default function Step4({
     }
 
     // Validar y procesar formulario de tarjeta inline si corresponde
-    if (paymentMethod === "tarjeta" && useNewCard && !selectedCardId && formRef.current) {
-      console.log("💳 [Step4] Processing inline new card...");
+    // IMPORTANTE: Si no hay selectedCardId, significa que estamos usando tarjeta nueva
+    // No depender de useNewCard porque puede no estar sincronizado
+    const isUsingNewCard = paymentMethod === "tarjeta" && !selectedCardId;
+    // console.log("💳 [Step4] handleContinueToNextStep:", { paymentMethod, selectedCardId, useNewCard, isUsingNewCard, hasFormRef: !!formRef.current });
+
+    if (isUsingNewCard && formRef.current) {
+      // console.log("💳 [Step4] Processing inline new card...");
       setIsValidatingCard(true);
       try {
         // Enviar formulario (saveInfo determina si se tokeniza y guarda en perfil o solo en LS)
         const success = await formRef.current.submitForm(saveInfo);
-        console.log("💳 [Step4] Inline card submission result:", success);
+        // console.log("💳 [Step4] Inline card submission result:", success);
         if (!success) {
           e.preventDefault();
           setIsValidatingCard(false);
@@ -208,7 +286,7 @@ export default function Step4({
         // Si tuvo éxito, los datos están en localStorage (checkout-card-data).
         // Necesitamos sincronizarlos con el estado 'card' de useCheckoutLogic para que el pago funcione.
         const tempCardData = localStorage.getItem("checkout-card-data");
-        console.log("💳 [Step4] Temp card data found after submission:", !!tempCardData);
+        // console.log("💳 [Step4] Temp card data found after submission:", !!tempCardData);
         if (tempCardData) {
           const parsed = JSON.parse(tempCardData);
           handleCardChange({
@@ -231,10 +309,10 @@ export default function Step4({
     }
 
     const isValid = await handleSavePaymentData(e);
-    console.log("💳 [Step4] handleSavePaymentData result:", isValid);
+    // console.log("💳 [Step4] handleSavePaymentData result:", isValid);
     setIsValidatingCard(false); // Reset here in case validation failed or we are just moving on
     if (isValid && onContinue) {
-      console.log("💳 [Step4] isValid is true, calling onContinue()");
+      // console.log("💳 [Step4] isValid is true, calling onContinue()");
       onContinue();
     } else {
       console.warn("💳 [Step4] Validation failed or onContinue missing", { isValid, hasOnContinue: !!onContinue });
@@ -288,7 +366,7 @@ export default function Step4({
             isLoadingZeroInterest={isLoadingZeroInterest}
             onFetchZeroInterest={fetchZeroInterestInfo}
             formRef={formRef}
-            onValidityChange={setIsCardFormValid}
+            onValidityChange={handleCardFormValidityChange}
           />
         </form>
 
@@ -304,7 +382,17 @@ export default function Step4({
             }}
             onBack={onBack}
             buttonText="Continuar"
-            disabled={isProcessing || isValidatingCard || !tradeInValidation.isValid || !isPaymentMethodValid}
+            disabled={(() => {
+              const isDisabled = isProcessing || isValidatingCard || !tradeInValidation.isValid || !isPaymentMethodValid;
+              // console.log('🔘 [Step4] Button disabled check:', {
+//                 isProcessing,
+//                 isValidatingCard,
+//                 tradeInIsValid: tradeInValidation.isValid,
+//                 isPaymentMethodValid,
+//                 finalDisabled: isDisabled
+//               });
+              return isDisabled;
+            })()}
             isSticky={false}
             shouldCalculateCanPickUp={false}
             deliveryMethod={
@@ -320,19 +408,23 @@ export default function Step4({
             }
           />
 
-          {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
-          {tradeInData?.completed && (
-            <TradeInCompletedSummary
-              deviceName={tradeInData.deviceName}
-              tradeInValue={tradeInData.value}
-              onEdit={handleRemoveTradeIn}
-              validationError={
-                !tradeInValidation.isValid
-                  ? getTradeInValidationMessage(tradeInValidation)
-                  : undefined
-              }
-            />
-          )}
+          {/* Banner de Trade-In - Mostrar para cada producto con trade-in */}
+          {Object.entries(tradeInDataMap).map(([sku, tradeIn]) => {
+            if (!tradeIn?.completed) return null;
+            return (
+              <TradeInCompletedSummary
+                key={sku}
+                deviceName={tradeIn.deviceName}
+                tradeInValue={tradeIn.value}
+                onEdit={() => handleRemoveTradeIn(sku)}
+                validationError={
+                  !tradeInValidation.isValid
+                    ? getTradeInValidationMessage(tradeInValidation)
+                    : undefined
+                }
+              />
+            );
+          })}
         </aside>
       </div>
 
@@ -354,7 +446,10 @@ export default function Step4({
 
           {/* Botón continuar */}
           <button
-            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${isProcessing || isValidatingCard || !tradeInValidation.isValid || !isPaymentMethodValid
+            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${(() => {
+              const isDisabled = isProcessing || isValidatingCard || !tradeInValidation.isValid || !isPaymentMethodValid;
+              return isDisabled;
+            })()
               ? "bg-gray-400 cursor-not-allowed opacity-70"
               : "bg-[#222] hover:bg-[#333] cursor-pointer"
               }`}

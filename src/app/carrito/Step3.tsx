@@ -826,17 +826,22 @@ export default function Step3({
   }, [hasActiveTradeIn, stores.length, availableStoresWhenCanPickUpFalse.length, storesLoading, forceRefreshStores]);
 
   // Marcar que ya se cargó el pickup por primera vez cuando termine de cargar
-  // IMPORTANTE: Solo marcar como cargado cuando realmente termine (storesLoading es false)
-  // y haya pasado un pequeño delay para asegurar que la UI se actualizó
+  // IMPORTANTE: Solo marcar como cargado cuando:
+  // 1. storesLoading es false (terminó de cargar)
+  // 2. Y HAY datos de tiendas (stores.length > 0 o availableStoresWhenCanPickUpFalse.length > 0)
+  //    O canPickUp es false (no hay tiendas disponibles pero el cálculo terminó)
   React.useEffect(() => {
-    if (!storesLoading && !hasLoadedPickupOnceRef.current) {
+    const hasData = stores.length > 0 || availableStoresWhenCanPickUpFalse.length > 0;
+    const finishedWithNoStores = canPickUp === false && !storesLoading;
+
+    if (!storesLoading && !hasLoadedPickupOnceRef.current && (hasData || finishedWithNoStores)) {
       // Pequeño delay para asegurar que el skeleton se muestre antes de ocultarlo
       const timer = setTimeout(() => {
         hasLoadedPickupOnceRef.current = true;
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [storesLoading]);
+  }, [storesLoading, stores.length, availableStoresWhenCanPickUpFalse.length, canPickUp]);
 
   // IMPORTANTE: Cuando termine de cargar después de cambiar dirección, ocultar skeleton de recálculo
   // Esperar a que termine de cargar canPickUp Y las tiendas antes de ocultar el skeleton
@@ -1262,8 +1267,9 @@ export default function Step3({
 
   // Mostrar skeleton si:
   // 1. Está cargando stores (siempre mostrar skeleton mientras carga, incluso si hay datos previos)
-  // 2. O si no hay datos Y no se ha cargado pickup al menos una vez (carga inicial)
-  const shouldShowSkeleton = storesLoading || (!hasStoreData && !hasLoadedPickupOnceRef.current);
+  // 2. O si está cargando canPickUp (esperando datos del caché o endpoint)
+  // 3. O si no hay datos Y no se ha cargado pickup al menos una vez (carga inicial)
+  const shouldShowSkeleton = storesLoading || isLoadingCanPickUp || (!hasStoreData && !hasLoadedPickupOnceRef.current);
 
   // NOTE: REMOVED isRecalculatingPickup conditions to keep UI visible.
   // The loading state is now handled by individual components via isLoading prop.

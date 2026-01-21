@@ -307,7 +307,11 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
 
                 {/* Botón para agregar dirección manualmente (DESPUÉS del botón "Cerca de mí") */}
                 <button
-                  onClick={() => setShowAddAddressModal(true)}
+                  onClick={() => {
+                    console.log('🔘 [StoreSelector] Click en Agregar nueva dirección - showAddAddressModal:', showAddAddressModal, '-> true');
+                    console.log('🔘 [StoreSelector] isMounted:', isMounted);
+                    setShowAddAddressModal(true);
+                  }}
                   className="w-full px-4 py-2.5 bg-[#222] hover:bg-[#333] text-white rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2"
                   type="button"
                 >
@@ -402,8 +406,9 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
       )}
 
         {/* Modal para agregar dirección - usando Portal para renderizar fuera del componente */}
+        {console.log('🔘 [StoreSelector] Render check - showAddAddressModal:', showAddAddressModal, 'isMounted:', isMounted)}
         {showAddAddressModal && isMounted && createPortal(
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/50">
+          <div className="fixed inset-0 z-[100001] flex items-center justify-center p-4 bg-black/50">
             <button
               type="button"
               aria-label="Cerrar modal"

@@ -114,6 +114,20 @@ function getInitialStoresFromCache(): CacheStoresData | null {
   if (typeof window === 'undefined') return null;
 
   try {
+    // CRÍTICO: Limpiar el lock global al iniciar lectura de caché
+    // Esto evita que Step3 se quede bloqueado por un lock de Step1 que no se limpió
+    const globalState = window as unknown as { __imagiqIsFetching?: boolean; __imagiqLastFetchTime?: number };
+    if (globalState.__imagiqIsFetching) {
+      const timeSinceLastFetch = Date.now() - (globalState.__imagiqLastFetchTime || 0);
+      // Si el lock tiene más de 2 segundos, limpiarlo
+      if (timeSinceLastFetch > 2000) {
+        console.log('🔓 [getInitialStoresFromCache] Limpiando lock global obsoleto');
+        globalState.__imagiqIsFetching = false;
+      }
+    }
+
+    console.log('🏪 [getInitialStoresFromCache] INICIO - Intentando leer caché sincronamente');
+
     // Obtener userId
     const storedUser = localStorage.getItem("imagiq_user");
     let userId: string | undefined;
@@ -122,7 +136,10 @@ function getInitialStoresFromCache(): CacheStoresData | null {
       userId = user.id || user.user_id;
     }
 
-    if (!userId) return null;
+    if (!userId) {
+      console.log('🏪 [getInitialStoresFromCache] No hay userId, retornando null');
+      return null;
+    }
 
     // Obtener addressId
     let addressId: string | null = null;
@@ -139,14 +156,20 @@ function getInitialStoresFromCache(): CacheStoresData | null {
 
     // Obtener productos del carrito
     const cartData = localStorage.getItem("imagiq_cart");
-    if (!cartData) return null;
+    if (!cartData) {
+      console.log('🏪 [getInitialStoresFromCache] No hay cartData en localStorage');
+      return null;
+    }
 
     const cart = JSON.parse(cartData);
     const products = cart.products || [];
-    if (products.length === 0) return null;
+    if (products.length === 0) {
+      console.log('🏪 [getInitialStoresFromCache] Carrito vacío');
+      return null;
+    }
 
-    const productsToCheck = products.map((p: { sku: string; quantity: number }) => ({
-      sku: p.sku,
+    const productsToCheck = products.map((p: { sku: string; skuPostback?: string; quantity: number }) => ({
+      sku: p.skuPostback || p.sku,
       quantity: p.quantity,
     }));
 
@@ -157,8 +180,18 @@ function getInitialStoresFromCache(): CacheStoresData | null {
       addressId,
     });
 
+    console.log('🏪 [getInitialStoresFromCache] Buscando caché con key:', {
+      userId: userId?.substring(0, 8) + '...',
+      addressId: addressId?.substring(0, 8) + '...',
+      productsCount: productsToCheck.length,
+      productsSummary: productsToCheck.map((p: { sku: string; quantity: number }) => `${p.sku}:${p.quantity}`).join(', ')
+    });
+
     const cachedResponse = getFullCandidateStoresResponseFromCache(cacheKey);
-    if (!cachedResponse) return null;
+    if (!cachedResponse) {
+      console.log('🏪 [getInitialStoresFromCache] No hay caché disponible');
+      return null;
+    }
 
     // Procesar datos del caché
     const globalCanPickUp = cachedResponse.canPickUp;
@@ -227,6 +260,10 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   // OPTIMIZACIÓN: Cuando onlyReadCache=true, inicializar estados directamente desde el caché
   // para evitar el "flash" de estados vacíos antes de que se lean del caché
   const initialCacheData = onlyReadCache ? getInitialStoresFromCache() : null;
+
+  // Ref para marcar si ya teníamos datos del caché al montar
+  // Esto evita que fetchCandidateStores sobrescriba los estados inicializados
+  const hadInitialCacheDataRef = useRef(!!initialCacheData);
 
   const [address, setAddress] = useState<Address | null>(null);
   const [addressEdit, setAddressEdit] = useState(false);
@@ -1423,11 +1460,24 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       isFirstTime: productsHashRef.current === '',
       isRemovingTradeIn: isRemovingTradeInRef.current,
       canFetchFromEndpoint,
-      onlyReadCache
+      onlyReadCache,
+      hadInitialCacheData: hadInitialCacheDataRef.current
     });
 
     // Solo ejecutar si realmente cambiaron los productos O es la primera vez
     if (productsHashRef.current === '' || productsHashRef.current !== productsHash) {
+      // OPTIMIZACIÓN CRÍTICA: Si es la primera vez Y ya teníamos datos del caché,
+      // NO llamar a fetchCandidateStores porque ya inicializamos los estados con esos datos.
+      // Esto evita el "flash" donde los estados se resetean y después se vuelven a llenar.
+      const isFirstTime = productsHashRef.current === '';
+      if (isFirstTime && hadInitialCacheDataRef.current) {
+        console.log('⏭️ [useDelivery Products Effect] Primera vez PERO ya teníamos datos del caché - saltando fetch para evitar flash');
+        productsHashRef.current = productsHash;
+        // Marcar que ya procesamos el primer render
+        hadInitialCacheDataRef.current = false;
+        return;
+      }
+
       console.log('✅ [useDelivery Products Effect] Hash cambió o es primera vez, programando fetch');
       // IMPORTANTE: NO limpiar el caché aquí porque causa race conditions
       // cuando se cambian múltiples cantidades rápidamente.

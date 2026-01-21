@@ -38,9 +38,9 @@ export default function Step3({
   const { trackAddPaymentInfo } = useAnalyticsWithUser();
   const { user, login } = useAuthContext();
 
-  // OPTIMIZACIÓN CRÍTICA: Step3 SOLO lee del caché si ya existe
+  // OPTIMIZACIÓN: Step3 prefiere leer del caché, pero permite fetch como fallback
   // Si viene de Step1, ya debería existir el caché de candidate-stores
-  // NUNCA debe hacer llamadas al endpoint en Step3, solo leer del caché
+  // Si el caché está vacío (ej: por cambio de dirección desde header), permite hacer fetch
   const {
     address,
     setAddress,
@@ -68,8 +68,8 @@ export default function Step3({
     lastResponse,
     setAddresses, // New function from useDelivery
   } = useDelivery({
-    canFetchFromEndpoint: false, // ❌ NUNCA hacer fetch en Step3
-    onlyReadCache: true, // ✅ Solo leer del caché (ya calculado en Step1)
+    canFetchFromEndpoint: true, // ✅ Permitir fetch como fallback si el caché está vacío
+    onlyReadCache: false, // ✅ Intentar caché primero, pero permitir fetch si está vacío
   });
 
   // DEBUG: Verificar valores retornados por useDelivery en Step3
@@ -1265,11 +1265,28 @@ export default function Step3({
   // IMPORTANTE: Mostrar skeleton INMEDIATAMENTE si no hay datos, para evitar parpadeo
   const hasStoreData = stores.length > 0 || availableStoresWhenCanPickUpFalse.length > 0;
 
+  // IMPORTANTE: Si canPickUp es false y no estamos cargando, significa que el cálculo terminó
+  // aunque no haya tiendas disponibles. No debemos mostrar skeleton en este caso.
+  const finishedCalculationWithNoPickup = canPickUp === false && !storesLoading && !isLoadingCanPickUp;
+
   // Mostrar skeleton si:
   // 1. Está cargando stores (siempre mostrar skeleton mientras carga, incluso si hay datos previos)
   // 2. O si está cargando canPickUp (esperando datos del caché o endpoint)
-  // 3. O si no hay datos Y no se ha cargado pickup al menos una vez (carga inicial)
-  const shouldShowSkeleton = storesLoading || isLoadingCanPickUp || (!hasStoreData && !hasLoadedPickupOnceRef.current);
+  // 3. O si no hay datos Y no se ha cargado pickup al menos una vez (carga inicial) Y NO terminamos con canPickUp=false
+  const shouldShowSkeleton = storesLoading || isLoadingCanPickUp || (!hasStoreData && !hasLoadedPickupOnceRef.current && !finishedCalculationWithNoPickup);
+
+  // DEBUG TEMPORAL - Remover después de debuguear
+  console.log('🔍 [Step3 SKELETON DEBUG]', {
+    shouldShowSkeleton,
+    storesLoading,
+    isLoadingCanPickUp,
+    hasStoreData,
+    hasLoadedPickupOnce: hasLoadedPickupOnceRef.current,
+    finishedCalculationWithNoPickup,
+    canPickUp,
+    storesLength: stores.length,
+    availableStoresWhenCanPickUpFalseLength: availableStoresWhenCanPickUpFalse.length,
+  });
 
   // NOTE: REMOVED isRecalculatingPickup conditions to keep UI visible.
   // The loading state is now handled by individual components via isLoading prop.

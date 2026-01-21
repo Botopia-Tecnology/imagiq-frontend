@@ -61,6 +61,17 @@ export default function Step4({
   const [isCardFormValid, setIsCardFormValid] = React.useState(false);
   const formRef = React.useRef<AddCardFormHandle>(null);
 
+  // Debug: Log cuando cambia isCardFormValid
+  React.useEffect(() => {
+    console.log('💳 [Step4] isCardFormValid changed to:', isCardFormValid);
+  }, [isCardFormValid]);
+
+  // Wrapper para setIsCardFormValid con logging
+  const handleCardFormValidityChange = React.useCallback((isValid: boolean) => {
+    console.log('💳 [Step4] handleCardFormValidityChange called with:', isValid);
+    setIsCardFormValid(isValid);
+  }, []);
+
   // Trade-In state management - soporta múltiples productos
   const [tradeInDataMap, setTradeInDataMap] = React.useState<Record<string, {
     completed: boolean;
@@ -206,18 +217,39 @@ export default function Step4({
   // Validar si el método de pago está seleccionado correctamente
   const isPaymentMethodValid = React.useMemo(() => {
     // Si no hay método de pago seleccionado
-    if (!paymentMethod) return false;
+    if (!paymentMethod) {
+      console.log('🔴 [Step4] isPaymentMethodValid: false - no paymentMethod');
+      return false;
+    }
 
     // Si es tarjeta, debe tener una tarjeta seleccionada O estar usando una nueva Y que el formulario sea válido
     if (paymentMethod === "tarjeta") {
-      if (!selectedCardId && !useNewCard) return false;
-      if (useNewCard && !selectedCardId && !isCardFormValid) return false;
+      // IMPORTANTE: Si no hay tarjeta guardada seleccionada (!selectedCardId),
+      // entonces estamos usando tarjeta nueva y debemos verificar isCardFormValid
+      const isUsingNewCard = !selectedCardId;
+
+      console.log('🔍 [Step4] isPaymentMethodValid check:', {
+        paymentMethod,
+        selectedCardId,
+        useNewCard,
+        isUsingNewCard,
+        isCardFormValid
+      });
+
+      if (isUsingNewCard && !isCardFormValid) {
+        console.log('🔴 [Step4] isPaymentMethodValid: false - new card but form not valid');
+        return false;
+      }
     }
 
     // Si es PSE, debe tener un banco seleccionado
-    if (paymentMethod === "pse" && !selectedBank) return false;
+    if (paymentMethod === "pse" && !selectedBank) {
+      console.log('🔴 [Step4] isPaymentMethodValid: false - PSE but no bank');
+      return false;
+    }
 
     // Si es Addi, siempre está válido (no requiere más datos)
+    console.log('🟢 [Step4] isPaymentMethodValid: true');
     return true;
   }, [paymentMethod, selectedCardId, selectedBank, useNewCard, isCardFormValid]);
 
@@ -233,7 +265,12 @@ export default function Step4({
     }
 
     // Validar y procesar formulario de tarjeta inline si corresponde
-    if (paymentMethod === "tarjeta" && useNewCard && !selectedCardId && formRef.current) {
+    // IMPORTANTE: Si no hay selectedCardId, significa que estamos usando tarjeta nueva
+    // No depender de useNewCard porque puede no estar sincronizado
+    const isUsingNewCard = paymentMethod === "tarjeta" && !selectedCardId;
+    console.log("💳 [Step4] handleContinueToNextStep:", { paymentMethod, selectedCardId, useNewCard, isUsingNewCard, hasFormRef: !!formRef.current });
+
+    if (isUsingNewCard && formRef.current) {
       console.log("💳 [Step4] Processing inline new card...");
       setIsValidatingCard(true);
       try {
@@ -329,7 +366,7 @@ export default function Step4({
             isLoadingZeroInterest={isLoadingZeroInterest}
             onFetchZeroInterest={fetchZeroInterestInfo}
             formRef={formRef}
-            onValidityChange={setIsCardFormValid}
+            onValidityChange={handleCardFormValidityChange}
           />
         </form>
 
@@ -345,7 +382,17 @@ export default function Step4({
             }}
             onBack={onBack}
             buttonText="Continuar"
-            disabled={isProcessing || isValidatingCard || !tradeInValidation.isValid || !isPaymentMethodValid}
+            disabled={(() => {
+              const isDisabled = isProcessing || isValidatingCard || !tradeInValidation.isValid || !isPaymentMethodValid;
+              console.log('🔘 [Step4] Button disabled check:', {
+                isProcessing,
+                isValidatingCard,
+                tradeInIsValid: tradeInValidation.isValid,
+                isPaymentMethodValid,
+                finalDisabled: isDisabled
+              });
+              return isDisabled;
+            })()}
             isSticky={false}
             shouldCalculateCanPickUp={false}
             deliveryMethod={
@@ -399,7 +446,10 @@ export default function Step4({
 
           {/* Botón continuar */}
           <button
-            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${isProcessing || isValidatingCard || !tradeInValidation.isValid || !isPaymentMethodValid
+            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${(() => {
+              const isDisabled = isProcessing || isValidatingCard || !tradeInValidation.isValid || !isPaymentMethodValid;
+              return isDisabled;
+            })()
               ? "bg-gray-400 cursor-not-allowed opacity-70"
               : "bg-[#222] hover:bg-[#333] cursor-pointer"
               }`}

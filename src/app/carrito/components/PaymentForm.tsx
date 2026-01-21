@@ -321,6 +321,14 @@ export default function PaymentForm({
               const hasTempCard = !!tempCardData;
               const isNewCardSelected = paymentMethod === "tarjeta" && !selectedCardId;
 
+              console.log('🎯 [PaymentForm] Rendering card option:', {
+                paymentMethod,
+                selectedCardId,
+                isNewCardSelected,
+                hasOnValidityChange: !!onValidityChange,
+                hasFormRef: !!formRef
+              });
+
               return (
                 <div>
                   <label className="flex items-center gap-3 justify-between py-3 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors px-3 -mx-3">

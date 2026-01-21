@@ -187,13 +187,25 @@ export default function Step4OrderSummary({
 
       if (!userId) return null;
 
-      // 2. Obtener dirección - Intentar checkout-address primero, luego imagiq_default_address como fallback
+      // 2. Obtener dirección - Intentar checkout-address primero, luego fallbacks
       let addressId: string | null = null;
       let savedAddress = localStorage.getItem("checkout-address");
 
-      // Fallback a imagiq_default_address si checkout-address no existe
+      // Fallback 1: imagiq_default_address si checkout-address no existe
       if (!savedAddress || savedAddress === "undefined" || savedAddress === "null") {
         savedAddress = localStorage.getItem("imagiq_default_address");
+      }
+
+      // Fallback 2: defaultAddress dentro de imagiq_user
+      if (!savedAddress || savedAddress === "undefined" || savedAddress === "null") {
+        const userDataStr = localStorage.getItem("imagiq_user");
+        if (userDataStr && userDataStr !== "null" && userDataStr !== "undefined") {
+          const userData = JSON.parse(userDataStr);
+          if (userData?.defaultAddress?.id) {
+            savedAddress = JSON.stringify(userData.defaultAddress);
+            console.log('📍 [Step4OrderSummary INIT] Usando defaultAddress de imagiq_user:', userData.defaultAddress.id);
+          }
+        }
       }
 
       console.log('🔍 [Step4OrderSummary INIT] savedAddress:', savedAddress?.substring(0, 50));
@@ -294,13 +306,24 @@ export default function Step4OrderSummary({
         return false;
       }
 
-      // Verificar caché de nuevo - Intentar checkout-address primero, luego fallback
+      // Verificar caché de nuevo - Intentar checkout-address primero, luego fallbacks
       let addressId: string | null = null;
       let savedAddress = localStorage.getItem("checkout-address");
 
-      // Fallback a imagiq_default_address si checkout-address no existe
+      // Fallback 1: imagiq_default_address si checkout-address no existe
       if (!savedAddress || savedAddress === "undefined" || savedAddress === "null") {
         savedAddress = localStorage.getItem("imagiq_default_address");
+      }
+
+      // Fallback 2: defaultAddress dentro de imagiq_user (ya lo tenemos parseado arriba)
+      if (!savedAddress || savedAddress === "undefined" || savedAddress === "null") {
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          if (userData?.defaultAddress?.id) {
+            savedAddress = JSON.stringify(userData.defaultAddress);
+            console.log('📍 [Step4OrderSummary INIT isLoadingCanPickUp] Usando defaultAddress de imagiq_user');
+          }
+        }
       }
 
       if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
@@ -475,6 +498,9 @@ export default function Step4OrderSummary({
   // Se ejecuta cuando el componente se monta Y cuando el caché se actualiza desde useDelivery
   // IMPORTANTE: Esta función SOLO lee del caché, NO hace llamadas al endpoint
   const fetchGlobalCanPickUp = React.useCallback(async () => {
+    // DEBUG: Log para rastrear llamadas
+    console.log('🔍🔍🔍 [fetchGlobalCanPickUp] LLAMADA - Stack trace:', new Error().stack?.split('\n').slice(1, 5).join('\n'));
+
     // Generar ID único para esta ejecución y actualizar ref para evitar race conditions
     const requestId = Date.now();
     lastRequestIdRef.current = requestId;
@@ -551,8 +577,25 @@ export default function Step4OrderSummary({
     // Esto asegura que las claves de caché coincidan exactamente
     if (typeof globalThis.window !== "undefined") {
       try {
-        // Leer SOLO de checkout-address (igual que useDelivery)
-        const savedAddress = globalThis.window.localStorage.getItem("checkout-address");
+        // Leer de checkout-address primero
+        let savedAddress = globalThis.window.localStorage.getItem("checkout-address");
+
+        // Fallback 1: imagiq_default_address
+        if (!savedAddress || savedAddress === "undefined" || savedAddress === "null") {
+          savedAddress = globalThis.window.localStorage.getItem("imagiq_default_address");
+        }
+
+        // Fallback 2: defaultAddress dentro de imagiq_user
+        if (!savedAddress || savedAddress === "undefined" || savedAddress === "null") {
+          const userDataStr = globalThis.window.localStorage.getItem("imagiq_user");
+          if (userDataStr && userDataStr !== "null" && userDataStr !== "undefined") {
+            const userData = JSON.parse(userDataStr);
+            if (userData?.defaultAddress?.id) {
+              savedAddress = JSON.stringify(userData.defaultAddress);
+              console.log('📍 [fetchGlobalCanPickUp] Usando defaultAddress de imagiq_user:', userData.defaultAddress.id);
+            }
+          }
+        }
 
         if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
           const parsed = JSON.parse(savedAddress) as { id?: string; ciudad?: string; linea_uno?: string };
@@ -592,6 +635,16 @@ export default function Step4OrderSummary({
     if (cachedValue !== null) {
       // console.log(`📦 [Step4OrderSummary] Usando respuesta CACHEADA. canPickUp=${cachedValue}`);
       setGlobalCanPickUp(cachedValue);
+      setIsLoadingCanPickUp(false);
+      return;
+    }
+
+    // NUEVO: Si no hay valor simple en caché, intentar obtener de fullResponse
+    // Esto es crítico para Steps 4-7 donde el caché ya fue poblado por useDelivery
+    const fullResponse = getFullCandidateStoresResponseFromCache(cacheKey);
+    if (fullResponse && typeof fullResponse.canPickUp === 'boolean') {
+      console.log(`📦 [Step4OrderSummary] Usando fullResponse CACHEADA. canPickUp=${fullResponse.canPickUp}`);
+      setGlobalCanPickUp(fullResponse.canPickUp);
       setIsLoadingCanPickUp(false);
       return;
     }
@@ -698,6 +751,7 @@ export default function Step4OrderSummary({
     if (typeof window === 'undefined') return;
 
     const handleCacheUpdate = async () => {
+      console.log('🔔 [Step4] LISTENER #1 (línea 710) - canPickUpCache-updated disparado');
       // Usar la ref para evitar stale closures
       if (fetchGlobalCanPickUpRef.current) {
         await fetchGlobalCanPickUpRef.current();
@@ -735,9 +789,21 @@ export default function Step4OrderSummary({
         let addressId: string | null = null;
         let savedAddress = localStorage.getItem("checkout-address");
 
-        // Fallback a imagiq_default_address si checkout-address no existe
+        // Fallback 1: imagiq_default_address si checkout-address no existe
         if (!savedAddress || savedAddress === "undefined" || savedAddress === "null") {
           savedAddress = localStorage.getItem("imagiq_default_address");
+        }
+
+        // Fallback 2: defaultAddress dentro de imagiq_user
+        if (!savedAddress || savedAddress === "undefined" || savedAddress === "null") {
+          const userDataStr = localStorage.getItem("imagiq_user");
+          if (userDataStr && userDataStr !== "null" && userDataStr !== "undefined") {
+            const userData = JSON.parse(userDataStr);
+            if (userData?.defaultAddress?.id) {
+              savedAddress = JSON.stringify(userData.defaultAddress);
+              console.log('📍 [updateDebugInfoFromCache] Usando defaultAddress de imagiq_user:', userData.defaultAddress.id);
+            }
+          }
         }
 
         console.log('🔍 [Step4OrderSummary] savedAddress raw:', savedAddress?.substring(0, 100));
@@ -901,6 +967,7 @@ export default function Step4OrderSummary({
     // y disparará el evento 'canPickUpCache-updated' cuando esté listo.
     // Leer aquí causaría un race condition donde leemos null antes de que se escriba.
     if (!isStep1) {
+      console.log('🔔 [Step4] EFFECT directo (línea 908) - llamando fetchGlobalCanPickUp');
       fetchGlobalCanPickUp();
     }
   }, [
@@ -913,7 +980,7 @@ export default function Step4OrderSummary({
   // Escuchar cuando el caché se actualiza para volver a leer
   React.useEffect(() => {
     const handleCacheUpdate = () => {
-
+      console.log('🔔 [Step4] LISTENER #2 (línea 926) - canPickUpCache-updated disparado');
       // Ejecutar inmediatamente para máxima fluidez
       fetchGlobalCanPickUp();
     };
@@ -1053,6 +1120,7 @@ export default function Step4OrderSummary({
 
     // Escuchar cambios en el caché de candidate stores
     const handleCacheUpdate = () => {
+      console.log('🔔 [Step4] LISTENER #3 (línea 1062) - canPickUpCache-updated disparado');
       fetchGlobalCanPickUp();
     };
     globalThis.window.addEventListener("canPickUpCache-updated", handleCacheUpdate);

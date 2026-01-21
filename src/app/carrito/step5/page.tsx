@@ -12,6 +12,9 @@ export default function Step5Page() {
 
   // Protección: Solo permitir acceso si hay usuario logueado (invitado o regular con token)
   useEffect(() => {
+    // Limpiar cuotas seleccionadas para que siempre inicie sin selección previa
+    localStorage.removeItem("checkout-installments");
+
     if (!isLoading) return; // Ya se verificó, no volver a verificar
 
     const token = localStorage.getItem("imagiq_token");

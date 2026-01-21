@@ -47,6 +47,7 @@ export function buildGlobalCanPickUpKey(input: CacheKeyInput): string {
     userId: userPart,
     addressId: addressPart,
     productsCount: input.products.length,
+    productsPart: productsPart, // Mostrar los productos exactos
     keyLength: key.length,
     keyPreview: key.substring(0, 100) + (key.length > 100 ? '...' : '')
   });
@@ -140,6 +141,23 @@ export function getFullCandidateStoresResponseFromCache(key: string): CandidateS
       cacheKeyLength: cache.key.length,
       first50Match: key.substring(0, 50) === cache.key.substring(0, 50)
     });
+    // DEBUG DETALLADO: Mostrar keys completas para identificar la diferencia exacta
+    console.log('🔍 [Cache] KEY SOLICITADA COMPLETA:', key);
+    console.log('🔍 [Cache] KEY EN CACHÉ COMPLETA:', cache.key);
+    // Encontrar el primer carácter diferente
+    for (let i = 0; i < Math.max(key.length, cache.key.length); i++) {
+      if (key[i] !== cache.key[i]) {
+        console.log('🔍 [Cache] PRIMERA DIFERENCIA en posición', i, ':', {
+          keyChar: key[i],
+          cacheChar: cache.key[i],
+          keyCharCode: key.charCodeAt(i),
+          cacheCharCode: cache.key.charCodeAt(i),
+          contextoKey: key.substring(Math.max(0, i-5), i+10),
+          contextoCacheKey: cache.key.substring(Math.max(0, i-5), i+10)
+        });
+        break;
+      }
+    }
     return null;
   }
 
@@ -177,6 +195,8 @@ export function setGlobalCanPickUpCache(
     fullResponseCanPickUp: fullResponse?.canPickUp,
     addressId
   });
+  // DEBUG DETALLADO: Mostrar key completa al guardar
+  console.log('💾 [Cache] KEY COMPLETA AL GUARDAR:', key);
 
   cache = {
     key,

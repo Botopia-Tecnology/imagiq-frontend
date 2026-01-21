@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import DynamicFilterSection from "./DynamicFilterSection";
+import GlobalFiltersSection from "./GlobalFiltersSection";
 import type { DynamicFilterConfig, DynamicFilterState } from "@/types/filters";
 
 interface FilterOption {
@@ -45,6 +46,9 @@ interface FilterSidebarProps {
     value: string | { min?: number; max?: number; ranges?: string[]; values?: string[] },
     checked?: boolean
   ) => void;
+  // Filtros globales
+  isStockFilterEnabled?: boolean;
+  onStockFilterChange?: (enabled: boolean) => void;
   // Props comunes
   resultCount: number;
   expandedFilters?: Set<string>;
@@ -62,6 +66,9 @@ export default function FilterSidebar({
   dynamicFilters = [],
   dynamicFilterState = {},
   onDynamicFilterChange,
+  // Filtros globales
+  isStockFilterEnabled = false,
+  onStockFilterChange,
   // Props comunes
   resultCount,
   expandedFilters,
@@ -197,6 +204,14 @@ export default function FilterSidebar({
             </div>
           </div>
         </div>
+
+        {/* Filtros globales (aparecen en todas las categorías) */}
+        {onStockFilterChange && (
+          <GlobalFiltersSection
+            isStockFilterEnabled={isStockFilterEnabled}
+            onStockFilterChange={onStockFilterChange}
+          />
+        )}
 
         {/* Contenedor principal con scroll oculto */}
         <div className="overflow-hidden">

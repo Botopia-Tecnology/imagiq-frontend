@@ -500,7 +500,7 @@ export default function FilterSlider({
         
         {/* Track activo (rango seleccionado) */}
         <div
-          className="absolute top-1/2 h-2 bg-blue-600 rounded-full -translate-y-1/2 pointer-events-none"
+          className="absolute top-1/2 h-2 bg-black rounded-full -translate-y-1/2 pointer-events-none"
           style={{
             left: `${minPercent}%`,
             width: `${maxPercent - minPercent}%`,
@@ -511,9 +511,9 @@ export default function FilterSlider({
         <div
           ref={minInputRef}
           className={cn(
-            "absolute top-1/2 w-7 h-7 bg-blue-600 border-3 border-white rounded-full shadow-xl cursor-grab active:cursor-grabbing -translate-x-1/2 -translate-y-1/2 transition-all touch-none",
-            "hover:bg-blue-700 hover:scale-110",
-            activeThumb === "min" && "scale-125 bg-blue-700 ring-2 ring-blue-300 z-10",
+            "absolute top-1/2 w-7 h-7 bg-black border-3 border-white rounded-full shadow-xl cursor-grab active:cursor-grabbing -translate-x-1/2 -translate-y-1/2 transition-all touch-none",
+            "hover:bg-gray-800 hover:scale-110",
+            activeThumb === "min" && "scale-125 bg-gray-800 ring-2 ring-gray-400 z-10",
             !activeThumb && "z-3"
           )}
           style={{
@@ -534,9 +534,9 @@ export default function FilterSlider({
         <div
           ref={maxInputRef}
           className={cn(
-            "absolute top-1/2 w-7 h-7 bg-blue-600 border-3 border-white rounded-full shadow-xl cursor-grab active:cursor-grabbing -translate-x-1/2 -translate-y-1/2 transition-all touch-none",
-            "hover:bg-blue-700 hover:scale-110",
-            activeThumb === "max" && "scale-125 bg-blue-700 ring-2 ring-blue-300 z-10",
+            "absolute top-1/2 w-7 h-7 bg-black border-3 border-white rounded-full shadow-xl cursor-grab active:cursor-grabbing -translate-x-1/2 -translate-y-1/2 transition-all touch-none",
+            "hover:bg-gray-800 hover:scale-110",
+            activeThumb === "max" && "scale-125 bg-gray-800 ring-2 ring-gray-400 z-10",
             !activeThumb && "z-4"
           )}
           style={{

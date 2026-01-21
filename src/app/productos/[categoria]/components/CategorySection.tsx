@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useDeviceType } from "@/components/responsive";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
@@ -39,6 +39,7 @@ import {
   useCategoryAnalytics,
 } from "../hooks/useCategorySection";
 import { useDynamicFilters } from "@/hooks/useDynamicFilters";
+import { useStockFilter } from "@/hooks/useStockFilter";
 import type { DynamicFilterState } from "@/types/filters";
 
 interface CategorySectionProps {
@@ -59,6 +60,9 @@ export default function CategorySection({
   const setFilters = () => {};
   const { categoryCode, categoryUuid, menuUuid, submenuUuid } =
     useSelectedHierarchy(categoriaApiCode, seccion);
+
+  // Filtro global de stock (aparece en todas las categorías)
+  const { isStockFilterEnabled, toggleStockFilter } = useStockFilter();
   
   // Verificar y cargar submenús bajo demanda cuando el usuario entra a un menú
   usePreloadMenuSubmenus(categoryCode, menuUuid);
@@ -221,6 +225,15 @@ export default function CategorySection({
 
   const effectiveTitle = seccion ? sectionTitle : categoryVisibleName;
 
+  // Construir filtros globales (stock, etc.)
+  const globalFilters = useMemo(() => {
+    const result: Record<string, string | number | boolean> = {};
+    if (isStockFilterEnabled) {
+      result.stockMinimo = 1;
+    }
+    return result;
+  }, [isStockFilterEnabled]);
+
   const {
     products,
     bundles,
@@ -249,7 +262,9 @@ export default function CategorySection({
     categoryCode,
     // Pasar filtros dinámicos
     dynamicFilters,
-    dynamicFilterState
+    dynamicFilterState,
+    // Pasar filtros globales (stock)
+    globalFilters
   );
 
   // ✅ NUEVO: Obtener submenús del menú actual
@@ -383,6 +398,9 @@ export default function CategorySection({
                 dynamicFilters={dynamicFilters}
                 dynamicFilterState={dynamicFilterState}
                 onDynamicFilterChange={handleDynamicFilterChange}
+                // Filtros globales
+                isStockFilterEnabled={isStockFilterEnabled}
+                onStockFilterChange={toggleStockFilter}
                 // Props comunes
                 expandedFilters={expandedFilters}
                 onToggleFilter={handleToggleFilter}
@@ -399,6 +417,9 @@ export default function CategorySection({
           dynamicFilters={dynamicFilters}
           dynamicFilterState={dynamicFilterState}
           onDynamicFilterChange={handleDynamicFilterChange}
+          // Filtros globales
+          isStockFilterEnabled={isStockFilterEnabled}
+          onStockFilterChange={toggleStockFilter}
           // Props comunes
           expandedFilters={expandedFilters}
           onToggleFilter={handleToggleFilter}

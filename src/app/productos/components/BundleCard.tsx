@@ -506,6 +506,17 @@ export default function BundleCard({
       if (selectedOption.productos && selectedOption.productos.length > 0) {
         const firstProduct = selectedOption.productos[0];
 
+        // Calcular precios proporcionales basados en el descuento del bundle
+        // para que el total en el carrito coincida con el precio mostrado en el card
+        const totalIndividualPrice = selectedOption.productos.reduce(
+          (sum, p) => sum + (p.product_discount_price || 0),
+          0
+        );
+        const bundleTotalPrice = firstProduct.bundle_discount || totalIndividualPrice;
+        const priceFactor = totalIndividualPrice > 0
+          ? bundleTotalPrice / totalIndividualPrice
+          : 1;
+
         const products: Omit<CartProduct, "quantity">[] =
           selectedOption.productos.map((product, index) => ({
             id: (product.codigoMarket || product.sku).split('/')[0],
@@ -514,7 +525,8 @@ export default function BundleCard({
               product.imagePreviewUrl ||
               previewImages[index] ||
               "/img/logo_imagiq.png",
-            price: product.product_discount_price,
+            // Usar precio proporcional para que el total coincida con bundle_discount
+            price: Math.round((product.product_discount_price || 0) * priceFactor),
             originalPrice: product.product_original_price,
             sku: product.sku,
             ean: product.ean || product.sku,
@@ -526,6 +538,13 @@ export default function BundleCard({
             modelo: product.modelo,
             categoria: product.categoria || categoria || "IM",
           }));
+
+        // Ajustar errores de redondeo en el último producto
+        const currentTotal = products.reduce((sum, p) => sum + p.price, 0);
+        const roundingDifference = bundleTotalPrice - currentTotal;
+        if (roundingDifference !== 0 && products.length > 0) {
+          products[products.length - 1].price += roundingDifference;
+        }
 
         const bundleInfo: BundleInfo = {
           codCampana,
@@ -590,6 +609,17 @@ export default function BundleCard({
         // Usar datos completos del backend que ya vienen en la opción
         const firstProduct = selectedOption.productos[0];
 
+        // Calcular precios proporcionales basados en el descuento del bundle
+        // para que el total en el carrito coincida con el precio mostrado en el card
+        const totalIndividualPrice = selectedOption.productos.reduce(
+          (sum, p) => sum + (p.product_discount_price || 0),
+          0
+        );
+        const bundleTotalPrice = firstProduct.bundle_discount || totalIndividualPrice;
+        const priceFactor = totalIndividualPrice > 0
+          ? bundleTotalPrice / totalIndividualPrice
+          : 1;
+
         const products: Omit<CartProduct, "quantity">[] =
           selectedOption.productos.map((product, index) => ({
             id: (product.codigoMarket || product.sku).split('/')[0],
@@ -598,7 +628,8 @@ export default function BundleCard({
               product.imagePreviewUrl ||
               previewImages[index] ||
               "/img/logo_imagiq.png",
-            price: product.product_discount_price,
+            // Usar precio proporcional para que el total coincida con bundle_discount
+            price: Math.round((product.product_discount_price || 0) * priceFactor),
             originalPrice: product.product_original_price,
             sku: product.sku,
             ean: product.ean || product.sku,
@@ -610,6 +641,13 @@ export default function BundleCard({
             modelo: product.modelo,
             categoria: product.categoria || categoria || "IM",
           }));
+
+        // Ajustar errores de redondeo en el último producto
+        const currentTotal = products.reduce((sum, p) => sum + p.price, 0);
+        const roundingDifference = bundleTotalPrice - currentTotal;
+        if (roundingDifference !== 0 && products.length > 0) {
+          products[products.length - 1].price += roundingDifference;
+        }
 
         const bundleInfo: BundleInfo = {
           codCampana,

@@ -24,48 +24,149 @@ import useSecureStorage from "@/hooks/useSecureStorage";
 /**
  * Extrae los beneficios de trade-in desde localStorage
  * Maneja tanto el formato antiguo como el nuevo formato indexado por SKU
+ * IMPORTANTE: Solo incluye trade-ins cuyo SKU coincida con un producto en el carrito
+ * @param cartProducts - Array de productos del carrito con sus identificadores
  * @returns Array de beneficios de tipo entrego_y_estreno
  */
-function extractTradeInBeneficios(): BeneficiosDTO[] {
+function extractTradeInBeneficios(cartProducts: { sku: string; id?: string; skuPostback?: string }[]): BeneficiosDTO[] {
   const beneficios: BeneficiosDTO[] = [];
+  // Crear un Set con todos los identificadores posibles del carrito (sku, id, skuPostback)
+  const cartIdentifiers = new Set<string>();
+  for (const p of cartProducts) {
+    if (p.sku) cartIdentifiers.add(p.sku);
+    if (p.id) cartIdentifiers.add(p.id);
+    if (p.skuPostback) cartIdentifiers.add(p.skuPostback);
+  }
+  console.log('[extractTradeInBeneficios] Cart identifiers:', Array.from(cartIdentifiers));
   try {
     const tradeStr = localStorage.getItem("imagiq_trade_in");
+    console.log('[extractTradeInBeneficios] Raw localStorage:', tradeStr);
     if (!tradeStr) return beneficios;
 
     const parsedTrade = JSON.parse(tradeStr);
 
-    // Formato antiguo: { deviceName, value, completed, detalles }
+    // Formato antiguo: { deviceName, value, completed, detalles, sku }
+    // IMPORTANTE: Validar que el SKU del trade-in coincida con un producto del carrito
     if (parsedTrade?.completed && parsedTrade?.deviceName) {
-      beneficios.push({
-        type: "entrego_y_estreno",
-        dispositivo_a_recibir: parsedTrade.deviceName,
-        valor_retoma: parsedTrade.value,
-        detalles_dispositivo_a_recibir: parsedTrade.detalles,
-      });
+      const tradeInSku = parsedTrade.sku;
+      console.log('[extractTradeInBeneficios] Formato antiguo - SKU:', tradeInSku, 'Coincide con carrito:', cartIdentifiers.has(tradeInSku));
+      // Solo agregar si el SKU del trade-in está en el carrito
+      if (tradeInSku && cartIdentifiers.has(tradeInSku)) {
+        const beneficio = {
+          type: "entrego_y_estreno" as const,
+          dispositivo_a_recibir: parsedTrade.deviceName,
+          valor_retoma: parsedTrade.value,
+          detalles_dispositivo_a_recibir: parsedTrade.detalles,
+          sku: tradeInSku, // Backend espera 'sku', no 'sku_producto'
+        };
+        console.log('[extractTradeInBeneficios] Agregando beneficio Trade-In:', beneficio);
+        beneficios.push(beneficio);
+      }
       return beneficios;
     }
 
     // Formato nuevo: { "SKU": { sku, name, skuPostback, deviceName, value, completed, detalles } }
+    // IMPORTANTE: Solo incluir trade-ins cuyo SKU (key del objeto) coincida con un producto del carrito
     if (typeof parsedTrade === 'object' && !parsedTrade.deviceName) {
-      for (const sku of Object.keys(parsedTrade)) {
-        const tradeInData = parsedTrade[sku];
-        if (tradeInData?.completed && tradeInData?.deviceName) {
-          beneficios.push({
-            type: "entrego_y_estreno",
+      console.log('[extractTradeInBeneficios] Formato nuevo - Keys:', Object.keys(parsedTrade));
+      for (const tradeKey of Object.keys(parsedTrade)) {
+        const tradeInData = parsedTrade[tradeKey];
+        // El tradeKey es el SKU original del producto (ej: SM-S938BZKJLTC)
+        // Verificar si el tradeKey o el sku interno coincide con algún identificador del carrito
+        const matchesCart = cartIdentifiers.has(tradeKey) || (tradeInData?.sku && cartIdentifiers.has(tradeInData.sku));
+        console.log('[extractTradeInBeneficios] Procesando tradeKey:', tradeKey, 'sku interno:', tradeInData?.sku, 'completed:', tradeInData?.completed, 'Coincide con carrito:', matchesCart);
+
+        // Solo agregar si el Trade-In key o sku está en el carrito
+        if (tradeInData?.completed && tradeInData?.deviceName && matchesCart) {
+          const beneficio = {
+            type: "entrego_y_estreno" as const,
             dispositivo_a_recibir: tradeInData.deviceName,
             valor_retoma: tradeInData.value,
             detalles_dispositivo_a_recibir: tradeInData.detalles,
-            // Datos adicionales del producto que aplica trade-in
-            sku_producto: tradeInData.sku || sku,
-            nombre_producto: tradeInData.name,
-            sku_postback_producto: tradeInData.skuPostback,
-          });
+            sku: tradeKey, // Backend espera 'sku', no 'sku_producto'
+          };
+          console.log('[extractTradeInBeneficios] Agregando beneficio Trade-In:', beneficio);
+          beneficios.push(beneficio);
         }
       }
     }
-  } catch {
-    // ignore parsing errors
+  } catch (e) {
+    console.error('[extractTradeInBeneficios] Error:', e);
   }
+  console.log('[extractTradeInBeneficios] Beneficios finales:', beneficios);
+  return beneficios;
+}
+
+/**
+ * Extrae los beneficios de bundle desde los productos del carrito
+ * @param cartProducts - Array de productos del carrito
+ * @returns Array de beneficios de tipo bundle
+ */
+function extractBundleBeneficios(cartProducts: { sku: string; name?: string; skuPostback?: string; bundleInfo?: { codCampana: string; productSku: string; bundleDiscount?: number } }[]): BeneficiosDTO[] {
+  const beneficios: BeneficiosDTO[] = [];
+  console.log('[extractBundleBeneficios] Productos del carrito:', cartProducts.map(p => ({ sku: p.sku, hasBundleInfo: !!p.bundleInfo, bundleInfo: p.bundleInfo })));
+
+  // Agrupar productos por bundle (productSku del bundleInfo)
+  const bundleGroups = new Map<string, typeof cartProducts>();
+
+  for (const product of cartProducts) {
+    if (product.bundleInfo?.productSku) {
+      const bundleKey = product.bundleInfo.productSku;
+      console.log('[extractBundleBeneficios] Producto con bundle:', product.sku, '-> bundleKey:', bundleKey);
+      if (!bundleGroups.has(bundleKey)) {
+        bundleGroups.set(bundleKey, []);
+      }
+      bundleGroups.get(bundleKey)!.push(product);
+    }
+  }
+
+  console.log('[extractBundleBeneficios] Bundle groups:', Array.from(bundleGroups.keys()));
+
+  // Crear un beneficio por cada bundle único
+  for (const [productSku, products] of bundleGroups) {
+    const firstProduct = products[0];
+    if (firstProduct.bundleInfo) {
+      const beneficio = {
+        type: "bundle" as const,
+        sku: productSku, // Backend espera 'sku', no 'sku_producto'
+        descuento_bundle: firstProduct.bundleInfo.bundleDiscount,
+      };
+      console.log('[extractBundleBeneficios] Agregando beneficio Bundle:', beneficio);
+      beneficios.push(beneficio);
+    }
+  }
+
+  console.log('[extractBundleBeneficios] Beneficios finales:', beneficios);
+  return beneficios;
+}
+
+/**
+ * Construye el array de beneficios para enviar al backend
+ * SIEMPRE incluye 0%_interes con aplica: true o false
+ * @param cartProducts - Productos del carrito
+ * @param paymentMethod - Método de pago ('tarjeta' | 'addi' | 'pse')
+ * @param zeroInterestApplies - Si aplica 0% interés (solo para tarjeta)
+ */
+function buildBeneficiosArray(
+  cartProducts: { sku: string; id?: string; skuPostback?: string; name?: string; bundleInfo?: { codCampana: string; productSku: string; bundleDiscount?: number } }[],
+  paymentMethod: 'tarjeta' | 'addi' | 'pse',
+  zeroInterestApplies: boolean = false
+): BeneficiosDTO[] {
+  console.log(`[buildBeneficiosArray - ${paymentMethod.toUpperCase()}] Iniciando construcción de beneficios`);
+
+  const beneficios: BeneficiosDTO[] = [
+    ...extractTradeInBeneficios(cartProducts),
+    ...extractBundleBeneficios(cartProducts),
+  ];
+
+  // SIEMPRE incluir el beneficio de 0% interés con aplica: true o false
+  // Para tarjeta: depende de la tarjeta y cuotas seleccionadas
+  // Para ADDI y PSE: siempre aplica: false
+  const aplica0Interes = paymentMethod === 'tarjeta' ? zeroInterestApplies : false;
+  beneficios.push({ type: "0%_interes", aplica: aplica0Interes });
+  console.log(`[buildBeneficiosArray - ${paymentMethod.toUpperCase()}] 0% interés aplica: ${aplica0Interes}`);
+
+  console.log(`[buildBeneficiosArray - ${paymentMethod.toUpperCase()}] BENEFICIOS FINALES:`, JSON.stringify(beneficios, null, 2));
   return beneficios;
 }
 
@@ -432,22 +533,31 @@ export function useCheckoutLogic() {
         case "addi": {
           // Construir beneficios
           const buildBeneficios = (): BeneficiosDTO[] => {
-            const beneficios: BeneficiosDTO[] = extractTradeInBeneficios();
+            console.log('[buildBeneficios - ADDI] Iniciando construcción de beneficios');
+            const beneficios: BeneficiosDTO[] = [
+              ...extractTradeInBeneficios(cartProducts),
+              ...extractBundleBeneficios(cartProducts),
+            ];
+            // Siempre incluir el beneficio de 0% interés con aplica: true o false
             try {
               const zeroStr = localStorage.getItem("checkout-zero-interest");
+              console.log('[buildBeneficios - ADDI] Zero interest data:', zeroStr);
               if (zeroStr) {
                 const parsedZero = JSON.parse(zeroStr);
                 const aplicaZero =
-                  parsedZero?.aplica_zero_interes || parsedZero?.aplica;
-                if (aplicaZero) {
-                  // Addi payments might not have a card id, but keep logic for completeness
-                  beneficios.push({ type: "0%_interes" });
-                }
+                  parsedZero?.aplica_zero_interes || parsedZero?.aplica || false;
+                console.log('[buildBeneficios - ADDI] Zero interest aplica:', aplicaZero);
+                beneficios.push({ type: "0%_interes", aplica: aplicaZero });
+              } else {
+                // Si no hay datos de zero interest, incluir con aplica: false
+                beneficios.push({ type: "0%_interes", aplica: false });
               }
             } catch {
-              // ignore
+              // En caso de error, incluir con aplica: false
+              beneficios.push({ type: "0%_interes", aplica: false });
             }
             if (beneficios.length === 0) return [{ type: "sin_beneficios" }];
+            console.log('[buildBeneficios - ADDI] BENEFICIOS FINALES:', JSON.stringify(beneficios, null, 2));
             return beneficios;
           };
 
@@ -545,47 +655,31 @@ export function useCheckoutLogic() {
                 direccionId: checkoutAddress?.id || "",
               },
               informacion_facturacion,
-              beneficios: (() => {
-                const beneficios: BeneficiosDTO[] = extractTradeInBeneficios();
+              beneficios: buildBeneficiosArray(cartProducts, 'tarjeta', (() => {
+                // Calcular si aplica 0% interés para esta tarjeta y cuotas
                 try {
-                  const zeroStr = localStorage.getItem(
-                    "checkout-zero-interest"
-                  );
+                  const zeroStr = localStorage.getItem("checkout-zero-interest");
                   if (zeroStr) {
                     const parsedZero = JSON.parse(zeroStr);
-                    const aplicaZero =
-                      parsedZero?.aplica_zero_interes || parsedZero?.aplica;
+                    const aplicaZero = parsedZero?.aplica_zero_interes || parsedZero?.aplica || false;
                     if (aplicaZero) {
                       const installmentsNum = Number(card.installments || 1);
-                      const cardId =
-                        selectedCardId ||
-                        localStorage.getItem("checkout-saved-card-id");
+                      const cardId = selectedCardId || localStorage.getItem("checkout-saved-card-id");
                       const matched = parsedZero?.cards?.find(
-                        (c: {
-                          id: string;
-                          eligibleForZeroInterest: boolean;
-                          availableInstallments: number[];
-                        }) => String(c.id) === String(cardId)
+                        (c: { id: string; eligibleForZeroInterest: boolean; availableInstallments: number[] }) =>
+                          String(c.id) === String(cardId)
                       );
-                      if (
-                        matched?.eligibleForZeroInterest &&
-                        matched.availableInstallments?.includes(installmentsNum)
-                      ) {
-                        beneficios.push({ type: "0%_interes" });
-                      }
+                      return !!(matched?.eligibleForZeroInterest && matched.availableInstallments?.includes(installmentsNum));
                     }
                   }
-                } catch {
-                  // ignore
+                } catch (e) {
+                  console.error('[TARJETA GUARDADA] Error calculando zero interest:', e);
                 }
-                if (beneficios.length === 0)
-                  return [{ type: "sin_beneficios" }];
-                return beneficios;
-              })(),
+                return false;
+              })()),
             });
           } else {
             // Pago con tarjeta nueva
-            console.log("💳 [useCheckoutLogic] Paying with NEW CARD. Data:", card);
             res = await payWithCard({
               cardCvc: card.cvc,
               cardExpMonth: card.expiryMonth,
@@ -623,10 +717,16 @@ export function useCheckoutLogic() {
               },
               informacion_facturacion,
               beneficios: (() => {
-                const beneficios: BeneficiosDTO[] = extractTradeInBeneficios();
-                // For new cards we don't have a card id to check zero interest eligibility
+                console.log('[buildBeneficios - TARJETA NUEVA] Iniciando construcción de beneficios');
+                const beneficios: BeneficiosDTO[] = [
+                  ...extractTradeInBeneficios(cartProducts),
+                  ...extractBundleBeneficios(cartProducts),
+                ];
+                // Para tarjetas nuevas no tenemos card id para verificar, siempre incluir con aplica: false
+                beneficios.push({ type: "0%_interes", aplica: false });
                 if (beneficios.length === 0)
                   return [{ type: "sin_beneficios" }];
+                console.log('[buildBeneficios - TARJETA NUEVA] BENEFICIOS FINALES:', JSON.stringify(beneficios, null, 2));
                 return beneficios;
               })(),
             });
@@ -690,8 +790,15 @@ export function useCheckoutLogic() {
             },
             informacion_facturacion,
             beneficios: (() => {
-              const beneficios: BeneficiosDTO[] = extractTradeInBeneficios();
+              console.log('[buildBeneficios - PSE] Iniciando construcción de beneficios');
+              const beneficios: BeneficiosDTO[] = [
+                ...extractTradeInBeneficios(cartProducts),
+                ...extractBundleBeneficios(cartProducts),
+              ];
+              // PSE no tiene tarjeta, siempre incluir 0% interés con aplica: false
+              beneficios.push({ type: "0%_interes", aplica: false });
               if (beneficios.length === 0) return [{ type: "sin_beneficios" }];
+              console.log('[buildBeneficios - PSE] BENEFICIOS FINALES:', JSON.stringify(beneficios, null, 2));
               return beneficios;
             })(),
           });

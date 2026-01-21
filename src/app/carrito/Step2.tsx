@@ -88,6 +88,13 @@ export default function Step2({
   // Estado para controlar el modal de Trade-In
   const [isTradeInModalOpen, setIsTradeInModalOpen] = useState(false);
 
+  // Estado para el producto seleccionado para Trade-In
+  const [selectedProductForTradeIn, setSelectedProductForTradeIn] = useState<{
+    sku: string;
+    name: string;
+    skuPostback?: string;
+  } | null>(null);
+
   // Estado para verificar si el usuario ya tiene dirección agregada
   const [hasAddedAddress, setHasAddedAddress] = useState(false);
 
@@ -941,6 +948,23 @@ export default function Step2({
 
   // Handler para abrir el modal de Trade-In (para cambiar producto)
   const handleOpenTradeInModal = () => {
+    // Buscar el producto que aplica para Trade-In (indRetoma === 1)
+    const productWithTradeIn = cartProducts.find(p => p.indRetoma === 1);
+    if (productWithTradeIn) {
+      setSelectedProductForTradeIn({
+        sku: productWithTradeIn.sku,
+        name: productWithTradeIn.name,
+        skuPostback: productWithTradeIn.skuPostback,
+      });
+    } else if (cartProducts.length > 0) {
+      // Fallback: usar el primer producto si ninguno tiene indRetoma definido
+      const firstProduct = cartProducts[0];
+      setSelectedProductForTradeIn({
+        sku: firstProduct.sku,
+        name: firstProduct.name,
+        skuPostback: firstProduct.skuPostback,
+      });
+    }
     setIsTradeInModalOpen(true);
   };
 
@@ -1924,6 +1948,9 @@ export default function Step2({
         onClose={() => setIsTradeInModalOpen(false)}
         onCompleteTradeIn={handleCompleteTradeIn}
         onCancelWithoutCompletion={handleCancelWithoutCompletion}
+        productSku={selectedProductForTradeIn?.sku}
+        productName={selectedProductForTradeIn?.name}
+        skuPostback={selectedProductForTradeIn?.skuPostback}
       />
     </div>
   );

@@ -36,17 +36,15 @@ export interface BeneficiosDTO {
   | "bundle"
   | "soporte"
   | "sin_beneficios";
+  // Campos para entrego_y_estreno (Trade-In)
   dispositivo_a_recibir?: string;
   valor_retoma?: number;
   dispositivo_a_entregar?: string;
   detalles_dispositivo_a_recibir?: DetalleDispositivoRetoma;
+  // Campos comunes
   sku?: string;
   descuento_producto?: number;
   descuento_bundle?: number;
-  // Nuevos campos para identificar el producto que aplica trade-in
-  sku_producto?: string;
-  nombre_producto?: string;
-  sku_postback_producto?: string;
 }
 
 export type AddiPaymentData = BasicPaymentData;

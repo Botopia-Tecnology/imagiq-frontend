@@ -808,6 +808,8 @@ export function useCart(): UseCartReturn {
       setTimeout(() => {
         apiDelete(`/api/cart/items/clear`);
         localStorage.removeItem(STORAGE_KEYS.CART_ITEMS);
+        // Limpiar también el trade-in al vaciar el carrito
+        localStorage.removeItem("imagiq_trade_in");
 
         // Disparar evento de storage para sincronizar entre pestañas
         try {

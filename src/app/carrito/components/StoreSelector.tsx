@@ -74,9 +74,7 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
     // Llamar a onAddressAdded y esperar si devuelve una promesa (consulta de candidate stores)
     const result = onAddressAdded?.(newAddress);
     if (result instanceof Promise) {
-      console.log('⏳ Esperando consulta de candidate stores en StoreSelector...');
       await result;
-      console.log('✅ Candidate stores consultados en StoreSelector');
     }
 
     setShowAddAddressModal(false);
@@ -282,8 +280,6 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
                 <div className="space-y-3">
                   <NearbyLocationButton
                     onAddressAdded={(newAddress: Address) => {
-                      console.log('📍 Dirección obtenida por geolocalización:', newAddress);
-
                       // Actualizar la dirección y refrescar tiendas
                       if (onAddressChange) {
                         onAddressChange(newAddress);
@@ -307,11 +303,7 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
 
                 {/* Botón para agregar dirección manualmente (DESPUÉS del botón "Cerca de mí") */}
                 <button
-                  onClick={() => {
-                    console.log('🔘 [StoreSelector] Click en Agregar nueva dirección - showAddAddressModal:', showAddAddressModal, '-> true');
-                    console.log('🔘 [StoreSelector] isMounted:', isMounted);
-                    setShowAddAddressModal(true);
-                  }}
+                  onClick={() => setShowAddAddressModal(true)}
                   className="w-full px-4 py-2.5 bg-[#222] hover:bg-[#333] text-white rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2"
                   type="button"
                 >
@@ -406,7 +398,6 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
       )}
 
         {/* Modal para agregar dirección - usando Portal para renderizar fuera del componente */}
-        {console.log('🔘 [StoreSelector] Render check - showAddAddressModal:', showAddAddressModal, 'isMounted:', isMounted)}
         {showAddAddressModal && isMounted && createPortal(
           <div className="fixed inset-0 z-[100001] flex items-center justify-center p-4 bg-black/50">
             <button

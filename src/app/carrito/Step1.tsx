@@ -47,6 +47,13 @@ export default function Step1({
   const [couponCode, setCouponCode] = useState("");
   const { trackBeginCheckout } = useAnalyticsWithUser();
 
+  // Estado para evitar hydration mismatch (localStorage solo existe en cliente)
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // Estado para Trade-In
   // Estado para Trade-In (Mapa de SKU -> Datos)
   const [tradeInData, setTradeInData] = useState<Record<string, {
@@ -839,7 +846,23 @@ export default function Step1({
         {/* Productos */}
         <section id="carrito-productos" className="p-0">
 
-          {cartProducts.length === 0 ? (
+          {/* Skeleton mientras se hidrata el cliente */}
+          {!isClient ? (
+            <div className="space-y-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
+                  <div className="flex gap-4">
+                    <div className="w-20 h-20 md:w-24 md:h-24 bg-gray-200 rounded-xl" />
+                    <div className="flex-1 space-y-3">
+                      <div className="h-4 bg-gray-200 rounded w-3/4" />
+                      <div className="h-3 bg-gray-200 rounded w-1/2" />
+                      <div className="h-4 bg-gray-200 rounded w-1/4" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : cartProducts.length === 0 ? (
             <div className="text-gray-500 text-center py-16 text-lg">
               No hay productos en el carrito.
             </div>
@@ -932,6 +955,28 @@ export default function Step1({
         </section>
         {/* Resumen de compra - Solo Desktop */}
         <aside className="hidden md:block space-y-4">
+          {!isClient ? (
+            <div className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
+              <div className="h-6 bg-gray-200 rounded w-1/2 mb-4" />
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <div className="h-4 bg-gray-200 rounded w-1/3" />
+                  <div className="h-4 bg-gray-200 rounded w-1/4" />
+                </div>
+                <div className="flex justify-between">
+                  <div className="h-4 bg-gray-200 rounded w-1/3" />
+                  <div className="h-4 bg-gray-200 rounded w-1/4" />
+                </div>
+                <div className="border-t pt-3 mt-3">
+                  <div className="flex justify-between">
+                    <div className="h-5 bg-gray-200 rounded w-1/4" />
+                    <div className="h-5 bg-gray-200 rounded w-1/3" />
+                  </div>
+                </div>
+              </div>
+              <div className="h-12 bg-gray-200 rounded w-full mt-6" />
+            </div>
+          ) : (
           <Step4OrderSummary
             onFinishPayment={() => {
               // Validar Trade-In antes de continuar
@@ -964,6 +1009,7 @@ export default function Step1({
             products={cartProducts}
             calculations={calculations}
           />
+          )}
         </aside>
       </div>
       {/* Sugerencias: fila completa debajo del grid principal */}
@@ -976,7 +1022,7 @@ export default function Step1({
       </div>
 
       {/* Sticky Bottom Bar - Solo Mobile */}
-      {cartProducts.length > 0 && (
+      {isClient && cartProducts.length > 0 && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
           <div className="p-4">
             {/* Resumen compacto */}

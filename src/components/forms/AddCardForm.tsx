@@ -631,11 +631,7 @@ const AddCardForm = React.forwardRef<AddCardFormHandle, AddCardFormProps>(({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            CVV {(() => {
-              const brand = getCardBrand(cardNumber);
-              const isAmex = brand?.toLowerCase().includes('american') || brand?.toLowerCase().includes('amex');
-              return isAmex ? '4 dígitos' : '3 dígitos';
-            })()}
+            CVV
           </label>
           <input
             type="text"

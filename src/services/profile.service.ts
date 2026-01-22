@@ -3,7 +3,7 @@
  * @description Servicio para interactuar con el API de perfil del backend
  */
 
-import { apiGet, apiPost, apiPatch } from "@/lib/api-client";
+import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api-client";
 import { EncryptedCard } from "../features/profile/types";
 
 /**
@@ -399,6 +399,33 @@ export class ProfileService {
         error instanceof Error
           ? error.message
           : "Error desconocido en tokenización dual";
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * Elimina una tarjeta tokenizada del usuario
+   * Llama al endpoint DELETE /api/payments/cards/:userId/:cardId
+   */
+  public async deleteCard(
+    userId: string,
+    cardId: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log("🗑️ Eliminando tarjeta:", { userId, cardId });
+
+      const result = await apiDelete<{ success: boolean; message: string }>(
+        `/api/payments/cards/${userId}/${cardId}`
+      );
+
+      console.log("✅ Tarjeta eliminada exitosamente:", result);
+      return result;
+    } catch (error: unknown) {
+      console.error("❌ Error eliminando tarjeta:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Error desconocido eliminando tarjeta";
       throw new Error(errorMessage);
     }
   }

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { Plus, Check } from "lucide-react";
+import { Plus, Check, Trash2, X } from "lucide-react";
 import { CardData, CardErrors } from "./CreditCardForm";
 import { PaymentMethod, CheckZeroInterestResponse } from "../types";
 import { useAuthContext } from "@/features/auth/context";
@@ -13,6 +13,8 @@ import { fetchBanks } from "../utils";
 import { useCardsCache } from "../hooks/useCardsCache";
 import useSecureStorage from "@/hooks/useSecureStorage";
 import { User } from "@/types/user";
+import { profileService } from "@/services/profile.service";
+import { toast } from "sonner";
 
 interface PaymentFormProps {
   paymentMethod: string;
@@ -120,6 +122,41 @@ export default function PaymentForm({
   const userRole = getUserRole();
   const canSaveCards = userRole === 2 || userRole === 4; // Roles 2 y 4 pueden guardar tarjetas
 
+  // Estados para eliminar tarjeta
+  const [cardToDelete, setCardToDelete] = useState<{ id: string; lastDigits: string } | null>(null);
+  const [isDeletingCard, setIsDeletingCard] = useState(false);
+
+  // Handler para eliminar tarjeta
+  const handleDeleteCard = async () => {
+    if (!cardToDelete) return;
+
+    const userId = getUserId();
+    if (!userId) {
+      toast.error("No se pudo identificar el usuario");
+      return;
+    }
+
+    setIsDeletingCard(true);
+    try {
+      await profileService.deleteCard(userId, cardToDelete.id);
+      toast.success(`Tarjeta ****${cardToDelete.lastDigits} eliminada`);
+
+      // Si la tarjeta eliminada era la seleccionada, limpiar selección
+      if (selectedCardId === cardToDelete.id) {
+        onCardSelect(null);
+      }
+
+      // Recargar tarjetas
+      loadSavedCards(true);
+    } catch (error) {
+      console.error("Error eliminando tarjeta:", error);
+      toast.error("Error al eliminar la tarjeta");
+    } finally {
+      setIsDeletingCard(false);
+      setCardToDelete(null);
+    }
+  };
+
   // Helper para obtener el máximo de cuotas sin interés de una tarjeta
   const getMaxInstallments = (cardId: string): number | null => {
     if (!zeroInterestData?.cards) return null;
@@ -159,6 +196,9 @@ export default function PaymentForm({
     }
   }, [authContext.user?.id, loggedUser?.id, savedCardsReloadCounter, loadSavedCards]);
 
+  // Ref para trackear el último valor de savedCardsReloadCounter que se procesó
+  const lastProcessedReloadCounter = React.useRef<number>(0);
+
   // Auto-seleccionar la tarjeta predeterminada cuando se cargan las tarjetas o después de agregar una nueva
   useEffect(() => {
     if (
@@ -170,15 +210,16 @@ export default function PaymentForm({
 
       // Solo procesar si el método de pago actual o guardado es "tarjeta"
       if (paymentMethod === "tarjeta" || savedPaymentMethod === "tarjeta") {
-        console.log("💳 [PaymentForm] Auto-selection check triggered", { paymentMethod, savedPaymentMethod, selectedCardId, useNewCard });
+        console.log("💳 [PaymentForm] Auto-selection check triggered", { paymentMethod, savedPaymentMethod, selectedCardId, useNewCard, savedCardsReloadCounter, lastProcessed: lastProcessedReloadCounter.current });
 
         // Solo auto-seleccionar si:
         // 1. No hay tarjeta seleccionada actualmente Y no hay una guardada en localStorage Y el método actual es tarjeta
-        // 2. Se agregó una nueva tarjeta (savedCardsReloadCounter > 0)
+        // 2. Se agregó una nueva tarjeta (savedCardsReloadCounter cambió desde la última vez que procesamos)
         const savedCardId = localStorage.getItem("checkout-saved-card-id");
-        const shouldSelectCard = (!selectedCardId && !savedCardId && paymentMethod === "tarjeta" && !useNewCard) || (savedCardsReloadCounter !== undefined && savedCardsReloadCounter > 0 && !useNewCard);
+        const isNewReload = savedCardsReloadCounter !== undefined && savedCardsReloadCounter > lastProcessedReloadCounter.current;
+        const shouldSelectCard = (!selectedCardId && !savedCardId && paymentMethod === "tarjeta" && !useNewCard) || (isNewReload && !useNewCard);
 
-        console.log("💳 [PaymentForm] Should select card?", shouldSelectCard, { savedCardId, savedCardsReloadCounter });
+        console.log("💳 [PaymentForm] Should select card?", shouldSelectCard, { savedCardId, savedCardsReloadCounter, isNewReload });
 
         if (shouldSelectCard) {
           const defaultCard =
@@ -191,6 +232,10 @@ export default function PaymentForm({
             if (paymentMethod !== "tarjeta") {
               onPaymentMethodChange("tarjeta");
             }
+          }
+          // Marcar este reload como procesado
+          if (savedCardsReloadCounter !== undefined) {
+            lastProcessedReloadCounter.current = savedCardsReloadCounter;
           }
         } else if (savedCardId && !selectedCardId && paymentMethod === "tarjeta" && !useNewCard) {
           console.log("💳 [PaymentForm] Restoring saved card from LS", savedCardId);
@@ -319,12 +364,18 @@ export default function PaymentForm({
             {(() => {
               const tempCardData = localStorage.getItem("checkout-card-data");
               const hasTempCard = !!tempCardData;
-              const isNewCardSelected = paymentMethod === "tarjeta" && !selectedCardId;
+              // Para rol 2 o 4: mantener seleccionado cuando paymentMethod es tarjeta (incluso con tarjeta guardada seleccionada)
+              // Para rol 3: solo seleccionado cuando no hay tarjeta guardada seleccionada
+              const isCardMethodSelected = paymentMethod === "tarjeta";
+              const isNewCardSelected = isCardMethodSelected && !selectedCardId;
+              const shouldShowChecked = canSaveCards ? isCardMethodSelected : isNewCardSelected;
 
               console.log('🎯 [PaymentForm] Rendering card option:', {
                 paymentMethod,
                 selectedCardId,
                 isNewCardSelected,
+                shouldShowChecked,
+                canSaveCards,
                 hasOnValidityChange: !!onValidityChange,
                 hasFormRef: !!formRef
               });
@@ -336,13 +387,20 @@ export default function PaymentForm({
                       <input
                         type="radio"
                         name="payment"
-                        checked={isNewCardSelected}
+                        checked={shouldShowChecked}
                         onChange={() => {
                           onPaymentMethodChange("tarjeta");
-                          onCardSelect(null);
-                          onUseNewCardChange(true);
-                          // Limpiar caché de datos de tarjeta por seguridad (no cachear datos de tarjetas nuevas)
-                          localStorage.removeItem("checkout-card-data");
+                          // Para rol 2/4: auto-seleccionar la primera tarjeta guardada si hay tarjetas
+                          if (canSaveCards && activeCards.length > 0 && !selectedCardId) {
+                            onCardSelect(String(activeCards[0].id));
+                            onUseNewCardChange(false);
+                          } else if (!canSaveCards) {
+                            // Solo limpiar la tarjeta seleccionada para rol 3
+                            onCardSelect(null);
+                            onUseNewCardChange(true);
+                            // Limpiar caché de datos de tarjeta por seguridad (no cachear datos de tarjetas nuevas)
+                            localStorage.removeItem("checkout-card-data");
+                          }
                         }}
                         className="accent-black w-5 h-5 flex-shrink-0"
                       />
@@ -363,8 +421,8 @@ export default function PaymentForm({
                     )}
                   </label>
 
-                  {/* Formulario inline siempre visible */}
-                  {isNewCardSelected && (
+                  {/* Formulario inline solo para rol 3 (invitados) */}
+                  {isNewCardSelected && userRole === 3 && (
                     <div className="ml-8 mb-3 mt-1">
                       <div className="p-4">
                         <AddCardForm
@@ -387,7 +445,11 @@ export default function PaymentForm({
                   type="radio"
                   name="payment"
                   checked={paymentMethod === "pse"}
-                  onChange={() => onPaymentMethodChange("pse")}
+                  onChange={() => {
+                    onPaymentMethodChange("pse");
+                    // Limpiar selección de tarjeta guardada al cambiar a PSE
+                    onCardSelect(null);
+                  }}
                   className="accent-black w-5 h-5 flex-shrink-0"
                 />
                 <span className="font-medium text-black">
@@ -441,7 +503,11 @@ export default function PaymentForm({
                     type="radio"
                     name="payment"
                     checked={paymentMethod === "addi"}
-                    onChange={() => onPaymentMethodChange("addi")}
+                    onChange={() => {
+                      onPaymentMethodChange("addi");
+                      // Limpiar selección de tarjeta guardada al cambiar a Addi
+                      onCardSelect(null);
+                    }}
                     className="accent-black w-5 h-5 flex-shrink-0"
                   />
                   <span className="font-medium text-black">
@@ -528,24 +594,27 @@ export default function PaymentForm({
                 selectedCardId === String(card.id);
 
               return (
-                <label
+                <div
                   key={card.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    onPaymentMethodChange("tarjeta");
+                    onCardSelect(String(card.id));
+                    onUseNewCardChange(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      onPaymentMethodChange("tarjeta");
+                      onCardSelect(String(card.id));
+                      onUseNewCardChange(false);
+                    }
+                  }}
                   className={`flex items-center gap-3 justify-between py-3 px-4 cursor-pointer rounded-lg border-2 transition-all ${isSelected
                     ? "border-black bg-gray-50"
                     : "border-gray-200 hover:border-gray-300 bg-white"
                     }`}
                 >
-                  <input
-                    type="radio"
-                    name="payment"
-                    checked={isSelected}
-                    onChange={() => {
-                      onPaymentMethodChange("tarjeta");
-                      onCardSelect(String(card.id));
-                      onUseNewCardChange(false);
-                    }}
-                    className="sr-only"
-                  />
                   <span className="flex items-center gap-3 flex-1 min-w-0">
                     <div
                       className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isSelected
@@ -604,8 +673,23 @@ export default function PaymentForm({
                         </span>
                       ) : null;
                     })()}
+                    {/* Botón eliminar tarjeta */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCardToDelete({
+                          id: String(card.id),
+                          lastDigits: card.ultimos_dijitos,
+                        });
+                      }}
+                      className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
+                      title="Eliminar tarjeta"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                </label>
+                </div>
               );
             })}
           </div>
@@ -664,6 +748,57 @@ export default function PaymentForm({
           </p>
         </div>
       ) : null}
+
+      {/* Modal de confirmación para eliminar tarjeta */}
+      {cardToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-lg font-bold text-gray-900">
+                Eliminar método de pago
+              </h3>
+              <button
+                type="button"
+                onClick={() => setCardToDelete(null)}
+                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <p className="text-gray-600 mb-6">
+              ¿Estás seguro de que deseas eliminar la tarjeta terminada en{" "}
+              <span className="font-semibold">****{cardToDelete.lastDigits}</span>?
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setCardToDelete(null)}
+                disabled={isDeletingCard}
+                className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteCard}
+                disabled={isDeletingCard}
+                className="flex-1 px-4 py-2.5 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isDeletingCard ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Eliminando...
+                  </>
+                ) : (
+                  "Eliminar"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

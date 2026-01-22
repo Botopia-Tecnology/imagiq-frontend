@@ -6,94 +6,155 @@
  *
  * Características:
  * - Custom User ID hasheado automáticamente por Clarity
- * - Custom Session ID para tracking de sesiones específicas
+ * - Custom Session ID persistente para mantener continuidad de sesión
  * - Custom Page ID para identificar páginas únicas
  * - Friendly Name para visualización en dashboard
- * - Se ejecuta solo si hay consentimiento de analytics
+ *
+ * IMPORTANTE: El sessionId se inicializa UNA VEZ al cargar la página y se mantiene
+ * durante toda la sesión del navegador para evitar fragmentación de grabaciones.
  */
 
 import { User } from "@/types/user";
-import {
-  logIdentificationSuccess,
-  logIdentificationError,
-} from "./clarity-debug";
 
 // El tipo de window.clarity está declarado en @/lib/clarity.ts
 
-const DEBUG_MODE = process.env.NODE_ENV === "development";
+const SESSION_STORAGE_KEY = "clarity_session_id";
+
+// Flag para rastrear si el usuario ya fue identificado en esta sesión
+let userIdentified = false;
 
 /**
- * Identifica al usuario en Clarity
+ * Inicializa el sessionId al cargar la página
+ * DEBE llamarse lo antes posible (en ClarityScript) para asegurar
+ * que el sessionId exista ANTES de cualquier identificación
+ */
+export function initializeSessionId(): string {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    const existingSessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (existingSessionId) {
+      return existingSessionId;
+    }
+
+    // Crear nuevo session ID solo si no existe
+    const newSessionId = generateSessionId();
+    sessionStorage.setItem(SESSION_STORAGE_KEY, newSessionId);
+    return newSessionId;
+  } catch {
+    // Fallback si sessionStorage no está disponible
+    return generateSessionId();
+  }
+}
+
+/**
+ * Obtiene el sessionId persistente (nunca genera uno nuevo después de la inicialización)
+ */
+export function getSessionId(): string {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    const sessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (sessionId) {
+      return sessionId;
+    }
+    // Si por alguna razón no existe, inicializarlo
+    return initializeSessionId();
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Identifica al usuario en Clarity - SE LLAMA SOLO UNA VEZ por sesión
  *
  * @param user - Objeto de usuario autenticado
- * @param sessionId - ID de sesión opcional (generado automáticamente si no se proporciona)
- * @param pageId - ID de página opcional
+ * @param forceReidentify - Forzar re-identificación (usar con precaución)
  *
  * Clarity hashea automáticamente el customUserId en el cliente antes de enviarlo a sus servidores
  */
 export function identifyUserInClarity(
   user: User,
-  sessionId?: string,
-  pageId?: string
+  forceReidentify: boolean = false
 ): void {
   // Verificar que Clarity esté cargado
   if (typeof window === "undefined" || !window.clarity) {
-    if (DEBUG_MODE) {
-      console.warn(
-        "[Clarity Identity] ⚠️ Clarity not loaded yet, skipping identification"
-      );
-    }
+    return;
+  }
+
+  // Evitar re-identificación múltiple (causa fragmentación de sesiones)
+  if (userIdentified && !forceReidentify) {
+    // Solo actualizar metadatos sin re-identificar
+    updateUserMetadata(user);
     return;
   }
 
   // Validar que el usuario tenga al menos un email
   if (!user?.email) {
-    console.warn("[Clarity Identity] ⚠️ User email is required for identification");
     return;
   }
 
-  // Preparar datos - usar valores por defecto si faltan campos
-  const customUserId = user.email; // Email como identificador único
-  const customSessionId = sessionId || generateSessionId();
-  const customPageId = pageId || undefined;
+  // Preparar datos - SIEMPRE usar el sessionId persistente
+  const customUserId = user.email;
+  const customSessionId = getSessionId(); // Usar sessionId existente, NUNCA generar uno nuevo
   const friendlyName = user.nombre && user.apellido
     ? `${user.nombre} ${user.apellido}`.trim()
-    : user.email.split('@')[0]; // Usar parte del email si faltan nombre/apellido
+    : user.email.split('@')[0];
 
   try {
-    // Llamar al API de Clarity
+    // Llamar al API de Clarity - SOLO UNA VEZ por sesión
     window.clarity(
       "identify",
       customUserId,
       customSessionId,
-      customPageId,
+      undefined, // No usar pageId para evitar fragmentación
       friendlyName
     );
 
-    if (DEBUG_MODE) {
-      logIdentificationSuccess(customUserId, customSessionId, friendlyName);
-    }
+    // Marcar como identificado para evitar re-identificaciones
+    userIdentified = true;
 
-    // También enviar metadatos adicionales
+    // Enviar metadatos adicionales con set()
+    updateUserMetadata(user);
+  } catch {
+    // Error silencioso - no es crítico para la aplicación
+  }
+}
+
+/**
+ * Actualiza metadatos del usuario SIN re-identificar
+ * Usar esto para actualizar información sin fragmentar la sesión
+ */
+export function updateUserMetadata(user: User): void {
+  if (typeof window === "undefined" || !window.clarity) {
+    return;
+  }
+
+  try {
     if (user.id) {
       window.clarity("set", "userId", user.id);
     }
-    window.clarity("set", "userEmail", customUserId);
-    window.clarity("set", "userName", friendlyName);
-
-    console.log("[Clarity Identity] ✅ User identified:", {
-      email: customUserId,
-      name: friendlyName,
-      sessionId: customSessionId
-    });
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    logIdentificationError(err, {
-      userId: customUserId,
-      sessionId: customSessionId,
-      friendlyName,
-    });
+    if (user.email) {
+      window.clarity("set", "userEmail", user.email);
+    }
+    if (user.nombre || user.apellido) {
+      const friendlyName = `${user.nombre || ""} ${user.apellido || ""}`.trim();
+      window.clarity("set", "userName", friendlyName);
+    }
+  } catch {
+    // Error silencioso - no es crítico
   }
+}
+
+/**
+ * Resetea el estado de identificación (usar al cerrar sesión)
+ */
+export function resetIdentificationState(): void {
+  userIdentified = false;
 }
 
 /**
@@ -107,55 +168,27 @@ function generateSessionId(): string {
 }
 
 /**
- * Genera un page ID único basado en la ruta actual
- * Formato: imagiq-page-{route}-{timestamp}
+ * Registra un evento de página visitada SIN re-identificar
+ * Usar para tracking de navegación sin fragmentar sesión
  */
-export function generatePageId(pathname: string): string {
-  const sanitizedPath =
-    pathname.replace(/\//g, "-").replace(/^-/, "") || "home";
-  const timestamp = Date.now();
-  return `imagiq-page-${sanitizedPath}-${timestamp}`;
-}
-
-/**
- * Identifica al usuario con page ID personalizado
- */
-export function identifyUserWithPageId(user: User, pathname: string): void {
-  const pageId = generatePageId(pathname);
-  identifyUserInClarity(user, undefined, pageId);
-}
-
-/**
- * Re-identifica al usuario en cada cambio de ruta
- * Útil para tracking de navegación cross-page
- */
-export function reidentifyUserOnNavigation(user: User, pathname: string): void {
-  // Usar el mismo session ID pero actualizar el page ID
-  const sessionId = getOrCreateSessionId();
-  const pageId = generatePageId(pathname);
-
-  identifyUserInClarity(user, sessionId, pageId);
-}
-
-/**
- * Obtiene o crea un session ID persistente para la sesión del navegador
- */
-function getOrCreateSessionId(): string {
-  const STORAGE_KEY = "clarity_session_id";
+export function trackPageView(pathname: string): void {
+  if (typeof window === "undefined" || !window.clarity) {
+    return;
+  }
 
   try {
-    // Intentar obtener session ID existente
-    const existingSessionId = sessionStorage.getItem(STORAGE_KEY);
-    if (existingSessionId) {
-      return existingSessionId;
-    }
-
-    // Crear nuevo session ID
-    const newSessionId = generateSessionId();
-    sessionStorage.setItem(STORAGE_KEY, newSessionId);
-    return newSessionId;
+    // Usar set() para registrar la página actual sin re-identificar
+    const sanitizedPath = pathname.replaceAll("/", "-").replace(/^-/, "") || "home";
+    window.clarity("set", "currentPage", sanitizedPath);
+    window.clarity("set", "lastPageView", new Date().toISOString());
   } catch {
-    // Fallback si sessionStorage no está disponible
-    return generateSessionId();
+    // Error silencioso - no es crítico
   }
+}
+
+/**
+ * Verifica si el usuario ya fue identificado en esta sesión
+ */
+export function isUserIdentified(): boolean {
+  return userIdentified;
 }

@@ -21,12 +21,23 @@ declare global {
       (action: 'event', eventName: string): void;
 
       /**
-       * Identify a user in Clarity
+       * Identify a user in Clarity (simple version)
        * IMPORTANT: Only use hashed or anonymous IDs, never PII
        * @param action - Always 'identify' for user identification
        * @param userId - Hashed or anonymous user ID
        */
       (action: 'identify', userId: string): void;
+
+      /**
+       * Identify a user in Clarity with full parameters
+       * IMPORTANT: Clarity automatically hashes the userId on the client
+       * @param action - Always 'identify' for user identification
+       * @param userId - User ID (will be hashed by Clarity)
+       * @param sessionId - Custom session ID for cross-session tracking
+       * @param pageId - Custom page ID (optional)
+       * @param friendlyName - Display name for Clarity dashboard
+       */
+      (action: 'identify', userId: string, sessionId: string, pageId: string | undefined, friendlyName: string): void;
 
       /**
        * Set a custom tag/property

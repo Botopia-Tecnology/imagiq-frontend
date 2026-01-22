@@ -2,53 +2,67 @@
  * Hook para identificación automática de usuarios en Clarity
  *
  * Se sincroniza automáticamente con el estado de autenticación:
- * - Identifica al usuario cuando inicia sesión
- * - Re-identifica en cada cambio de ruta
- * - Limpia la identificación al cerrar sesión
+ * - Identifica al usuario UNA SOLA VEZ cuando inicia sesión
+ * - Registra cambios de página SIN re-identificar (usa set() en lugar de identify())
+ * - Resetea el estado al cerrar sesión
+ *
+ * IMPORTANTE: La re-identificación múltiple causa fragmentación de sesiones en Clarity.
+ * Por eso solo identificamos UNA VEZ y usamos set() para actualizaciones.
  */
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useAuthContext } from "@/features/auth/context";
 import {
   identifyUserInClarity,
-  reidentifyUserOnNavigation,
+  trackPageView,
+  resetIdentificationState,
+  isUserIdentified,
 } from "@/lib/analytics/clarity-identify";
 import { waitForClarity } from "@/lib/analytics/clarity-debug";
-import { hasAnalyticsConsent } from "@/lib/consent";
 
 export function useClarityIdentity() {
   const { user, isAuthenticated } = useAuthContext();
   const pathname = usePathname();
+  const previousAuthState = useRef<boolean>(false);
 
-  // Identificar usuario cuando se autentica
+  // Detectar logout para resetear estado de identificación
+  useEffect(() => {
+    if (previousAuthState.current && !isAuthenticated) {
+      // Usuario cerró sesión
+      resetIdentificationState();
+    }
+    previousAuthState.current = isAuthenticated;
+  }, [isAuthenticated]);
+
+  // Identificar usuario UNA SOLA VEZ cuando se autentica
   useEffect(() => {
     if (!isAuthenticated || !user) return;
+
+    // Si ya está identificado, no volver a identificar
+    if (isUserIdentified()) {
+      return;
+    }
 
     // Esperar a que Clarity esté disponible y luego identificar
     const identifyUser = async () => {
       try {
         await waitForClarity(10, 1000); // Esperar hasta 10 segundos
         identifyUserInClarity(user);
-      } catch (error) {
-        // Solo mostrar error en producción, en desarrollo es normal que falle si el backend no está corriendo
-        if (process.env.NODE_ENV === 'production') {
-          console.error("[useClarityIdentity] Failed to identify user:", error);
-        } else {
-          console.log("[useClarityIdentity] Clarity not available (development mode - backend may not be running)");
-        }
+      } catch {
+        // Error silencioso - Clarity no es crítico para la aplicación
       }
     };
 
     identifyUser();
   }, [user, isAuthenticated]);
 
-  // Re-identificar en cada cambio de ruta para tracking de navegación
+  // Registrar cambios de página SIN re-identificar
+  // Usar set() para actualizar la página actual sin fragmentar la sesión
   useEffect(() => {
-    if (!isAuthenticated || !user) return;
+    if (typeof window === "undefined" || !window.clarity) return;
 
-    if (typeof window !== "undefined" && window.clarity) {
-      reidentifyUserOnNavigation(user, pathname);
-    }
-  }, [pathname, user, isAuthenticated]);
+    // Registrar la página visitada (funciona para usuarios autenticados y anónimos)
+    trackPageView(pathname);
+  }, [pathname]);
 }

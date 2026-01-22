@@ -512,9 +512,20 @@ export default function BundleCard({
           (sum, p) => sum + (p.product_discount_price || 0),
           0
         );
+        const totalOriginalPrice = selectedOption.productos.reduce(
+          (sum, p) => sum + (p.product_original_price || 0),
+          0
+        );
         const bundleTotalPrice = firstProduct.bundle_discount || totalIndividualPrice;
+        const bundleOriginalPrice = firstProduct.bundle_price || totalOriginalPrice;
+
+        // Factor para precios con descuento (para que sum(price) = bundle_discount)
         const priceFactor = totalIndividualPrice > 0
           ? bundleTotalPrice / totalIndividualPrice
+          : 1;
+        // Factor para precios originales (para que sum(originalPrice) = bundle_price)
+        const originalPriceFactor = totalOriginalPrice > 0
+          ? bundleOriginalPrice / totalOriginalPrice
           : 1;
 
         const products: Omit<CartProduct, "quantity">[] =
@@ -527,7 +538,10 @@ export default function BundleCard({
               "/img/logo_imagiq.png",
             // Usar precio proporcional para que el total coincida con bundle_discount
             price: Math.round((product.product_discount_price || 0) * priceFactor),
-            originalPrice: product.product_original_price,
+            // También aplicar factor proporcional al precio original para mostrar ahorro correctamente
+            originalPrice: product.product_original_price
+              ? Math.round(product.product_original_price * originalPriceFactor)
+              : undefined,
             sku: product.sku,
             ean: product.ean || product.sku,
             color: product.color,
@@ -615,9 +629,20 @@ export default function BundleCard({
           (sum, p) => sum + (p.product_discount_price || 0),
           0
         );
+        const totalOriginalPrice = selectedOption.productos.reduce(
+          (sum, p) => sum + (p.product_original_price || 0),
+          0
+        );
         const bundleTotalPrice = firstProduct.bundle_discount || totalIndividualPrice;
+        const bundleOriginalPrice = firstProduct.bundle_price || totalOriginalPrice;
+
+        // Factor para precios con descuento (para que sum(price) = bundle_discount)
         const priceFactor = totalIndividualPrice > 0
           ? bundleTotalPrice / totalIndividualPrice
+          : 1;
+        // Factor para precios originales (para que sum(originalPrice) = bundle_price)
+        const originalPriceFactor = totalOriginalPrice > 0
+          ? bundleOriginalPrice / totalOriginalPrice
           : 1;
 
         const products: Omit<CartProduct, "quantity">[] =
@@ -630,7 +655,10 @@ export default function BundleCard({
               "/img/logo_imagiq.png",
             // Usar precio proporcional para que el total coincida con bundle_discount
             price: Math.round((product.product_discount_price || 0) * priceFactor),
-            originalPrice: product.product_original_price,
+            // También aplicar factor proporcional al precio original para mostrar ahorro correctamente
+            originalPrice: product.product_original_price
+              ? Math.round(product.product_original_price * originalPriceFactor)
+              : undefined,
             sku: product.sku,
             ean: product.ean || product.sku,
             color: product.color,

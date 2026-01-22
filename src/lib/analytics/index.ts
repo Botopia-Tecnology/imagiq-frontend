@@ -78,8 +78,12 @@ export { useAnalyticsWithUser } from "./hooks/useAnalyticsWithUser";
 // Clarity - Identificación de usuarios
 export {
   identifyUserInClarity,
-  reidentifyUserOnNavigation,
-  identifyUserWithPageId,
+  updateUserMetadata,
+  trackPageView,
+  resetIdentificationState,
+  isUserIdentified,
+  initializeSessionId,
+  getSessionId,
 } from "./clarity-identify";
 
 // Clarity - Debug utilities (solo para desarrollo)

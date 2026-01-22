@@ -5,12 +5,16 @@ import {
   initializeClarityConsent,
   sendClarityConsentToBackend,
 } from "@/lib/analytics/clarity-consent";
+import { initializeSessionId } from "@/lib/analytics/clarity-identify";
 
 /**
  * Microsoft Clarity - First-Party Loading
  *
  * Se carga SIEMPRE para grabar todas las sesiones
  * No requiere consentimiento de cookies
+ *
+ * IMPORTANTE: El script NO se elimina en cleanup para mantener
+ * la grabación continua durante toda la sesión del usuario
  */
 export default function ClarityScript() {
   const [mounted, setMounted] = useState(false);
@@ -19,6 +23,8 @@ export default function ClarityScript() {
     setMounted(true);
     // Inicializar el consentimiento (habilitado por defecto)
     initializeClarityConsent();
+    // Inicializar el sessionId desde el principio para mantener continuidad
+    initializeSessionId();
   }, []);
 
   useEffect(() => {
@@ -45,19 +51,12 @@ export default function ClarityScript() {
       script.id = "clarity-bootstrap";
 
       script.onload = () => {
-        console.log("[Clarity] ✅ Loaded successfully - Recording enabled");
-
         // Enviar consentimiento de grabación al backend
         sendClarityConsentToBackend(true);
       };
 
       script.onerror = () => {
-        // Solo mostrar error si no estamos en desarrollo sin backend
-        if (process.env.NODE_ENV === "production") {
-          console.error("[Clarity] ❌ Failed to load from", clarityUrl);
-        } else {
-          console.warn("[Clarity] ⚠️ Backend not available (development mode)");
-        }
+        // Error silencioso - Clarity no es crítico para la aplicación
       };
 
       document.head.appendChild(script);
@@ -66,9 +65,8 @@ export default function ClarityScript() {
     // Cargar inmediatamente - SIN verificar consentimiento
     loadClarity();
 
-    return () => {
-      document.getElementById("clarity-bootstrap")?.remove();
-    };
+    // NO eliminar el script en cleanup - Clarity debe seguir grabando
+    // incluso durante navegaciones y re-renders de React
   }, [mounted]);
 
   return null;

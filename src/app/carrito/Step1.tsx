@@ -43,8 +43,6 @@ export default function Step1({
     onlyReadCache: false,         // NO solo lectura, debe hacer llamada inicial
   });
 
-  const [showCouponModal, setShowCouponModal] = useState(false);
-  const [couponCode, setCouponCode] = useState("");
   const { trackBeginCheckout } = useAnalyticsWithUser();
 
   // Estado para evitar hydration mismatch (localStorage solo existe en cliente)
@@ -1036,12 +1034,6 @@ export default function Step1({
                   $ {Number(total).toLocaleString()}
                 </p>
               </div>
-              <button
-                onClick={() => setShowCouponModal(true)}
-                className="text-sm text-sky-600 hover:text-sky-700 font-medium underline cursor-pointer"
-              >
-                Cupón
-              </button>
             </div>
 
             {/* Botón continuar */}
@@ -1097,45 +1089,6 @@ export default function Step1({
         />
       )}
 
-      {/* Modal de Cupón */}
-      {showCouponModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end md:items-center justify-center">
-          <div className="bg-white w-full md:max-w-md md:rounded-lg rounded-t-2xl overflow-hidden animate-slide-up">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h3 className="text-lg font-bold">Agregar cupón</h3>
-              <button
-                onClick={() => setShowCouponModal(false)}
-                className="text-gray-500 hover:text-gray-700 cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-4">
-              <input
-                type="text"
-                placeholder="Código de cupón"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:border-sky-500"
-              />
-              <button
-                onClick={() => {
-                  // Aquí iría la lógica para aplicar el cupón
-                  alert(`Cupón "${couponCode}" aplicado`);
-                  setShowCouponModal(false);
-                  setCouponCode("");
-                }}
-                className="w-full mt-4 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-lg transition cursor-pointer"
-              >
-                Aplicar cupón
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
 
     </main>

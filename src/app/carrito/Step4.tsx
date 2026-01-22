@@ -214,6 +214,14 @@ export default function Step4({
     };
   }, [router]);
 
+  // Obtener el rol del usuario
+  const userRole = React.useMemo(() => {
+    return authContext.user?.rol || loggedUser?.rol || null;
+  }, [authContext.user?.rol, loggedUser?.rol]);
+
+  // Roles 2 y 4 pueden guardar tarjetas (no ven formulario de tarjeta nueva)
+  const canSaveCards = userRole === 2 || userRole === 4;
+
   // Validar si el método de pago está seleccionado correctamente
   const isPaymentMethodValid = React.useMemo(() => {
     // Si no hay método de pago seleccionado
@@ -224,8 +232,16 @@ export default function Step4({
 
     // Si es tarjeta, debe tener una tarjeta seleccionada O estar usando una nueva Y que el formulario sea válido
     if (paymentMethod === "tarjeta") {
-      // IMPORTANTE: Si no hay tarjeta guardada seleccionada (!selectedCardId),
-      // entonces estamos usando tarjeta nueva y debemos verificar isCardFormValid
+      // Para roles 2 y 4: DEBEN seleccionar una tarjeta guardada (no ven formulario de nueva)
+      if (canSaveCards) {
+        if (!selectedCardId) {
+          // console.log('🔴 [Step4] isPaymentMethodValid: false - rol 2/4 must select a saved card');
+          return false;
+        }
+        return true;
+      }
+
+      // Para otros roles (ej: rol 3): pueden usar tarjeta nueva si el formulario es válido
       const isUsingNewCard = !selectedCardId;
 
       // console.log('🔍 [Step4] isPaymentMethodValid check:', {
@@ -251,7 +267,7 @@ export default function Step4({
     // Si es Addi, siempre está válido (no requiere más datos)
     // console.log('🟢 [Step4] isPaymentMethodValid: true');
     return true;
-  }, [paymentMethod, selectedCardId, selectedBank, useNewCard, isCardFormValid]);
+  }, [paymentMethod, selectedCardId, selectedBank, useNewCard, isCardFormValid, canSaveCards]);
 
   const handleContinueToNextStep = async (e: React.FormEvent) => {
     e.preventDefault(); // Prevenir recarga inmediatamente

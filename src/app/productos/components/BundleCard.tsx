@@ -506,6 +506,28 @@ export default function BundleCard({
       if (selectedOption.productos && selectedOption.productos.length > 0) {
         const firstProduct = selectedOption.productos[0];
 
+        // Calcular precios proporcionales basados en el descuento del bundle
+        // para que el total en el carrito coincida con el precio mostrado en el card
+        const totalIndividualPrice = selectedOption.productos.reduce(
+          (sum, p) => sum + (p.product_discount_price || 0),
+          0
+        );
+        const totalOriginalPrice = selectedOption.productos.reduce(
+          (sum, p) => sum + (p.product_original_price || 0),
+          0
+        );
+        const bundleTotalPrice = firstProduct.bundle_discount || totalIndividualPrice;
+        const bundleOriginalPrice = firstProduct.bundle_price || totalOriginalPrice;
+
+        // Factor para precios con descuento (para que sum(price) = bundle_discount)
+        const priceFactor = totalIndividualPrice > 0
+          ? bundleTotalPrice / totalIndividualPrice
+          : 1;
+        // Factor para precios originales (para que sum(originalPrice) = bundle_price)
+        const originalPriceFactor = totalOriginalPrice > 0
+          ? bundleOriginalPrice / totalOriginalPrice
+          : 1;
+
         const products: Omit<CartProduct, "quantity">[] =
           selectedOption.productos.map((product, index) => ({
             id: (product.codigoMarket || product.sku).split('/')[0],
@@ -514,8 +536,12 @@ export default function BundleCard({
               product.imagePreviewUrl ||
               previewImages[index] ||
               "/img/logo_imagiq.png",
-            price: product.product_discount_price,
-            originalPrice: product.product_original_price,
+            // Usar precio proporcional para que el total coincida con bundle_discount
+            price: Math.round((product.product_discount_price || 0) * priceFactor),
+            // También aplicar factor proporcional al precio original para mostrar ahorro correctamente
+            originalPrice: product.product_original_price
+              ? Math.round(product.product_original_price * originalPriceFactor)
+              : undefined,
             sku: product.sku,
             ean: product.ean || product.sku,
             color: product.color,
@@ -526,6 +552,13 @@ export default function BundleCard({
             modelo: product.modelo,
             categoria: product.categoria || categoria || "IM",
           }));
+
+        // Ajustar errores de redondeo en el último producto
+        const currentTotal = products.reduce((sum, p) => sum + p.price, 0);
+        const roundingDifference = bundleTotalPrice - currentTotal;
+        if (roundingDifference !== 0 && products.length > 0) {
+          products[products.length - 1].price += roundingDifference;
+        }
 
         const bundleInfo: BundleInfo = {
           codCampana,
@@ -590,6 +623,28 @@ export default function BundleCard({
         // Usar datos completos del backend que ya vienen en la opción
         const firstProduct = selectedOption.productos[0];
 
+        // Calcular precios proporcionales basados en el descuento del bundle
+        // para que el total en el carrito coincida con el precio mostrado en el card
+        const totalIndividualPrice = selectedOption.productos.reduce(
+          (sum, p) => sum + (p.product_discount_price || 0),
+          0
+        );
+        const totalOriginalPrice = selectedOption.productos.reduce(
+          (sum, p) => sum + (p.product_original_price || 0),
+          0
+        );
+        const bundleTotalPrice = firstProduct.bundle_discount || totalIndividualPrice;
+        const bundleOriginalPrice = firstProduct.bundle_price || totalOriginalPrice;
+
+        // Factor para precios con descuento (para que sum(price) = bundle_discount)
+        const priceFactor = totalIndividualPrice > 0
+          ? bundleTotalPrice / totalIndividualPrice
+          : 1;
+        // Factor para precios originales (para que sum(originalPrice) = bundle_price)
+        const originalPriceFactor = totalOriginalPrice > 0
+          ? bundleOriginalPrice / totalOriginalPrice
+          : 1;
+
         const products: Omit<CartProduct, "quantity">[] =
           selectedOption.productos.map((product, index) => ({
             id: (product.codigoMarket || product.sku).split('/')[0],
@@ -598,8 +653,12 @@ export default function BundleCard({
               product.imagePreviewUrl ||
               previewImages[index] ||
               "/img/logo_imagiq.png",
-            price: product.product_discount_price,
-            originalPrice: product.product_original_price,
+            // Usar precio proporcional para que el total coincida con bundle_discount
+            price: Math.round((product.product_discount_price || 0) * priceFactor),
+            // También aplicar factor proporcional al precio original para mostrar ahorro correctamente
+            originalPrice: product.product_original_price
+              ? Math.round(product.product_original_price * originalPriceFactor)
+              : undefined,
             sku: product.sku,
             ean: product.ean || product.sku,
             color: product.color,
@@ -610,6 +669,13 @@ export default function BundleCard({
             modelo: product.modelo,
             categoria: product.categoria || categoria || "IM",
           }));
+
+        // Ajustar errores de redondeo en el último producto
+        const currentTotal = products.reduce((sum, p) => sum + p.price, 0);
+        const roundingDifference = bundleTotalPrice - currentTotal;
+        if (roundingDifference !== 0 && products.length > 0) {
+          products[products.length - 1].price += roundingDifference;
+        }
 
         const bundleInfo: BundleInfo = {
           codCampana,

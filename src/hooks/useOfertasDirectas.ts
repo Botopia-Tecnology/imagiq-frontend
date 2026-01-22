@@ -85,8 +85,11 @@ export function useOfertasDirectas(): UseOfertasDirectasReturn {
                 console.log('[Ofertas Directas] Fetching from direct endpoint...');
 
                 fetchPromise = (async () => {
+                    const url = `${API_BASE_URL}/api/products/ofertas-destacadas/direct`;
+                    console.log('[Ofertas Directas] 🚀 Fetching URL:', url);
+
                     const response = await fetch(
-                        `${API_BASE_URL}/api/products/ofertas-destacadas/direct`,
+                        url,
                         {
                             headers: {
                                 "Content-Type": "application/json",
@@ -95,17 +98,32 @@ export function useOfertasDirectas(): UseOfertasDirectasReturn {
                         }
                     );
 
+                    console.log('[Ofertas Directas] 📡 Response status:', response.status);
+
                     if (!response.ok) {
                         throw new Error("Error al cargar ofertas destacadas");
                     }
 
                     const data = await response.json();
-                    console.log('[Ofertas Directas] Response:', data);
+                    console.log('[Ofertas Directas] 📦 Response data:', data);
+                    console.log('[Ofertas Directas] 📦 Data keys:', Object.keys(data));
+                    console.log('[Ofertas Directas] 📦 Is data.data an array?', Array.isArray(data.data));
+                    if (data.data && data.data.length > 0) {
+                        console.log('[Ofertas Directas] 📦 First item:', data.data[0]);
+                    }
 
                     // El endpoint devuelve { success: true, data: [...] }
-                    const ofertasData = data.success && Array.isArray(data.data)
-                        ? data.data as OfertaDirecta[]
-                        : [];
+                    // NOTA: A veces el caché devuelve un objeto con keys numéricos en lugar de array
+                    let ofertasData: OfertaDirecta[] = [];
+                    if (data.success && data.data) {
+                        if (Array.isArray(data.data)) {
+                            ofertasData = data.data as OfertaDirecta[];
+                        } else if (typeof data.data === 'object') {
+                            // Convertir objeto con keys numéricos a array
+                            ofertasData = Object.values(data.data) as OfertaDirecta[];
+                            console.log('[Ofertas Directas] ⚠️ Converted object to array:', ofertasData.length, 'items');
+                        }
+                    }
 
                     // Filtrar solo ofertas activas y ordenar
                     const ofertasActivas = ofertasData

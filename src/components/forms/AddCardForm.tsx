@@ -519,7 +519,7 @@ const AddCardForm = React.forwardRef<AddCardFormHandle, AddCardFormProps>(({
   );
 
   const renderFormFields = () => (
-    <div className="space-y-4">
+    <div className="space-y-3 md:space-y-4">
       {/* Título - Solo si NO es modal (en modal se maneja fuera o diferente) */}
       {!showAsModal && !embedded && (
         <div className="flex items-center gap-2 mb-4">
@@ -530,7 +530,7 @@ const AddCardForm = React.forwardRef<AddCardFormHandle, AddCardFormProps>(({
 
       {/* Número de tarjeta */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
           Número de tarjeta
         </label>
         <div className="relative">
@@ -539,7 +539,7 @@ const AddCardForm = React.forwardRef<AddCardFormHandle, AddCardFormProps>(({
             value={formatCardNumber(cardNumber)}
             onChange={handleCardNumberChange}
             placeholder="1234 5678 9012 3456"
-            className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm ${errors.cardNumber ? "border-red-500" : "border-gray-300"
+            className={`w-full px-2 md:px-4 py-2 md:py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm ${errors.cardNumber ? "border-red-500" : "border-gray-300"
               }`}
           />
         </div>
@@ -550,7 +550,7 @@ const AddCardForm = React.forwardRef<AddCardFormHandle, AddCardFormProps>(({
 
       {/* Nombre del titular */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
           Nombre del titular
         </label>
         <input
@@ -563,7 +563,7 @@ const AddCardForm = React.forwardRef<AddCardFormHandle, AddCardFormProps>(({
             }
           }}
           placeholder="JUAN PÉREZ"
-          className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm uppercase ${errors.cardHolder ? "border-red-500" : "border-gray-300"
+          className={`w-full px-2 md:px-4 py-2 md:py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm uppercase ${errors.cardHolder ? "border-red-500" : "border-gray-300"
             }`}
         />
         {errors.cardHolder && (
@@ -572,10 +572,10 @@ const AddCardForm = React.forwardRef<AddCardFormHandle, AddCardFormProps>(({
       </div>
 
       {/* Fecha de expiración y CVV */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 md:gap-4">
         {/* Mes */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 mb-1">
             Mes
           </label>
           <select
@@ -586,7 +586,7 @@ const AddCardForm = React.forwardRef<AddCardFormHandle, AddCardFormProps>(({
                 setErrors((prev) => ({ ...prev, expiryMonth: "" }));
               }
             }}
-            className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm ${errors.expiryMonth ? "border-red-500" : "border-gray-300"
+            className={`w-full px-1 md:px-3 py-2 md:py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-xs ${errors.expiryMonth ? "border-red-500" : "border-gray-300"
               }`}
           >
             <option value="">MM</option>
@@ -603,7 +603,7 @@ const AddCardForm = React.forwardRef<AddCardFormHandle, AddCardFormProps>(({
 
         {/* Año */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 mb-1">
             Año
           </label>
           <select
@@ -614,7 +614,7 @@ const AddCardForm = React.forwardRef<AddCardFormHandle, AddCardFormProps>(({
                 setErrors((prev) => ({ ...prev, expiryYear: "" }));
               }
             }}
-            className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm ${errors.expiryYear ? "border-red-500" : "border-gray-300"
+            className={`w-full px-1 md:px-3 py-2 md:py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-xs ${errors.expiryYear ? "border-red-500" : "border-gray-300"
               }`}
           >
             <option value="">AAAA</option>
@@ -630,7 +630,7 @@ const AddCardForm = React.forwardRef<AddCardFormHandle, AddCardFormProps>(({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 mb-1">
             CVV
           </label>
           <input
@@ -644,7 +644,7 @@ const AddCardForm = React.forwardRef<AddCardFormHandle, AddCardFormProps>(({
               const isAmex = brand?.toLowerCase().includes('american') || brand?.toLowerCase().includes('amex');
               return isAmex ? '1234' : '123';
             })()}
-            className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm ${errors.cvv ? "border-red-500" : "border-gray-300"
+            className={`w-full px-1 md:px-3 py-2 md:py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-xs ${errors.cvv ? "border-red-500" : "border-gray-300"
               }`}
           />
           {errors.cvv && (

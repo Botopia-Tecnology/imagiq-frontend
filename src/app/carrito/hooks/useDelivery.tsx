@@ -469,6 +469,11 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
             fetchCandidateStoresRef.current?.(explicitAddressId);
           }, 500);
         }
+        // CRÍTICO: NO dejar storesLoading en true cuando programamos un reintento
+        // El reintento se encargará de activarlo de nuevo si es necesario
+        // Esto evita que el loading se quede atascado si hay múltiples componentes
+        // tratando de hacer fetch al mismo tiempo
+        setStoresLoading(false);
         return;
       }
     }
@@ -793,6 +798,9 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
             fetchCandidateStoresRef.current?.(explicitAddressId);
           }, 500);
         }
+        // CRÍTICO: NO dejar storesLoading en true cuando programamos un reintento
+        // El reintento se encargará de activarlo de nuevo si es necesario
+        setStoresLoading(false);
         return;
       }
     }
@@ -1056,7 +1064,20 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         setStoresLoading(false);
         isFetchingRef.current = false;
         setLastResponse({ success: true, data: cachedResponse });
-        // console.log(`📦 [CACHÉ] Usando respuesta CACHEADA. canPickUp=${globalCanPickUp} (NO del endpoint)`);
+
+        // CRÍTICO: Liberar el lock global cuando leemos del caché
+        if (typeof globalThis.window !== 'undefined') {
+          (globalThis.window as unknown as { __imagiqIsFetching?: boolean }).__imagiqIsFetching = false;
+        }
+
+        // CRÍTICO: Disparar evento para que Step4OrderSummary se sincronice
+        // Aunque leímos del caché (no escribimos), Step4OrderSummary necesita saber
+        // que los datos están listos para actualizar su estado interno
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('canPickUpCache-updated', {
+            detail: { key: cacheKey, value: globalCanPickUp, addressId: currentAddressId }
+          }));
+        }
       }
       return; // Salir sin hacer petición al endpoint
     }
@@ -2250,8 +2271,9 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
           invalidateCacheOnAddressChange(newAddress.id);
         }
 
-        // Llamar a fetch
-        fetchCandidateStoresRef.current?.();
+        // CRÍTICO: Pasar el addressId explícitamente para evitar race conditions
+        // donde localStorage aún no se ha actualizado con la nueva dirección
+        fetchCandidateStoresRef.current?.(newAddress.id);
       }
     } catch (error) {
       console.error("Error refreshing addresses:", error);

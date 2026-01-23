@@ -42,6 +42,8 @@ interface AddNewAddressFormProps {
   isRequestingLocation?: boolean; // Si está en proceso de obtener la ubicación
   enableAutoSelect?: boolean; // Habilitar selección automática de la primera predicción
   hideBackButton?: boolean; // Ocultar el botón "Atrás" en el paso 2
+  skipSetDefault?: boolean; // Si es true, NO establece la dirección como predeterminada (útil para Step6 facturación)
+  billingOnly?: boolean; // Si es true, solo muestra paso 1 y usa nombre "Dirección de facturación" automáticamente
 }
 
 export default function AddNewAddressForm({
@@ -55,6 +57,8 @@ export default function AddNewAddressForm({
   isRequestingLocation = false,
   enableAutoSelect = false,
   hideBackButton = false,
+  skipSetDefault = false,
+  billingOnly = false,
 }: AddNewAddressFormProps) {
   const { user, login } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
@@ -388,12 +392,16 @@ export default function AddNewAddressForm({
         "Selecciona una dirección de envío usando el autocompletado";
     }
 
-    if (!formData.nombreDireccion.trim()) {
-      newErrors.nombreDireccion = "El nombre de la dirección es requerido";
-    }
+    // Solo validar nombreDireccion e instruccionesEntrega si NO es billingOnly
+    // (en billingOnly se usa nombre automático y no requiere instrucciones)
+    if (!billingOnly) {
+      if (!formData.nombreDireccion.trim()) {
+        newErrors.nombreDireccion = "El nombre de la dirección es requerido";
+      }
 
-    if (!formData.instruccionesEntrega.trim()) {
-      newErrors.instruccionesEntrega = "Las instrucciones de entrega son requeridas";
+      if (!formData.instruccionesEntrega.trim()) {
+        newErrors.instruccionesEntrega = "Las instrucciones de entrega son requeridas";
+      }
     }
 
     // Validar campos requeridos de dirección
@@ -509,12 +517,14 @@ export default function AddNewAddressForm({
         }),
       };
 
-      // Crear dirección de envío
+      // Crear dirección de envío (o facturación si billingOnly)
       const shippingAddressRequest: CreateAddressRequest = {
-        nombreDireccion: formData.nombreDireccion,
+        // Si es billingOnly, usar nombre automático "Dirección de facturación"
+        nombreDireccion: billingOnly ? "Dirección de facturación" : formData.nombreDireccion,
         tipoDireccion: formData.tipoDireccion,
-        tipo: formData.usarMismaParaFacturacion ? "AMBOS" : "ENVIO",
-        esPredeterminada: true, // Marcar como predeterminada automáticamente
+        // Si es billingOnly, siempre es tipo FACTURACION
+        tipo: billingOnly ? "FACTURACION" : (formData.usarMismaParaFacturacion ? "AMBOS" : "ENVIO"),
+        esPredeterminada: !skipSetDefault, // NO marcar como predeterminada si skipSetDefault es true
         placeDetails: transformedPlaceDetails as PlaceDetails,
         // Nuevos campos estructurados
         departamento: formData.departamento || undefined,
@@ -530,9 +540,10 @@ export default function AddNewAddressForm({
         ciudad: formData.ciudad && /^\d+$/.test(formData.ciudad) ? formData.ciudad : undefined,
       };
 
-      const shippingResponse = await addressesService.createAddress(
-        shippingAddressRequest
-      );
+      // Usar createAddressWithoutDefault si skipSetDefault es true (desde Step6)
+      const shippingResponse = skipSetDefault
+        ? await addressesService.createAddressWithoutDefault(shippingAddressRequest)
+        : await addressesService.createAddress(shippingAddressRequest);
 
       // Si no usa la misma dirección, crear dirección de facturación separada
       if (!formData.usarMismaParaFacturacion && selectedBillingAddress) {
@@ -616,71 +627,78 @@ export default function AddNewAddressForm({
           ciudad: formData.ciudad && /^\d+$/.test(formData.ciudad) ? formData.ciudad : undefined,
         };
 
-        await addressesService.createAddress(
+        // Siempre usar createAddressWithoutDefault para direcciones de facturación separadas
+        await addressesService.createAddressWithoutDefault(
           billingAddressRequest
         );
       }
 
-      // CRÍTICO: Guardar SIEMPRE en checkout-address ANTES de sincronizar
-      // Esto garantiza que Step3 y Step4 puedan leer la dirección
-      if (globalThis.window !== undefined) {
-        let userEmail = user?.email || '';
+      // CRÍTICO: Solo guardar en checkout-address y sincronizar si NO es billingOnly
+      // En billingOnly (direcciones de facturación), NO queremos cambiar la dirección de envío
+      if (!billingOnly) {
+        // Guardar SIEMPRE en checkout-address ANTES de sincronizar
+        // Esto garantiza que Step3 y Step4 puedan leer la dirección
+        if (globalThis.window !== undefined) {
+          let userEmail = user?.email || '';
+          try {
+            const userInfo = JSON.parse(globalThis.window.localStorage.getItem('imagiq_user') || '{}');
+            userEmail = userInfo?.email || userEmail;
+          } catch (e) {
+            console.error('Error parsing user info:', e);
+          }
+
+          const checkoutAddress = {
+            id: shippingResponse.id,
+            usuario_id: shippingResponse.usuarioId || '',
+            email: userEmail,
+            linea_uno: shippingResponse.direccionFormateada || shippingResponse.lineaUno || '',
+            direccionFormateada: shippingResponse.direccionFormateada || '',
+            lineaUno: shippingResponse.lineaUno || '',
+            codigo_dane: shippingResponse.codigo_dane || '',
+            ciudad: shippingResponse.ciudad || '',
+            pais: shippingResponse.pais || 'Colombia',
+            esPredeterminada: true,
+            // Campos adicionales para mostrar detalles en Step3
+            localidad: shippingResponse.localidad || '',
+            barrio: shippingResponse.barrio || '',
+            complemento: shippingResponse.complemento || '',
+            instruccionesEntrega: shippingResponse.instruccionesEntrega || '',
+            tipoDireccion: shippingResponse.tipoDireccion || '',
+            nombreDireccion: shippingResponse.nombreDireccion || '',
+            // Google Maps URL
+            googleUrl: shippingResponse.googleUrl || '',
+            googlePlaceId: shippingResponse.googlePlaceId || '',
+            latitud: shippingResponse.latitud || 0,
+            longitud: shippingResponse.longitud || 0,
+          };
+          globalThis.window.localStorage.setItem('checkout-address', JSON.stringify(checkoutAddress));
+          globalThis.window.localStorage.setItem('imagiq_default_address', JSON.stringify(checkoutAddress));
+          console.log('✅ [AddNewAddressForm] Dirección guardada en checkout-address:', checkoutAddress);
+        }
+
+        // Sincronizar la dirección con el header y localStorage
         try {
-          const userInfo = JSON.parse(globalThis.window.localStorage.getItem('imagiq_user') || '{}');
-          userEmail = userInfo?.email || userEmail;
-        } catch (e) {
-          console.error('Error parsing user info:', e);
-        }
-        
-        const checkoutAddress = {
-          id: shippingResponse.id,
-          usuario_id: shippingResponse.usuarioId || '',
-          email: userEmail,
-          linea_uno: shippingResponse.direccionFormateada || shippingResponse.lineaUno || '',
-          direccionFormateada: shippingResponse.direccionFormateada || '',
-          lineaUno: shippingResponse.lineaUno || '',
-          codigo_dane: shippingResponse.codigo_dane || '',
-          ciudad: shippingResponse.ciudad || '',
-          pais: shippingResponse.pais || 'Colombia',
-          esPredeterminada: true,
-          // Campos adicionales para mostrar detalles en Step3
-          localidad: shippingResponse.localidad || '',
-          barrio: shippingResponse.barrio || '',
-          complemento: shippingResponse.complemento || '',
-          instruccionesEntrega: shippingResponse.instruccionesEntrega || '',
-          tipoDireccion: shippingResponse.tipoDireccion || '',
-          nombreDireccion: shippingResponse.nombreDireccion || '',
-          // Google Maps URL
-          googleUrl: shippingResponse.googleUrl || '',
-          googlePlaceId: shippingResponse.googlePlaceId || '',
-          latitud: shippingResponse.latitud || 0,
-          longitud: shippingResponse.longitud || 0,
-        };
-        globalThis.window.localStorage.setItem('checkout-address', JSON.stringify(checkoutAddress));
-        globalThis.window.localStorage.setItem('imagiq_default_address', JSON.stringify(checkoutAddress));
-        console.log('✅ [AddNewAddressForm] Dirección guardada en checkout-address:', checkoutAddress);
-      }
+          // Obtener email del usuario desde localStorage si no está autenticado
+          let userEmail = user?.email || '';
+          if (!userEmail && globalThis.window !== undefined) {
+            const userInfo = JSON.parse(globalThis.window.localStorage.getItem('imagiq_user') || '{}');
+            userEmail = userInfo?.email || '';
+          }
 
-      // Sincronizar la dirección con el header y localStorage
-      try {
-        // Obtener email del usuario desde localStorage si no está autenticado
-        let userEmail = user?.email || '';
-        if (!userEmail && globalThis.window !== undefined) {
-          const userInfo = JSON.parse(globalThis.window.localStorage.getItem('imagiq_user') || '{}');
-          userEmail = userInfo?.email || '';
+          await syncAddress({
+            address: shippingResponse,
+            userEmail,
+            user,
+            loginFn: login,
+            fromHeader: true, // Forzar recálculo de tiendas al agregar nueva dirección
+          });
+        } catch (syncError) {
+          console.error('⚠️ Error al sincronizar dirección con el header:', syncError);
+          // No bloquear el flujo si falla la sincronización
+          // La dirección ya fue guardada en checkout-address arriba
         }
-
-        await syncAddress({
-          address: shippingResponse,
-          userEmail,
-          user,
-          loginFn: login,
-          fromHeader: true, // Forzar recálculo de tiendas al agregar nueva dirección
-        });
-      } catch (syncError) {
-        console.error('⚠️ Error al sincronizar dirección con el header:', syncError);
-        // No bloquear el flujo si falla la sincronización
-        // La dirección ya fue guardada en checkout-address arriba
+      } else {
+        console.log('✅ [AddNewAddressForm] billingOnly=true: NO sincronizando con checkout-address ni header');
       }
 
       // Callback with the created address - ESPERAR la promesa si devuelve una
@@ -1031,32 +1049,45 @@ export default function AddNewAddressForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Indicador de pasos y botón continuar */}
       <div className="flex items-center justify-between mb-6">
-        <div className={`flex items-center ${!withContainer ? 'gap-1' : 'gap-2'}`}>
-          <div className={`flex items-center justify-center ${!withContainer ? 'w-6 h-6 text-xs' : 'w-8 h-8 text-sm'} rounded-full font-bold ${
-            currentStep === 1 ? "bg-black text-white" : "bg-gray-200 text-gray-600"
-          }`}>
-            1
+        {/* Solo mostrar indicador de pasos si NO es billingOnly */}
+        {!billingOnly ? (
+          <div className={`flex items-center ${!withContainer ? 'gap-1' : 'gap-2'}`}>
+            <div className={`flex items-center justify-center ${!withContainer ? 'w-6 h-6 text-xs' : 'w-8 h-8 text-sm'} rounded-full font-bold ${
+              currentStep === 1 ? "bg-black text-white" : "bg-gray-200 text-gray-600"
+            }`}>
+              1
+            </div>
+            <div className={`${!withContainer ? 'w-8' : 'w-12'} h-0.5 bg-gray-300`}></div>
+            <div className={`flex items-center justify-center ${!withContainer ? 'w-6 h-6 text-xs' : 'w-8 h-8 text-sm'} rounded-full font-bold ${
+              currentStep === 2 ? "bg-black text-white" : "bg-gray-200 text-gray-600"
+            }`}>
+              2
+            </div>
           </div>
-          <div className={`${!withContainer ? 'w-8' : 'w-12'} h-0.5 bg-gray-300`}></div>
-          <div className={`flex items-center justify-center ${!withContainer ? 'w-6 h-6 text-xs' : 'w-8 h-8 text-sm'} rounded-full font-bold ${
-            currentStep === 2 ? "bg-black text-white" : "bg-gray-200 text-gray-600"
-          }`}>
-            2
-          </div>
-        </div>
+        ) : (
+          /* Título para modo billingOnly */
+          <h3 className="text-lg font-semibold text-gray-900">Nueva dirección de facturación</h3>
+        )}
 
         {/* Botón Continuar - solo visible en paso 1 */}
         {currentStep === 1 && (
           <div className="relative">
             <button
               type="button"
-              onClick={() => setCurrentStep(2)}
-              disabled={!isStep1Complete}
+              onClick={() => {
+                // Si es billingOnly, hacer submit directo sin ir al paso 2
+                if (billingOnly) {
+                  handleSubmitInternal();
+                } else {
+                  setCurrentStep(2);
+                }
+              }}
+              disabled={!isStep1Complete || (billingOnly && isLoading)}
               onMouseEnter={() => !isStep1Complete && setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
               className="px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Continuar
+              {billingOnly ? (isLoading ? "Guardando..." : "Guardar dirección") : "Continuar"}
             </button>
 
             {/* Tooltip mostrando campos faltantes */}

@@ -8,8 +8,9 @@ import { useAuthContext } from "@/features/auth/context";
 import { addressesService } from "@/services/addresses.service";
 import type { Address } from "@/types/address";
 import Modal from "@/components/ui/Modal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import AddNewAddressForm from "./components/AddNewAddressForm";
-import { MapPin, Plus, Check } from "lucide-react";
+import { MapPin, Plus, Check, Trash2 } from "lucide-react";
 import { safeGetLocalStorage } from "@/lib/localStorage";
 import { useCart } from "@/hooks/useCart";
 import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
@@ -55,6 +56,9 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
   );
   const [isAddAddressModalOpen, setIsAddAddressModalOpen] = useState(false);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
+  const [deletingAddressId, setDeletingAddressId] = useState<string | null>(null);
+  const [addressToDelete, setAddressToDelete] = useState<Address | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const [billingData, setBillingData] = useState<BillingData>({
     type: "natural",
@@ -397,6 +401,64 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     }
   };
 
+  // Abrir modal de confirmación para eliminar
+  const handleDeleteClick = (addr: Address, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    // No permitir eliminar direcciones predeterminadas
+    if (addr.esPredeterminada) {
+      toast.error("No puedes eliminar una dirección predeterminada");
+      return;
+    }
+
+    setAddressToDelete(addr);
+    setShowDeleteConfirm(true);
+  };
+
+  // Confirmar eliminación
+  const handleConfirmDelete = async () => {
+    if (!addressToDelete) return;
+
+    setDeletingAddressId(addressToDelete.id);
+
+    try {
+      await addressesService.deleteAddress(addressToDelete.id);
+      toast.success("Dirección eliminada correctamente");
+
+      // Recargar direcciones
+      const userInfo = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
+      const userAddresses = await addressesService.getUserAddressesByType(
+        "FACTURACION",
+        userInfo?.id || ""
+      );
+      setAddresses(userAddresses);
+
+      // Si la dirección eliminada era la seleccionada, limpiar selección
+      if (selectedAddressId === addressToDelete.id) {
+        setSelectedAddressId(null);
+        setBillingData((prev) => ({
+          ...prev,
+          direccion: null,
+        }));
+      }
+
+      setShowDeleteConfirm(false);
+      setAddressToDelete(null);
+    } catch (error) {
+      console.error("Error eliminando dirección:", error);
+      toast.error("Error al eliminar la dirección");
+    } finally {
+      setDeletingAddressId(null);
+    }
+  };
+
+  // Cancelar eliminación
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setAddressToDelete(null);
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -606,6 +668,23 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                     </p>
                   )}
                 </div>
+
+                {/* Botón eliminar - solo si no es predeterminada */}
+                {!address.esPredeterminada && (
+                  <button
+                    type="button"
+                    onClick={(e) => handleDeleteClick(address, e)}
+                    disabled={deletingAddressId === address.id}
+                    className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50"
+                    title="Eliminar dirección"
+                  >
+                    {deletingAddressId === address.id ? (
+                      <div className="w-4 h-4 border-2 border-gray-300 border-t-red-500 rounded-full animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </button>
+                )}
               </div>
             </button>
           ))}
@@ -914,6 +993,8 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                     onAddressAdded={handleAddressAdded}
                     onCancel={handleCloseAddAddressModal}
                     withContainer={false}
+                    skipSetDefault={true}
+                    billingOnly={true}
                   />
                 </Modal>
 
@@ -997,6 +1078,19 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
           </button>
         </div>
       </div>
+
+      {/* Modal de confirmación para eliminar dirección */}
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title="Eliminar dirección"
+        message={`¿Estás seguro de eliminar la dirección "${addressToDelete?.nombreDireccion || addressToDelete?.direccionFormateada || ''}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        variant="danger"
+        isLoading={deletingAddressId !== null}
+      />
     </div>
   );
 }

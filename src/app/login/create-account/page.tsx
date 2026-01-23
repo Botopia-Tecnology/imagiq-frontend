@@ -192,7 +192,13 @@ export default function CreateAccountPage() {
       return false;
     }
     if (!formData.fecha_nacimiento) {
-      setError("Fecha de nacimiento es obligatoria");
+      setError("Fecha de nacimiento es obligatoria. Selecciona día, mes y año.");
+      return false;
+    }
+    // Validar que la fecha tiene formato correcto (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(formData.fecha_nacimiento)) {
+      setError("Fecha de nacimiento incompleta. Asegúrate de seleccionar día, mes y año.");
       return false;
     }
     if (!formData.contrasena || formData.contrasena.length < 8) {
@@ -376,6 +382,7 @@ export default function CreateAccountPage() {
             apellido: result.user.apellido,
             numero_documento: result.user.numero_documento,
             telefono: result.user.telefono,
+            role: result.user.rol ?? 2, // Rol 2 = usuario registrado
           });
         }
 
@@ -426,6 +433,7 @@ export default function CreateAccountPage() {
         apellido: user.apellido,
         numero_documento: user.numero_documento,
         telefono: user.telefono,
+        role: user.rol ?? user.role ?? 2, // Rol 2 = usuario registrado
       });
       console.log("✅ Sesión iniciada automáticamente al omitir paso opcional");
     } catch (err) {

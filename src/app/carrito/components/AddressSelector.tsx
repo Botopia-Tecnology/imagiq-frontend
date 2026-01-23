@@ -2,6 +2,10 @@ import React, { useState, useEffect } from "react";
 import type { Address } from "@/types/address";
 import AddNewAddressForm from "./AddNewAddressForm";
 import Modal from "@/components/ui/Modal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
+import { Trash2 } from "lucide-react";
+import { addressesService } from "@/services/addresses.service";
+import { toast } from "sonner";
 
 interface AddressSelectorProps {
   address: Address | null;
@@ -10,6 +14,7 @@ interface AddressSelectorProps {
   onAddressChange: (address: Address) => void;
   onEditToggle: (edit: boolean) => void;
   onAddressAdded?: (address?: Address) => void | Promise<void>;
+  onAddressDeleted?: () => void | Promise<void>; // Callback para recargar direcciones después de eliminar
   addressLoading?: boolean; // Para mostrar skeleton al recargar dirección desde header
 }
 
@@ -40,9 +45,68 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
   onAddressChange,
   onEditToggle,
   onAddressAdded,
+  onAddressDeleted,
   addressLoading = false,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [deletingAddressId, setDeletingAddressId] = useState<string | null>(null);
+  const [addressToDelete, setAddressToDelete] = useState<Address | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Abrir modal de confirmación para eliminar
+  const handleDeleteClick = (addr: Address, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    // No permitir eliminar la dirección actualmente seleccionada
+    if (address?.id === addr.id) {
+      toast.error("No puedes eliminar la dirección seleccionada");
+      return;
+    }
+
+    setAddressToDelete(addr);
+    setShowDeleteConfirm(true);
+  };
+
+  // Confirmar eliminación
+  const handleConfirmDelete = async () => {
+    if (!addressToDelete) return;
+
+    setDeletingAddressId(addressToDelete.id);
+
+    try {
+      await addressesService.deleteAddress(addressToDelete.id);
+      toast.success("Dirección eliminada correctamente");
+
+      // Si la dirección eliminada era la seleccionada, seleccionar otra
+      if (address?.id === addressToDelete.id) {
+        const remainingAddresses = addresses.filter(a => a.id !== addressToDelete.id);
+        if (remainingAddresses.length > 0) {
+          const newDefault = remainingAddresses.find(a => a.esPredeterminada) || remainingAddresses[0];
+          onAddressChange(newDefault);
+        }
+      }
+
+      // Recargar la lista de direcciones
+      if (onAddressDeleted) {
+        await onAddressDeleted();
+      }
+
+      setShowDeleteConfirm(false);
+      setAddressToDelete(null);
+    } catch (error) {
+      console.error("Error eliminando dirección:", error);
+      toast.error("Error al eliminar la dirección");
+    } finally {
+      setDeletingAddressId(null);
+    }
+  };
+
+  // Cancelar eliminación
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setAddressToDelete(null);
+  };
 
   // Si no hay dirección seleccionada, seleccionar por defecto la marcada
   useEffect(() => {
@@ -197,12 +261,28 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
                         )}
                       </div>
 
-                      {/* Indicador de predeterminada */}
-                      {ad.esPredeterminada && (
-                        <span className="text-blue-600 text-lg" title="Dirección predeterminada">
-                          ✓
-                        </span>
-                      )}
+                      {/* Checkmark para dirección seleccionada o botón eliminar */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {address?.id === ad.id ? (
+                          <span className="text-blue-600 text-lg" title="Dirección seleccionada">
+                            ✓
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteClick(ad, e)}
+                            disabled={deletingAddressId === ad.id}
+                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50"
+                            title="Eliminar dirección"
+                          >
+                            {deletingAddressId === ad.id ? (
+                              <div className="w-4 h-4 border-2 border-gray-300 border-t-red-500 rounded-full animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </label>
                   );
                 })}
@@ -213,7 +293,7 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
             {addresses.length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 <p className="mb-4">No tienes direcciones guardadas</p>
-                <p className="text-sm">Haz click en &quot;Añadir nueva&quot; para crear tu primera dirección</p>
+                <p className="text-sm">Haz click en &quot;Añadir nueva&quot; para crear tu dirección de envío</p>
               </div>
             )}
           </>
@@ -259,6 +339,19 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
           </>
         )}
       </div>
+
+      {/* Modal de confirmación para eliminar */}
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title="Eliminar dirección"
+        message={`¿Estás seguro de eliminar la dirección "${addressToDelete?.nombreDireccion || addressToDelete?.direccionFormateada || ''}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        variant="danger"
+        isLoading={deletingAddressId !== null}
+      />
     </Modal>
   );
 };

@@ -432,6 +432,13 @@ export default function Step3({
         }
       }
 
+      // IMPORTANTE: Si no hay dirección válida, retornar false inmediatamente
+      // Esto permite que usuarios recién registrados sin direcciones puedan continuar
+      // sin quedarse en estado de "calculando..."
+      if (!addressId) {
+        return false; // Sin dirección = no puede recoger en tienda
+      }
+
       // 3. Obtener productos
       if (!products || products.length === 0) return null;
 
@@ -491,6 +498,12 @@ export default function Step3({
         if (parsed?.id) {
           addressId = parsed.id;
         }
+      }
+
+      // IMPORTANTE: Si no hay dirección válida, NO mostrar loading
+      // Esto permite que usuarios recién registrados sin direcciones puedan continuar
+      if (!addressId) {
+        return false; // Sin dirección = no loading, canPickUp será false
       }
 
       const productsToCheck = products.map((p) => ({
@@ -1275,7 +1288,7 @@ export default function Step3({
   // 3. O si no hay datos Y no se ha cargado pickup al menos una vez (carga inicial) Y NO terminamos con canPickUp=false
   const shouldShowSkeleton = storesLoading || isLoadingCanPickUp || (!hasStoreData && !hasLoadedPickupOnceRef.current && !finishedCalculationWithNoPickup);
 
-  // DEBUG TEMPORAL - Remover después de debuguear
+  // DEBUG: Descomentar para troubleshooting de skeleton
   console.log('🔍 [Step3 SKELETON DEBUG]', {
     shouldShowSkeleton,
     storesLoading,
@@ -1376,6 +1389,7 @@ export default function Step3({
                         onAddressChange={handleAddressChange}
                         onEditToggle={setAddressEdit}
                         onAddressAdded={addAddress}
+                        onAddressDeleted={() => addAddress()}
                         addressLoading={addressLoading}
                       />
                     </div>

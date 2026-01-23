@@ -183,7 +183,15 @@ export class AddressesService {
       }
 
       const data = await apiGet<Address[]>(endpoint);
-      console.log("Direcciones obtenidas:", data);
+      console.log("📍 [AddressesService] Direcciones obtenidas del backend:", data.map(d => ({
+        id: d.id,
+        latitud: d.latitud,
+        longitud: d.longitud,
+        googleUrl: d.googleUrl,
+        localidad: d.localidad,
+        barrio: d.barrio,
+        complemento: d.complemento
+      })));
       return data;
     } catch (error: unknown) {
       const errorMessage =
@@ -396,6 +404,58 @@ export class AddressesService {
         error instanceof Error
           ? error.message
           : "Error incrementando contador de uso";
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * Crea una nueva dirección SIN establecerla como predeterminada
+   * Útil para agregar direcciones de facturación desde Step6 sin afectar
+   * la dirección predeterminada actual
+   */
+  public async createAddressWithoutDefault(
+    addressData: CreateAddressRequest
+  ): Promise<Address> {
+    try {
+      // Obtener información del usuario del localStorage
+      const userInfo = safeGetLocalStorage<{ id?: string; email?: string }>(
+        "imagiq_user",
+        {}
+      );
+      const requestData = { ...addressData };
+
+      // SIEMPRE incluir usuarioId explícitamente
+      if (userInfo.id) {
+        requestData.usuarioId = userInfo.id;
+        console.log("✅ createAddressWithoutDefault: Usando userInfo.id:", requestData.usuarioId);
+      } else if (userInfo.email) {
+        requestData.usuarioId = userInfo.email;
+        console.log("✅ createAddressWithoutDefault: Usando userInfo.email:", requestData.usuarioId);
+      } else {
+        throw new Error(
+          "No se encontró información del usuario. Por favor, inicia sesión nuevamente."
+        );
+      }
+
+      // Forzar esPredeterminada a false para no afectar la dirección actual
+      requestData.esPredeterminada = false;
+
+      console.log("📤 [createAddressWithoutDefault] Creando dirección sin establecer como default:", {
+        ...requestData,
+        placeDetails: requestData.placeDetails ? "PlaceDetails object" : "null",
+      });
+
+      const result = await apiPost<Address>("/api/addresses", requestData);
+      console.log("✅ [createAddressWithoutDefault] Dirección creada exitosamente (NO es default):", result);
+
+      // NO llamar a setDefaultAddress - retornar directamente
+      return result;
+    } catch (error: unknown) {
+      console.error("❌ Error creando dirección (sin default):", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Error desconocido creando dirección";
       throw new Error(errorMessage);
     }
   }

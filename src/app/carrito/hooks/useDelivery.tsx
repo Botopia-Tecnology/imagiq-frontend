@@ -469,6 +469,11 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
             fetchCandidateStoresRef.current?.(explicitAddressId);
           }, 500);
         }
+        // CRÍTICO: NO dejar storesLoading en true cuando programamos un reintento
+        // El reintento se encargará de activarlo de nuevo si es necesario
+        // Esto evita que el loading se quede atascado si hay múltiples componentes
+        // tratando de hacer fetch al mismo tiempo
+        setStoresLoading(false);
         return;
       }
     }
@@ -793,6 +798,9 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
             fetchCandidateStoresRef.current?.(explicitAddressId);
           }, 500);
         }
+        // CRÍTICO: NO dejar storesLoading en true cuando programamos un reintento
+        // El reintento se encargará de activarlo de nuevo si es necesario
+        setStoresLoading(false);
         return;
       }
     }
@@ -1056,7 +1064,20 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         setStoresLoading(false);
         isFetchingRef.current = false;
         setLastResponse({ success: true, data: cachedResponse });
-        // console.log(`📦 [CACHÉ] Usando respuesta CACHEADA. canPickUp=${globalCanPickUp} (NO del endpoint)`);
+
+        // CRÍTICO: Liberar el lock global cuando leemos del caché
+        if (typeof globalThis.window !== 'undefined') {
+          (globalThis.window as unknown as { __imagiqIsFetching?: boolean }).__imagiqIsFetching = false;
+        }
+
+        // CRÍTICO: Disparar evento para que Step4OrderSummary se sincronice
+        // Aunque leímos del caché (no escribimos), Step4OrderSummary necesita saber
+        // que los datos están listos para actualizar su estado interno
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('canPickUpCache-updated', {
+            detail: { key: cacheKey, value: globalCanPickUp, addressId: currentAddressId }
+          }));
+        }
       }
       return; // Salir sin hacer petición al endpoint
     }
@@ -2050,13 +2071,74 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   useEffect(() => {
     if (deliveryMethod === "domicilio" && globalThis.window !== undefined) {
       const savedAddress = globalThis.window.localStorage.getItem("checkout-address");
+      console.log('🔍 [useDelivery] Verificando checkout-address:', savedAddress?.substring(0, 200));
       if (savedAddress && savedAddress !== "undefined") {
         try {
           const saved = JSON.parse(savedAddress) as Address;
+          console.log('🔍 [useDelivery] Dirección parseada:', {
+            id: saved.id,
+            latitud: saved.latitud,
+            longitud: saved.longitud,
+            googleUrl: saved.googleUrl,
+            localidad: saved.localidad,
+            barrio: saved.barrio,
+            complemento: saved.complemento
+          });
           if (saved.id) {
-            setAddress(saved);
-            // IMPORTANTE: Actualizar ref para que las peticiones usen este ID
-            lastAddressIdRef.current = saved.id;
+            // Verificar si la dirección tiene campos completos
+            // Si no tiene localidad/barrio/complemento, buscar en addresses la versión completa
+            const needsEnrichment = !saved.localidad && !saved.barrio && !saved.complemento;
+            console.log('🔍 [useDelivery] needsEnrichment:', needsEnrichment, 'addresses.length:', addresses.length);
+
+            if (needsEnrichment && addresses.length > 0) {
+              // Buscar la dirección completa en la lista de direcciones
+              const completeAddress = addresses.find(a => a.id === saved.id);
+              console.log('🔍 [useDelivery] completeAddress found:', completeAddress ? {
+                id: completeAddress.id,
+                latitud: completeAddress.latitud,
+                longitud: completeAddress.longitud,
+                googleUrl: completeAddress.googleUrl,
+                localidad: completeAddress.localidad,
+                barrio: completeAddress.barrio,
+                complemento: completeAddress.complemento
+              } : 'NOT FOUND');
+              if (completeAddress) {
+                // Usar la dirección completa del backend
+                setAddress(completeAddress);
+                lastAddressIdRef.current = completeAddress.id;
+
+                // Actualizar localStorage con la versión completa
+                const enrichedAddress = {
+                  ...saved,
+                  localidad: completeAddress.localidad || '',
+                  barrio: completeAddress.barrio || '',
+                  complemento: completeAddress.complemento || '',
+                  instruccionesEntrega: completeAddress.instruccionesEntrega || '',
+                  direccionFormateada: completeAddress.direccionFormateada || saved.lineaUno || '',
+                  tipoDireccion: completeAddress.tipoDireccion || '',
+                  nombreDireccion: completeAddress.nombreDireccion || '',
+                  // Coordenadas y Google URL
+                  latitud: completeAddress.latitud || 0,
+                  longitud: completeAddress.longitud || 0,
+                  googleUrl: completeAddress.googleUrl || '',
+                  googlePlaceId: completeAddress.googlePlaceId || '',
+                };
+                console.log('✅ [useDelivery] Enriched address guardado:', {
+                  latitud: enrichedAddress.latitud,
+                  longitud: enrichedAddress.longitud,
+                  googleUrl: enrichedAddress.googleUrl
+                });
+                globalThis.window.localStorage.setItem('checkout-address', JSON.stringify(enrichedAddress));
+                globalThis.window.localStorage.setItem('imagiq_default_address', JSON.stringify(enrichedAddress));
+              } else {
+                setAddress(saved);
+                lastAddressIdRef.current = saved.id;
+              }
+            } else {
+              console.log('🔍 [useDelivery] No enrichment needed or no addresses, using saved as-is');
+              setAddress(saved);
+              lastAddressIdRef.current = saved.id;
+            }
 
             // Disparar recarga para asegurar que se use la dirección cargada
             setTimeout(() => {
@@ -2072,7 +2154,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deliveryMethod]);
+  }, [deliveryMethod, addresses]);
 
   // Cargar tienda seleccionada desde localStorage o seleccionar la primera por defecto
   // IMPORTANTE: Solo restaurar si la dirección no cambió desde que se guardó
@@ -2189,8 +2271,9 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
           invalidateCacheOnAddressChange(newAddress.id);
         }
 
-        // Llamar a fetch
-        fetchCandidateStoresRef.current?.();
+        // CRÍTICO: Pasar el addressId explícitamente para evitar race conditions
+        // donde localStorage aún no se ha actualizado con la nueva dirección
+        fetchCandidateStoresRef.current?.(newAddress.id);
       }
     } catch (error) {
       console.error("Error refreshing addresses:", error);

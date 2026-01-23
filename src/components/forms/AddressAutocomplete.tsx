@@ -191,15 +191,19 @@ export function AddressAutocomplete({
 
   /**
    * Actualizar posición del dropdown cuando se abre
+   * IMPORTANTE: NO usar window.scrollY porque el dropdown se renderiza con position: fixed
+   * y getBoundingClientRect() ya devuelve la posición relativa al viewport
    */
   useEffect(() => {
     if (isOpen && inputRef.current && isMounted) {
       const updatePosition = () => {
         const rect = inputRef.current?.getBoundingClientRect();
         if (rect) {
+          // Usar solo getBoundingClientRect() sin scrollY/scrollX
+          // porque el dropdown usa position: fixed y se posiciona relativo al viewport
           setDropdownPosition({
-            top: rect.bottom + window.scrollY,
-            left: rect.left + window.scrollX,
+            top: rect.bottom,
+            left: rect.left,
             width: rect.width
           });
         }

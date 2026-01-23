@@ -229,4 +229,18 @@ export interface Direccion {
   ciudad: string;
   pais: string;
   esPredeterminada: boolean;
+  // Campos adicionales para mostrar detalles de dirección
+  direccionFormateada?: string;
+  lineaUno?: string;
+  localidad?: string;
+  barrio?: string;
+  complemento?: string;
+  instruccionesEntrega?: string;
+  tipoDireccion?: string;
+  nombreDireccion?: string;
+  // Google Maps
+  googleUrl?: string;
+  googlePlaceId?: string;
+  latitud?: number;
+  longitud?: number;
 }

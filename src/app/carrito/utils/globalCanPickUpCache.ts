@@ -43,14 +43,12 @@ export function buildGlobalCanPickUpKey(input: CacheKeyInput): string {
     .join("|");
 
   const key = `${userPart}::${addressPart}::${productsPart}`;
-  // console.log('🔑 [Cache] buildGlobalCanPickUpKey:', {
-//     userId: userPart,
-//     addressId: addressPart,
-//     productsCount: input.products.length,
-//     productsPart: productsPart, // Mostrar los productos exactos
-//     keyLength: key.length,
-//     keyPreview: key.substring(0, 100) + (key.length > 100 ? '...' : '')
-//   });
+  console.log('🔑 [Cache] buildGlobalCanPickUpKey:', {
+    userId: userPart,
+    addressId: addressPart,
+    productsCount: input.products.length,
+    keyPreview: key.substring(0, 100) + (key.length > 100 ? '...' : '')
+  });
   return key;
 }
 
@@ -97,11 +95,20 @@ export function getGlobalCanPickUpFromCache(key: string): boolean | null {
     loadFromLocalStorage();
   }
 
-  if (!cache) return null;
-  if (cache.key !== key) return null;
+  if (!cache) {
+    console.log('🔍 [Cache] getGlobalCanPickUpFromCache: No hay caché en memoria ni localStorage');
+    return null;
+  }
+  if (cache.key !== key) {
+    console.log('🔍 [Cache] getGlobalCanPickUpFromCache: Keys NO coinciden');
+    console.log('🔍 [Cache] KEY SOLICITADA:', key);
+    console.log('🔍 [Cache] KEY EN CACHÉ:', cache.key);
+    return null;
+  }
 
   const isExpired = Date.now() - cache.timestamp > TTL_MS;
   if (isExpired) {
+    console.log('🔍 [Cache] getGlobalCanPickUpFromCache: Caché expirado');
     cache = null;
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(LOCAL_STORAGE_KEY);
@@ -109,6 +116,7 @@ export function getGlobalCanPickUpFromCache(key: string): boolean | null {
     return null;
   }
 
+  console.log('✅ [Cache] getGlobalCanPickUpFromCache: Retornando valor:', cache.value);
   return cache.value;
 }
 
@@ -188,15 +196,14 @@ export function setGlobalCanPickUpCache(
   fullResponse?: CandidateStoresResponse | null,
   addressId?: string | null
 ): void {
-  // console.log('💾 [Cache] setGlobalCanPickUpCache:', {
-//     keyPreview: key.substring(0, 80) + '...',
-//     value,
-//     hasFullResponse: !!fullResponse,
-//     fullResponseCanPickUp: fullResponse?.canPickUp,
-//     addressId
-//   });
-  // DEBUG DETALLADO: Mostrar key completa al guardar
-  // console.log('💾 [Cache] KEY COMPLETA AL GUARDAR:', key);
+  console.log('💾 [Cache] setGlobalCanPickUpCache:', {
+    keyPreview: key.substring(0, 80) + '...',
+    value,
+    hasFullResponse: !!fullResponse,
+    fullResponseCanPickUp: fullResponse?.canPickUp,
+    addressId
+  });
+  console.log('💾 [Cache] KEY COMPLETA AL GUARDAR:', key);
 
   cache = {
     key,

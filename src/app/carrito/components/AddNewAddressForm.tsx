@@ -365,7 +365,7 @@ export default function AddNewAddressForm({
     if (!formData.numeroPrincipal.trim()) missing.push("Principal");
     if (!formData.numeroSecundario.trim()) missing.push("# Secund.");
     if (!formData.numeroComplementario.trim()) missing.push("# Compl.");
-    if (!formData.setsReferencia.trim()) missing.push("Sets de referencia");
+    if (!formData.setsReferencia.trim()) missing.push("Complemento");
     if (!selectedAddress) missing.push("Dirección de Google Maps");
 
     return missing;
@@ -523,6 +523,8 @@ export default function AddNewAddressForm({
         numeroSecundario: formData.numeroSecundario || undefined,
         barrio: formData.barrio || undefined,
         setsReferencia: formData.setsReferencia || undefined,
+        // IMPORTANTE: Mapear setsReferencia a complemento para el backend
+        complemento: formData.setsReferencia || undefined,
         instruccionesEntrega: formData.instruccionesEntrega || undefined,
         // Solo enviar ciudad si es un código válido (string numérico)
         ciudad: formData.ciudad && /^\d+$/.test(formData.ciudad) ? formData.ciudad : undefined,
@@ -606,6 +608,8 @@ export default function AddNewAddressForm({
           numeroSecundario: formData.numeroSecundarioFacturacion || undefined,
           barrio: formData.barrioFacturacion || undefined,
           setsReferencia: formData.setsReferenciaFacturacion || undefined,
+          // IMPORTANTE: Mapear setsReferencia a complemento para el backend
+          complemento: formData.setsReferenciaFacturacion || undefined,
           instruccionesEntrega:
             formData.instruccionesEntregaFacturacion || undefined,
           // Solo enviar ciudad si es un código válido (string numérico)
@@ -633,10 +637,24 @@ export default function AddNewAddressForm({
           usuario_id: shippingResponse.usuarioId || '',
           email: userEmail,
           linea_uno: shippingResponse.direccionFormateada || shippingResponse.lineaUno || '',
+          direccionFormateada: shippingResponse.direccionFormateada || '',
+          lineaUno: shippingResponse.lineaUno || '',
           codigo_dane: shippingResponse.codigo_dane || '',
           ciudad: shippingResponse.ciudad || '',
           pais: shippingResponse.pais || 'Colombia',
           esPredeterminada: true,
+          // Campos adicionales para mostrar detalles en Step3
+          localidad: shippingResponse.localidad || '',
+          barrio: shippingResponse.barrio || '',
+          complemento: shippingResponse.complemento || '',
+          instruccionesEntrega: shippingResponse.instruccionesEntrega || '',
+          tipoDireccion: shippingResponse.tipoDireccion || '',
+          nombreDireccion: shippingResponse.nombreDireccion || '',
+          // Google Maps URL
+          googleUrl: shippingResponse.googleUrl || '',
+          googlePlaceId: shippingResponse.googlePlaceId || '',
+          latitud: shippingResponse.latitud || 0,
+          longitud: shippingResponse.longitud || 0,
         };
         globalThis.window.localStorage.setItem('checkout-address', JSON.stringify(checkoutAddress));
         globalThis.window.localStorage.setItem('imagiq_default_address', JSON.stringify(checkoutAddress));
@@ -1278,7 +1296,7 @@ export default function AddNewAddressForm({
           </div>
         </div>
 
-        {/* Grid: Barrio y Sets de referencia en una sola fila */}
+        {/* Grid: Barrio y Complemento en una sola fila */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Barrio */}
           <div>
@@ -1305,13 +1323,13 @@ export default function AddNewAddressForm({
             />
           </div>
 
-          {/* Sets de referencia (antes puntoReferencia) */}
+          {/* Complemento (ej: Oficina 204, Casa 5, Apto 301) */}
           <div>
             <label
               htmlFor="setsReferencia"
               className="block text-sm font-bold text-gray-900 mb-1"
             >
-              Sets de referencia 
+              Complemento 
             </label>
             <input
               id="setsReferencia"
@@ -1794,13 +1812,13 @@ export default function AddNewAddressForm({
             </select>
           </div>
 
-          {/* Sets de referencia para facturación */}
+          {/* Complemento para facturación */}
           <div>
             <label
               htmlFor="setsReferenciaFacturacion"
               className="block text-sm font-bold text-gray-900 mb-1"
             >
-              Sets de referencia
+              Complemento
             </label>
             <input
               id="setsReferenciaFacturacion"

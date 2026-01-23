@@ -156,7 +156,7 @@ export const DeliveryMethodSelector: React.FC<DeliveryMethodSelectorProps> = ({
                       <div className="h-4 bg-gray-300 rounded w-1/2"></div>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600">
                       {address
                         ? (() => {
                             // El backend usa snake_case, necesitamos acceder a linea_uno
@@ -167,10 +167,33 @@ export const DeliveryMethodSelector: React.FC<DeliveryMethodSelectorProps> = ({
                               address.lineaUno ||
                               address.nombreDireccion ||
                               'Dirección';
-                            return `${displayAddress}, ${address.ciudad}`;
+
+                            // Obtener campos adicionales
+                            const localidad = address.localidad || '';
+                            const barrio = address.barrio || '';
+                            const ciudad = address.ciudad || '';
+                            const complemento = address.complemento || '';
+                            const instruccionesEntrega = address.instruccionesEntrega || '';
+
+                            // Construir línea de ubicación
+                            const ubicacion = [localidad, barrio, ciudad].filter(Boolean).join(', ');
+
+                            return (
+                              <div className="space-y-1">
+                                <p className="font-medium text-gray-900">{displayAddress}</p>
+                                {ubicacion && <p className="text-gray-500">{ubicacion}</p>}
+                                {(complemento || instruccionesEntrega) && (
+                                  <p className="text-gray-500 text-xs italic">
+                                    {complemento && <span>Ref: {complemento}</span>}
+                                    {complemento && instruccionesEntrega && ' • '}
+                                    {instruccionesEntrega && <span>Observaciones: {instruccionesEntrega}</span>}
+                                  </p>
+                                )}
+                              </div>
+                            );
                           })()
-                        : "No hay dirección seleccionada"}
-                    </p>
+                        : <p>No hay dirección seleccionada</p>}
+                    </div>
                   )}
                 </div>
                 {onEditToggle && (

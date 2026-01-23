@@ -2054,9 +2054,39 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         try {
           const saved = JSON.parse(savedAddress) as Address;
           if (saved.id) {
-            setAddress(saved);
-            // IMPORTANTE: Actualizar ref para que las peticiones usen este ID
-            lastAddressIdRef.current = saved.id;
+            // Verificar si la dirección tiene campos completos
+            // Si no tiene localidad/barrio/complemento, buscar en addresses la versión completa
+            const needsEnrichment = !saved.localidad && !saved.barrio && !saved.complemento;
+
+            if (needsEnrichment && addresses.length > 0) {
+              // Buscar la dirección completa en la lista de direcciones
+              const completeAddress = addresses.find(a => a.id === saved.id);
+              if (completeAddress) {
+                // Usar la dirección completa del backend
+                setAddress(completeAddress);
+                lastAddressIdRef.current = completeAddress.id;
+
+                // Actualizar localStorage con la versión completa
+                const enrichedAddress = {
+                  ...saved,
+                  localidad: completeAddress.localidad || '',
+                  barrio: completeAddress.barrio || '',
+                  complemento: completeAddress.complemento || '',
+                  instruccionesEntrega: completeAddress.instruccionesEntrega || '',
+                  direccionFormateada: completeAddress.direccionFormateada || saved.lineaUno || '',
+                  tipoDireccion: completeAddress.tipoDireccion || '',
+                  nombreDireccion: completeAddress.nombreDireccion || '',
+                };
+                globalThis.window.localStorage.setItem('checkout-address', JSON.stringify(enrichedAddress));
+                globalThis.window.localStorage.setItem('imagiq_default_address', JSON.stringify(enrichedAddress));
+              } else {
+                setAddress(saved);
+                lastAddressIdRef.current = saved.id;
+              }
+            } else {
+              setAddress(saved);
+              lastAddressIdRef.current = saved.id;
+            }
 
             // Disparar recarga para asegurar que se use la dirección cargada
             setTimeout(() => {
@@ -2072,7 +2102,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deliveryMethod]);
+  }, [deliveryMethod, addresses]);
 
   // Cargar tienda seleccionada desde localStorage o seleccionar la primera por defecto
   // IMPORTANTE: Solo restaurar si la dirección no cambió desde que se guardó

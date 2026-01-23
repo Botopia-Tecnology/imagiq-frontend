@@ -22,6 +22,20 @@ export function addressToDireccion(address: Partial<Address> & Pick<Address, 'id
     ciudad: address.ciudad || "",
     pais: address.pais || "Colombia",
     esPredeterminada: true,
+    // Campos adicionales para mostrar detalles en Step3
+    direccionFormateada: address.direccionFormateada || "",
+    lineaUno: address.lineaUno || "",
+    localidad: address.localidad || "",
+    barrio: address.barrio || "",
+    complemento: address.complemento || "",
+    instruccionesEntrega: address.instruccionesEntrega || "",
+    tipoDireccion: address.tipoDireccion || "",
+    nombreDireccion: address.nombreDireccion || "",
+    // Google Maps
+    googleUrl: address.googleUrl || "",
+    googlePlaceId: address.googlePlaceId || "",
+    latitud: address.latitud || 0,
+    longitud: address.longitud || 0,
   };
 }
 
@@ -32,13 +46,19 @@ export function direccionToAddress(direccion: Direccion): Partial<Address> & Pic
   return {
     id: direccion.id || "",
     usuarioId: direccion.usuario_id || "",
-    nombreDireccion: direccion.linea_uno || "Dirección",
-    direccionFormateada: direccion.linea_uno || "",
-    lineaUno: direccion.linea_uno || "",
+    nombreDireccion: direccion.nombreDireccion || direccion.linea_uno || "Dirección",
+    direccionFormateada: direccion.direccionFormateada || direccion.linea_uno || "",
+    lineaUno: direccion.lineaUno || direccion.linea_uno || "",
     codigo_dane: direccion.codigo_dane || "",
     ciudad: direccion.ciudad || "",
     pais: direccion.pais || "Colombia",
     esPredeterminada: direccion.esPredeterminada ?? true,
+    // Campos adicionales
+    localidad: direccion.localidad || "",
+    barrio: direccion.barrio || "",
+    complemento: direccion.complemento || "",
+    instruccionesEntrega: direccion.instruccionesEntrega || "",
+    tipoDireccion: direccion.tipoDireccion as Address['tipoDireccion'],
   };
 }
 

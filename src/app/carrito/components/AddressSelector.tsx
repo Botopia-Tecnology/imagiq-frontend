@@ -120,7 +120,9 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
                   const mainAddress = ad.direccionFormateada || ad.nombreDireccion || 'Dirección';
                   const barrio = ad.barrio || '';
                   const ciudad = ad.ciudad || '';
+                  const localidad = ad.localidad || '';
                   const complemento = ad.complemento || '';
+                  const instruccionesEntrega = ad.instruccionesEntrega || '';
 
                   return (
                     <label
@@ -153,32 +155,36 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
                       />
 
                       {/* Layout responsive: una línea en desktop, multi-línea en mobile */}
-                      <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center gap-1 md:gap-2 text-sm">
-                        {/* Badge de tipo */}
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-base">{icon}</span>
-                          <span className="font-medium text-gray-900">{label}</span>
+                      <div className="flex-1 min-w-0 flex flex-col gap-1 text-sm">
+                        {/* Primera línea: tipo + dirección principal */}
+                        <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
+                          {/* Badge de tipo */}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-base">{icon}</span>
+                            <span className="font-medium text-gray-900">{label}</span>
+                          </div>
+
+                          {/* Separador desktop */}
+                          <span className="hidden md:inline text-gray-400">-</span>
+
+                          {/* Dirección principal */}
+                          <span className="font-medium text-gray-900">{mainAddress}</span>
                         </div>
 
-                        {/* Separador desktop */}
-                        <span className="hidden md:inline text-gray-400">-</span>
+                        {/* Segunda línea: ubicación (localidad, barrio, ciudad) */}
+                        {(localidad || barrio || ciudad) && (
+                          <div className="text-gray-500 text-xs md:text-sm">
+                            {[localidad, barrio, ciudad].filter(Boolean).join(', ')}
+                          </div>
+                        )}
 
-                        {/* Dirección principal */}
-                        <span className="font-medium text-gray-900">{mainAddress}</span>
-
-                        {/* Detalles adicionales */}
-                        {(barrio || ciudad || complemento) && (
-                          <>
-                            <span className="text-gray-500">
-                              {barrio && ciudad ? `${barrio}, ${ciudad}` : barrio || ciudad}
-                            </span>
-                            {complemento && (
-                              <>
-                                <span className="hidden md:inline text-gray-400">•</span>
-                                <span className="text-gray-500 italic">{complemento}</span>
-                              </>
-                            )}
-                          </>
+                        {/* Tercera línea: referencia e instrucciones de entrega */}
+                        {(complemento || instruccionesEntrega) && (
+                          <div className="text-gray-500 text-xs italic flex flex-wrap gap-1">
+                            {complemento && <span>Ref: {complemento}</span>}
+                            {complemento && instruccionesEntrega && <span className="text-gray-400">•</span>}
+                            {instruccionesEntrega && <span>Observaciones: {instruccionesEntrega}</span>}
+                          </div>
                         )}
                       </div>
 

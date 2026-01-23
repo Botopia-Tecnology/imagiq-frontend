@@ -2050,17 +2050,37 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   useEffect(() => {
     if (deliveryMethod === "domicilio" && globalThis.window !== undefined) {
       const savedAddress = globalThis.window.localStorage.getItem("checkout-address");
+      console.log('🔍 [useDelivery] Verificando checkout-address:', savedAddress?.substring(0, 200));
       if (savedAddress && savedAddress !== "undefined") {
         try {
           const saved = JSON.parse(savedAddress) as Address;
+          console.log('🔍 [useDelivery] Dirección parseada:', {
+            id: saved.id,
+            latitud: saved.latitud,
+            longitud: saved.longitud,
+            googleUrl: saved.googleUrl,
+            localidad: saved.localidad,
+            barrio: saved.barrio,
+            complemento: saved.complemento
+          });
           if (saved.id) {
             // Verificar si la dirección tiene campos completos
             // Si no tiene localidad/barrio/complemento, buscar en addresses la versión completa
             const needsEnrichment = !saved.localidad && !saved.barrio && !saved.complemento;
+            console.log('🔍 [useDelivery] needsEnrichment:', needsEnrichment, 'addresses.length:', addresses.length);
 
             if (needsEnrichment && addresses.length > 0) {
               // Buscar la dirección completa en la lista de direcciones
               const completeAddress = addresses.find(a => a.id === saved.id);
+              console.log('🔍 [useDelivery] completeAddress found:', completeAddress ? {
+                id: completeAddress.id,
+                latitud: completeAddress.latitud,
+                longitud: completeAddress.longitud,
+                googleUrl: completeAddress.googleUrl,
+                localidad: completeAddress.localidad,
+                barrio: completeAddress.barrio,
+                complemento: completeAddress.complemento
+              } : 'NOT FOUND');
               if (completeAddress) {
                 // Usar la dirección completa del backend
                 setAddress(completeAddress);
@@ -2076,7 +2096,17 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
                   direccionFormateada: completeAddress.direccionFormateada || saved.lineaUno || '',
                   tipoDireccion: completeAddress.tipoDireccion || '',
                   nombreDireccion: completeAddress.nombreDireccion || '',
+                  // Coordenadas y Google URL
+                  latitud: completeAddress.latitud || 0,
+                  longitud: completeAddress.longitud || 0,
+                  googleUrl: completeAddress.googleUrl || '',
+                  googlePlaceId: completeAddress.googlePlaceId || '',
                 };
+                console.log('✅ [useDelivery] Enriched address guardado:', {
+                  latitud: enrichedAddress.latitud,
+                  longitud: enrichedAddress.longitud,
+                  googleUrl: enrichedAddress.googleUrl
+                });
                 globalThis.window.localStorage.setItem('checkout-address', JSON.stringify(enrichedAddress));
                 globalThis.window.localStorage.setItem('imagiq_default_address', JSON.stringify(enrichedAddress));
               } else {
@@ -2084,6 +2114,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
                 lastAddressIdRef.current = saved.id;
               }
             } else {
+              console.log('🔍 [useDelivery] No enrichment needed or no addresses, using saved as-is');
               setAddress(saved);
               lastAddressIdRef.current = saved.id;
             }

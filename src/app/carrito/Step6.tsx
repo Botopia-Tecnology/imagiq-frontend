@@ -147,6 +147,15 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       ciudad: address.ciudad || "",
       pais: address.pais,
       esPredeterminada: address.esPredeterminada,
+      // Campos adicionales
+      googleUrl: address.googleUrl || "",
+      googlePlaceId: address.googlePlaceId || "",
+      latitud: address.latitud || 0,
+      longitud: address.longitud || 0,
+      localidad: address.localidad || "",
+      barrio: address.barrio || "",
+      complemento: address.complemento || "",
+      instruccionesEntrega: address.instruccionesEntrega || "",
     };
   };
 

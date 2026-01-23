@@ -134,6 +134,15 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
                         name="address"
                         checked={address?.id === ad.id}
                         onChange={() => {
+                          console.log('📍 [AddressSelector] Dirección seleccionada:', {
+                            id: ad.id,
+                            latitud: ad.latitud,
+                            longitud: ad.longitud,
+                            googleUrl: ad.googleUrl,
+                            localidad: ad.localidad,
+                            barrio: ad.barrio,
+                            complemento: ad.complemento
+                          });
                           onAddressChange(ad);
 
                           // Disparar evento para sincronizar navbar con la dirección seleccionada

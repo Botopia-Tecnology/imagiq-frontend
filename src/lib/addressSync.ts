@@ -115,6 +115,18 @@ export async function syncAddress(options: SyncAddressOptions): Promise<void> {
 
     // 4. Guardar en localStorage
     console.log('💾 Guardando en localStorage...');
+    console.log('📍 [syncAddress] Address original:', {
+      id: address.id,
+      latitud: address.latitud,
+      longitud: address.longitud,
+      googleUrl: address.googleUrl
+    });
+    console.log('📍 [syncAddress] checkoutAddress convertido:', {
+      id: checkoutAddress.id,
+      latitud: checkoutAddress.latitud,
+      longitud: checkoutAddress.longitud,
+      googleUrl: checkoutAddress.googleUrl
+    });
     localStorage.setItem('checkout-address', JSON.stringify(checkoutAddress));
     localStorage.setItem('imagiq_default_address', JSON.stringify(checkoutAddress));
     console.log('✅ Guardado en localStorage');

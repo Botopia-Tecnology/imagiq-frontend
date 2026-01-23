@@ -28,7 +28,9 @@ interface AddNewAddressFormProps {
   onCancel?: () => void;
   withContainer?: boolean; // Si debe mostrar el contenedor con padding y border
   onSubmitRef?: React.MutableRefObject<(() => void) | null>; // Ref para exponer la función de submit
+  onContinueToStep2Ref?: React.MutableRefObject<(() => void) | null>; // Ref para exponer la función de ir al paso 2
   onFormValidChange?: (isValid: boolean) => void; // Callback para notificar cuando el formulario es válido
+  onCurrentStepChange?: (step: 1 | 2) => void; // Callback para notificar cuando cambia el paso actual
   disabled?: boolean; // Si los campos deben estar deshabilitados
   geoLocationData?: {
     departamento?: string;
@@ -52,7 +54,9 @@ export default function AddNewAddressForm({
   onCancel,
   withContainer = true,
   onSubmitRef,
+  onContinueToStep2Ref,
   onFormValidChange,
+  onCurrentStepChange,
   disabled = false,
   geoLocationData,
   isRequestingLocation = false,
@@ -1057,6 +1061,24 @@ export default function AddNewAddressForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onSubmitRef, selectedAddress?.placeId, formData.nombreDireccion, formData.instruccionesEntrega, formData.usarMismaParaFacturacion]);
 
+  // Exponer función para continuar al paso 2
+  React.useEffect(() => {
+    if (onContinueToStep2Ref) {
+      onContinueToStep2Ref.current = () => {
+        if (isStep1Complete) {
+          setCurrentStep(2);
+        }
+      };
+    }
+  }, [onContinueToStep2Ref, isStep1Complete]);
+
+  // Notificar cuando cambia el paso actual
+  React.useEffect(() => {
+    if (onCurrentStepChange) {
+      onCurrentStepChange(currentStep);
+    }
+  }, [currentStep, onCurrentStepChange]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await handleSubmitInternal();
@@ -1065,22 +1087,22 @@ export default function AddNewAddressForm({
   const formContent = (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Título, indicador de pasos y botón continuar */}
-      <div className="flex items-center justify-between mb-6 gap-4">
+      <div className="flex flex-wrap items-center justify-between mb-4 md:mb-6 gap-2 md:gap-4">
         {/* Título (si se proporciona) */}
         {headerTitle && (
-          <h2 className="text-2xl font-bold whitespace-nowrap">{headerTitle}</h2>
+          <h2 className="text-lg md:text-2xl font-bold">{headerTitle}</h2>
         )}
 
         {/* Solo mostrar indicador de pasos si NO es billingOnly */}
         {!billingOnly ? (
-          <div className={`flex items-center ${!withContainer ? 'gap-1' : 'gap-2'}`}>
-            <div className={`flex items-center justify-center ${!withContainer ? 'w-6 h-6 text-xs' : 'w-8 h-8 text-sm'} rounded-full font-bold ${
+          <div className={`flex items-center ${!withContainer ? 'gap-1' : 'gap-1 md:gap-2'}`}>
+            <div className={`flex items-center justify-center ${!withContainer ? 'w-5 h-5 text-[10px]' : 'w-6 h-6 md:w-8 md:h-8 text-xs md:text-sm'} rounded-full font-bold ${
               currentStep === 1 ? "bg-black text-white" : "bg-gray-200 text-gray-600"
             }`}>
               1
             </div>
-            <div className={`${!withContainer ? 'w-8' : 'w-12'} h-0.5 bg-gray-300`}></div>
-            <div className={`flex items-center justify-center ${!withContainer ? 'w-6 h-6 text-xs' : 'w-8 h-8 text-sm'} rounded-full font-bold ${
+            <div className={`${!withContainer ? 'w-6' : 'w-6 md:w-12'} h-0.5 bg-gray-300`}></div>
+            <div className={`flex items-center justify-center ${!withContainer ? 'w-5 h-5 text-[10px]' : 'w-6 h-6 md:w-8 md:h-8 text-xs md:text-sm'} rounded-full font-bold ${
               currentStep === 2 ? "bg-black text-white" : "bg-gray-200 text-gray-600"
             }`}>
               2
@@ -1088,12 +1110,12 @@ export default function AddNewAddressForm({
           </div>
         ) : (
           /* Título para modo billingOnly */
-          <h3 className="text-lg font-semibold text-gray-900">Nueva dirección de facturación</h3>
+          <h3 className="text-base md:text-lg font-semibold text-gray-900">Nueva dirección de facturación</h3>
         )}
 
-        {/* Botón Continuar - solo visible en paso 1, a la derecha */}
+        {/* Botón Continuar - solo visible en paso 1, oculto en mobile (usa sticky bar) */}
         {currentStep === 1 ? (
-          <div className="relative">
+          <div className="relative hidden lg:block">
             <button
               type="button"
               onClick={() => {
@@ -1107,7 +1129,7 @@ export default function AddNewAddressForm({
               disabled={!isStep1Complete || (billingOnly && isLoading)}
               onMouseEnter={() => !isStep1Complete && setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
-              className="px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 md:px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
             >
               {billingOnly ? (isLoading ? "Guardando..." : "Guardar dirección") : "Continuar"}
             </button>
@@ -1130,8 +1152,8 @@ export default function AddNewAddressForm({
             )}
           </div>
         ) : (
-          /* Espacio vacío para mantener la alineación cuando no hay botón */
-          <div className="w-[120px]"></div>
+          /* Espacio vacío para mantener la alineación cuando no hay botón - solo en desktop */
+          <div className="hidden lg:block w-[120px]"></div>
         )}
       </div>
 

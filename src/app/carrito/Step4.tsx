@@ -352,7 +352,7 @@ export default function Step4({
         />
       </Modal>
 
-      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="w-full max-w-7xl grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Formulario de pago */}
         <form
           id="checkout-form"
@@ -468,7 +468,7 @@ export default function Step4({
               return isDisabled;
             })()
               ? "bg-gray-400 cursor-not-allowed opacity-70"
-              : "bg-[#222] hover:bg-[#333] cursor-pointer"
+              : "bg-green-600 hover:bg-green-700 cursor-pointer"
               }`}
             onClick={() => {
               const form = document.getElementById("checkout-form") as HTMLFormElement;

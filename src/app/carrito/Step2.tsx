@@ -144,6 +144,50 @@ export default function Step2({
 
   // Ref para poder hacer submit del formulario de dirección desde el botón del sidebar
   const addressFormSubmitRef = React.useRef<(() => void) | null>(null);
+  // Ref para poder avanzar al paso 2 del formulario de dirección
+  const addressContinueToStep2Ref = React.useRef<(() => void) | null>(null);
+  // Estado para rastrear el paso actual del formulario de dirección
+  const [addressFormStep, setAddressFormStep] = useState<1 | 2>(1);
+
+  // Redirección automática: Si el usuario ya tiene sesión y dirección, ir a Step1
+  // Esto maneja el caso de swipe back en mobile desde Step3
+  React.useEffect(() => {
+    const checkAndRedirect = () => {
+      // Verificar si hay usuario logueado (token o usuario en localStorage)
+      const token = localStorage.getItem("imagiq_token");
+      const userStr = localStorage.getItem("imagiq_user");
+      const savedAddress = localStorage.getItem("checkout-address");
+
+      let hasUser = false;
+      if (token && userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          // Usuario con rol 2 (registrado) o rol 3 (invitado verificado)
+          hasUser = user && (user.rol === 2 || user.rol === 3);
+        } catch {
+          hasUser = false;
+        }
+      }
+
+      let hasAddress = false;
+      if (savedAddress && savedAddress !== "null" && savedAddress !== "undefined") {
+        try {
+          const address = JSON.parse(savedAddress);
+          hasAddress = address && address.ciudad && address.linea_uno;
+        } catch {
+          hasAddress = false;
+        }
+      }
+
+      // Si ya tiene usuario y dirección, redirigir a Step1
+      if (hasUser && hasAddress) {
+        console.log("🔄 [Step2] Usuario y dirección detectados, redirigiendo a Step1...");
+        router.replace("/carrito/step1");
+      }
+    };
+
+    checkAndRedirect();
+  }, [router]);
 
   // --- Validación simplificada y centralizada ---
   // Filtros de seguridad por campo
@@ -1498,9 +1542,9 @@ export default function Step2({
     <div className="w-full bg-white flex flex-col items-center py-8 px-2 md:px-0 pb-40 md:pb-16 relative">
       {/* Fondo blanco sólido para cubrir cualquier animación de fondo */}
       <div className="fixed inset-0 bg-white -z-10 pointer-events-none" />
-      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
         {/* Login y invitado */}
-        <div className="col-span-2 flex flex-col gap-8">
+        <div className="col-span-1 lg:col-span-2 flex flex-col gap-8">
           {/* Login - Solo mostrar si no está registrado como invitado */}
           {!isRegisteredAsGuest && (
             <Card className="bg-[#F3F3F3] border-0 shadow">
@@ -1778,7 +1822,9 @@ export default function Step2({
                   onCancel={() => setIsRegisteredAsGuest(false)}
                   withContainer={false}
                   onSubmitRef={addressFormSubmitRef}
+                  onContinueToStep2Ref={addressContinueToStep2Ref}
                   onFormValidChange={setIsAddressFormValid}
+                  onCurrentStepChange={setAddressFormStep}
                   disabled={hasAddedAddress}
                   geoLocationData={geoLocationData}
                   isRequestingLocation={isRequestingLocation}
@@ -1789,8 +1835,8 @@ export default function Step2({
             </Card>
           )}
         </div>
-        {/* Resumen de compra con Step4OrderSummary - Hidden en mobile */}
-        <aside className="hidden md:flex flex-col gap-4">
+        {/* Resumen de compra con Step4OrderSummary - Hidden en mobile y tablet */}
+        <aside className="hidden lg:flex flex-col gap-4">
           <div className="w-full">
             <Step4OrderSummary
               onFinishPayment={
@@ -1850,7 +1896,7 @@ export default function Step2({
             />
             {/* Estilo personalizado para el botón "Registrarse como invitado" - más alto y texto en dos líneas */}
             <style jsx global>{`
-              aside.hidden.md\\:flex button[data-testid="checkout-finish-btn"][data-button-text="Registrarse como invitado"] {
+              aside.hidden.lg\\:flex button[data-testid="checkout-finish-btn"][data-button-text="Registrarse como invitado"] {
                 min-height: 4.5rem !important;
                 padding: 1rem 0.75rem !important;
                 white-space: normal !important;
@@ -1862,7 +1908,7 @@ export default function Step2({
                 align-items: center !important;
                 justify-content: center !important;
               }
-              aside.hidden.md\\:flex button[data-testid="checkout-finish-btn"][data-button-text="Registrarse como invitado"] span {
+              aside.hidden.lg\\:flex button[data-testid="checkout-finish-btn"][data-button-text="Registrarse como invitado"] span {
                 white-space: normal !important;
                 word-wrap: break-word !important;
                 word-break: break-word !important;
@@ -1888,8 +1934,8 @@ export default function Step2({
         </aside>
       </div>
 
-      {/* Sticky Bottom Bar - Solo Mobile */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+      {/* Sticky Bottom Bar - Mobile y Tablet */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
         <div className="p-4">
           {/* Resumen compacto */}
           <div className="flex items-center justify-between mb-3">
@@ -1909,17 +1955,34 @@ export default function Step2({
             className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${loading ||
                 isSavingAddress ||
                 (!isRegisteredAsGuest && !isGuestFormValid) ||
-                (isRegisteredAsGuest && !hasAddedAddress) ||
+                (isRegisteredAsGuest && !hasAddedAddress && addressFormStep === 2 && !isAddressFormValid) ||
                 !tradeInValidation.isValid
                 ? "bg-gray-400 cursor-not-allowed opacity-70"
                 : "bg-[#222] hover:bg-[#333] cursor-pointer"
               }`}
-            onClick={handleContinue}
+            onClick={() => {
+              // Si está registrado como invitado y no tiene dirección
+              if (isRegisteredAsGuest && !hasAddedAddress) {
+                // Si está en paso 1 del formulario de dirección, avanzar al paso 2
+                if (addressFormStep === 1) {
+                  if (addressContinueToStep2Ref.current) {
+                    addressContinueToStep2Ref.current();
+                  }
+                } else {
+                  // Si está en paso 2, hacer submit del formulario
+                  if (addressFormSubmitRef.current) {
+                    addressFormSubmitRef.current();
+                  }
+                }
+              } else {
+                handleContinue();
+              }
+            }}
             disabled={
               loading ||
               isSavingAddress ||
               (!isRegisteredAsGuest && !isGuestFormValid) ||
-              (isRegisteredAsGuest && !hasAddedAddress && !isAddressFormValid) ||
+              (isRegisteredAsGuest && !hasAddedAddress && addressFormStep === 2 && !isAddressFormValid) ||
               (guestStep !== 'verified' && guestStep !== 'form' && isRegisteredAsGuest) ||
               !tradeInValidation.isValid
             }
@@ -1931,7 +1994,7 @@ export default function Step2({
                 : !isRegisteredAsGuest
                   ? "Registrarse como invitado"
                   : !hasAddedAddress
-                    ? "Agregar dirección"
+                    ? (addressFormStep === 1 ? "Continuar" : "Agregar dirección")
                     : "Continuar pago"}
           </button>
         </div>

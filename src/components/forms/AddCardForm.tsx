@@ -844,7 +844,7 @@ const AddCardForm = React.forwardRef<AddCardFormHandle, AddCardFormProps>(({
     );
   }
 
-  // Inline Layout (Original Stacked)
+  // Inline Layout
   // IMPORTANTE: Cuando embedded=true, usar div en lugar de form para evitar form anidado en Step4
   const content = (
     <>
@@ -867,13 +867,31 @@ const AddCardForm = React.forwardRef<AddCardFormHandle, AddCardFormProps>(({
 
       {renderMessages()}
 
-      {/* Stacked Layout */}
-      <div>
-        <div className="mb-6">
-          {renderCardVisual()}
+      {/* Side-by-side Layout for embedded (guest users) / Stacked for non-embedded */}
+      {embedded ? (
+        <div className="flex flex-col md:flex-row gap-6 items-start">
+          {/* Columna Izquierda: Tarjeta animada */}
+          <div className="w-full md:w-1/2">
+            <div className="flex items-start justify-center">
+              <div className="w-full max-w-[320px]">
+                {renderCardVisual()}
+              </div>
+            </div>
+          </div>
+
+          {/* Columna Derecha: Formulario */}
+          <div className="w-full md:w-1/2">
+            {renderFormFields()}
+          </div>
         </div>
-        {renderFormFields()}
-      </div>
+      ) : (
+        <div>
+          <div className="mb-6">
+            {renderCardVisual()}
+          </div>
+          {renderFormFields()}
+        </div>
+      )}
 
       {!embedded && renderInlineButtons()}
     </>

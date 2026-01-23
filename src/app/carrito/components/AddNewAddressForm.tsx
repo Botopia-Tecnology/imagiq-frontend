@@ -44,6 +44,7 @@ interface AddNewAddressFormProps {
   hideBackButton?: boolean; // Ocultar el botón "Atrás" en el paso 2
   skipSetDefault?: boolean; // Si es true, NO establece la dirección como predeterminada (útil para Step6 facturación)
   billingOnly?: boolean; // Si es true, solo muestra paso 1 y usa nombre "Dirección de facturación" automáticamente
+  headerTitle?: string; // Título opcional para mostrar junto al indicador de pasos
 }
 
 export default function AddNewAddressForm({
@@ -59,6 +60,7 @@ export default function AddNewAddressForm({
   hideBackButton = false,
   skipSetDefault = false,
   billingOnly = false,
+  headerTitle,
 }: AddNewAddressFormProps) {
   const { user, login } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
@@ -151,7 +153,9 @@ export default function AddNewAddressForm({
       try {
         setLoadingDepartments(true);
         const data = await locationsService.getDepartments();
-        setDepartments(data);
+        // Agregar "Distrito Capital Bogotá DC" al inicio de la lista
+        const bogotaDC = { nombre: "Distrito Capital Bogotá DC" };
+        setDepartments([bogotaDC, ...data]);
       } catch (error) {
         console.error("Error cargando departamentos:", error);
       } finally {
@@ -167,6 +171,12 @@ export default function AddNewAddressForm({
     const loadCities = async () => {
       if (!formData.departamento) {
         setCities([]);
+        return;
+      }
+
+      // Caso especial: Distrito Capital Bogotá DC
+      if (formData.departamento === "Distrito Capital Bogotá DC") {
+        setCities([{ codigo: "11001000", nombre: "Bogotá D.C." }]);
         return;
       }
 
@@ -193,6 +203,12 @@ export default function AddNewAddressForm({
         return;
       }
 
+      // Caso especial: Distrito Capital Bogotá DC
+      if (formData.departamentoFacturacion === "Distrito Capital Bogotá DC") {
+        setBillingCities([{ codigo: "11001000", nombre: "Bogotá D.C." }]);
+        return;
+      }
+
       try {
         setLoadingBillingCities(true);
         const data = await locationsService.getCitiesByDepartment(formData.departamentoFacturacion);
@@ -216,12 +232,13 @@ export default function AddNewAddressForm({
 
   // Construir dirección sugerida automáticamente cuando cambien los campos manuales
   useEffect(() => {
-    // Solo construir si tenemos TODOS los campos requeridos: Tipo de Vía, Principal, Secund., Compl. y ciudad
+    // Solo construir si tenemos TODOS los campos requeridos: Tipo de Vía, Principal, Secund., Compl., Barrio y ciudad
     if (
       formData.nombreCalle &&
       formData.numeroPrincipal &&
       formData.numeroSecundario &&
       formData.numeroComplementario &&
+      formData.barrio &&
       formData.ciudad
     ) {
       // Buscar el nombre de la ciudad en las ciudades cargadas
@@ -1047,8 +1064,13 @@ export default function AddNewAddressForm({
 
   const formContent = (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Indicador de pasos y botón continuar */}
-      <div className="flex items-center justify-between mb-6">
+      {/* Título, indicador de pasos y botón continuar */}
+      <div className="flex items-center justify-between mb-6 gap-4">
+        {/* Título (si se proporciona) */}
+        {headerTitle && (
+          <h2 className="text-2xl font-bold whitespace-nowrap">{headerTitle}</h2>
+        )}
+
         {/* Solo mostrar indicador de pasos si NO es billingOnly */}
         {!billingOnly ? (
           <div className={`flex items-center ${!withContainer ? 'gap-1' : 'gap-2'}`}>
@@ -1069,8 +1091,8 @@ export default function AddNewAddressForm({
           <h3 className="text-lg font-semibold text-gray-900">Nueva dirección de facturación</h3>
         )}
 
-        {/* Botón Continuar - solo visible en paso 1 */}
-        {currentStep === 1 && (
+        {/* Botón Continuar - solo visible en paso 1, a la derecha */}
+        {currentStep === 1 ? (
           <div className="relative">
             <button
               type="button"
@@ -1085,7 +1107,7 @@ export default function AddNewAddressForm({
               disabled={!isStep1Complete || (billingOnly && isLoading)}
               onMouseEnter={() => !isStep1Complete && setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
-              className="px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {billingOnly ? (isLoading ? "Guardando..." : "Guardar dirección") : "Continuar"}
             </button>
@@ -1107,6 +1129,9 @@ export default function AddNewAddressForm({
               </div>
             )}
           </div>
+        ) : (
+          /* Espacio vacío para mantener la alineación cuando no hay botón */
+          <div className="w-[120px]"></div>
         )}
       </div>
 
@@ -1360,7 +1385,7 @@ export default function AddNewAddressForm({
               htmlFor="setsReferencia"
               className="block text-sm font-bold text-gray-900 mb-1"
             >
-              Complemento 
+              Complemento
             </label>
             <input
               id="setsReferencia"
@@ -1392,13 +1417,13 @@ export default function AddNewAddressForm({
             <AddressAutocomplete
               addressType="shipping"
               placeholder={
-                !formData.nombreCalle || !formData.numeroPrincipal || !formData.numeroSecundario || !formData.numeroComplementario || !formData.departamento || !formData.ciudad
-                  ? "Completa todos los campos de dirección primero (Tipo, Principal, Secund., Compl.)"
+                !formData.nombreCalle || !formData.numeroPrincipal || !formData.numeroSecundario || !formData.numeroComplementario || !formData.barrio || !formData.departamento || !formData.ciudad
+                  ? "Completa todos los campos de dirección primero (Tipo, Principal, Secund., Compl., Barrio)"
                   : "Busca tu dirección completa (ej: Calle 80 # 15-25, Bogotá)"
               }
               onPlaceSelect={handleAddressSelect}
               value={suggestedAddress}
-              disabled={disabled || !formData.nombreCalle || !formData.numeroPrincipal || !formData.numeroSecundario || !formData.numeroComplementario || !formData.departamento || !formData.ciudad}
+              disabled={disabled || !formData.nombreCalle || !formData.numeroPrincipal || !formData.numeroSecundario || !formData.numeroComplementario || !formData.barrio || !formData.departamento || !formData.ciudad}
               enableAutoSelect={enableAutoSelect}
             />
           </div>
@@ -1538,21 +1563,58 @@ export default function AddNewAddressForm({
           {/* Si hay onSubmitRef, significa que el botón de guardar está fuera del formulario (Step 2) */}
           {/* Si NO hay onSubmitRef, debemos mostrar el botón de guardar aquí dentro (Modales) */}
           {(!withContainer && onSubmitRef) ? (
-            // En Step2: Solo mostrar "Atrás" si NO está oculto con hideBackButton
-            !hideBackButton && (
+            // En Step2: Mostrar "Atrás" y "Agregar dirección"
+            <>
+              {!hideBackButton && (
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(1)}
+                  disabled={disabled}
+                  className={`px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium transition ${
+                    disabled
+                      ? "bg-gray-100 cursor-not-allowed opacity-60"
+                      : "hover:bg-gray-50"
+                  }`}
+                >
+                  Atrás
+                </button>
+              )}
               <button
-                type="button"
-                onClick={() => setCurrentStep(1)}
-                disabled={disabled}
-                className={`w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium transition ${
-                  disabled
-                    ? "bg-gray-100 cursor-not-allowed opacity-60"
-                    : "hover:bg-gray-50"
-                }`}
+                type="submit"
+                disabled={
+                  disabled ||
+                  isLoading ||
+                  !selectedAddress ||
+                  !formData.nombreDireccion ||
+                  !formData.instruccionesEntrega ||
+                  (!formData.usarMismaParaFacturacion && !selectedBillingAddress)
+                }
+                className="flex-1 bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Atrás
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                    Guardando...
+                  </span>
+                ) : (
+                  "Agregar dirección"
+                )}
               </button>
-            )
+            </>
           ) : (
             // En Modal: Mostrar ambos botones
             <>

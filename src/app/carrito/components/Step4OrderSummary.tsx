@@ -47,6 +47,8 @@ interface Step4OrderSummaryProps {
     filteredStores: number;
     availableCities: number;
   }; // Información de debug sobre tiendas
+  readonly buttonVariant?: "default" | "green"; // Variante de color del botón
+  readonly hideButton?: boolean; // Ocultar el botón principal (útil para pasos intermedios como OTP)
 }
 
 export default function Step4OrderSummary({
@@ -66,6 +68,8 @@ export default function Step4OrderSummary({
   products: propProducts,
   calculations: propCalculations,
   debugStoresInfo,
+  buttonVariant = "default",
+  hideButton = false,
 }: Step4OrderSummaryProps) {
   const router = useRouter();
   const {
@@ -1274,53 +1278,32 @@ export default function Step4OrderSummary({
         </div>
       )}
 
-      {/* Botón de volver (opcional) */}
-      {onBack && (
-        <div className="flex gap-3">
+      {/* Botones: Volver y Acción en la misma fila */}
+      <div className="flex gap-3">
+        {/* Botón de volver (opcional) */}
+        {onBack && (
           <button
             type="button"
-            className="flex-1 bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-blue-600 transition cursor-pointer"
+            className="flex-1 bg-gray-200 text-gray-800 font-semibold py-3 rounded-lg hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-blue-600 transition cursor-pointer"
             onClick={onBack}
           >
             Volver
           </button>
-        </div>
-      )}
+        )}
 
-      {/* Términos y Botón en la misma fila - Botón a la derecha */}
-      <div className="flex items-center gap-4">
-        {/* Términos y Condiciones - A la izquierda */}
-        <p className="text-[10px] text-gray-600 leading-tight flex-1">
-          Al continuar con tu compra, aceptas los{" "}
-          <a
-            href="/soporte/politicas-generales"
-            target="_blank"
-            className="text-blue-600 underline hover:text-blue-700"
-          >
-            Términos y Condiciones
-          </a>{" "}
-          y utilizaremos tus datos personales de acuerdo a nuestra{" "}
-          <a
-            href="/soporte/tratamiento-datos-personales"
-            target="_blank"
-            className="text-blue-600 underline hover:text-blue-700"
-          >
-            política de privacidad
-          </a>.
-        </p>
-
-        <button
-          type="button"
-          className={`shrink-0 bg-black text-white font-bold py-3 px-6 rounded-lg text-sm hover:bg-gray-800 transition flex items-center justify-center ${buttonText === "Registrarse como invitado" ? "min-h-[4.5rem] whitespace-normal flex-wrap" : ""
-            } ${isProcessing || disabled || (!isStep2 && (userClickedWhileLoading || isArtificialLoading))
-              ? "opacity-70 cursor-not-allowed"
-              : "cursor-pointer"
-            }`}
-          disabled={isProcessing || disabled || (!isStep2 && (userClickedWhileLoading || isArtificialLoading))}
-          data-testid="checkout-finish-btn"
-          data-button-text={buttonText}
-          aria-busy={isProcessing || userClickedWhileLoading || isArtificialLoading}
-          onClick={async () => {
+        {!hideButton && (
+          <button
+            type="button"
+            className={`flex-1 ${buttonVariant === "green" ? "bg-green-600 hover:bg-green-700" : "bg-black hover:bg-gray-900"} text-white font-bold py-3 px-6 rounded-lg text-sm transition flex items-center justify-center ${buttonText === "Registrarse como invitado" ? "min-h-[4.5rem] whitespace-normal flex-wrap" : ""
+              } ${isProcessing || disabled || (!isStep2 && (userClickedWhileLoading || isArtificialLoading))
+                ? "opacity-70 cursor-not-allowed"
+                : "cursor-pointer"
+              }`}
+            disabled={isProcessing || disabled || (!isStep2 && (userClickedWhileLoading || isArtificialLoading))}
+            data-testid="checkout-finish-btn"
+            data-button-text={buttonText}
+            aria-busy={isProcessing || userClickedWhileLoading || isArtificialLoading}
+            onClick={async () => {
             // console.log(`🎯 [Step4OrderSummary] Button clicked - isLoadingCanPickUp: ${isLoadingCanPickUp}, globalCanPickUp: ${globalCanPickUp}, shouldCalculateCanPickUp: ${shouldCalculateCanPickUp}, userClickedWhileLoading: ${userClickedWhileLoading}`);
 
             // Usar loading artificial para feedback visual inmediato SIN activar el auto-advance del useEffect
@@ -1469,8 +1452,29 @@ export default function Step4OrderSummary({
           ) : (
             buttonText
           )}
-        </button>
+          </button>
+        )}
       </div>
+
+      {/* Términos y Condiciones */}
+      <p className="text-[10px] text-gray-600 leading-tight">
+        Al continuar con tu compra, aceptas los{" "}
+        <a
+          href="/soporte/politicas-generales"
+          target="_blank"
+          className="text-blue-600 underline hover:text-blue-700"
+        >
+          Términos y Condiciones
+        </a>{" "}
+        y utilizaremos tus datos personales de acuerdo a nuestra{" "}
+        <a
+          href="/soporte/tratamiento-datos-personales"
+          target="_blank"
+          className="text-blue-600 underline hover:text-blue-700"
+        >
+          política de privacidad
+        </a>.
+      </p>
 
       {/* Información de compra - financiamiento y envío */}
       <div className="flex flex-col gap-2 text-[10px] leading-relaxed mt-3">

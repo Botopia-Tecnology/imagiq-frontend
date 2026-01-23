@@ -194,9 +194,27 @@ export function PersonalInfoStep({ formData, onChange, disabled, onValidationCha
 
   const allRequirementsMet = Object.values(passwordRequirements).every(Boolean);
 
-  // Parse fecha_nacimiento (YYYY-MM-DD) into day, month, year
-  const parsedDate = formData.fecha_nacimiento ? formData.fecha_nacimiento.split('-') : ['', '', ''];
-  const [year, month, day] = parsedDate;
+  // Estado local para mantener los valores de los dropdowns de fecha
+  // Esto permite que el usuario vea su selección incluso si la fecha está incompleta
+  const [localDateParts, setLocalDateParts] = useState<{ day: string; month: string; year: string }>(() => {
+    // Inicializar desde formData si existe
+    if (formData.fecha_nacimiento) {
+      const parts = formData.fecha_nacimiento.split('-');
+      return { year: parts[0] || '', month: parts[1] || '', day: parts[2] || '' };
+    }
+    return { day: '', month: '', year: '' };
+  });
+
+  // Sincronizar con formData cuando cambie externamente (ej: restaurar desde localStorage)
+  useEffect(() => {
+    if (formData.fecha_nacimiento) {
+      const parts = formData.fecha_nacimiento.split('-');
+      setLocalDateParts({ year: parts[0] || '', month: parts[1] || '', day: parts[2] || '' });
+    }
+  }, [formData.fecha_nacimiento]);
+
+  // Usar valores locales para los dropdowns
+  const { day, month, year } = localDateParts;
 
   // Country codes
   const countryCodes = [
@@ -232,8 +250,17 @@ export function PersonalInfoStep({ formData, onChange, disabled, onValidationCha
   const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0'));
 
   const handleDateChange = (newDay: string, newMonth: string, newYear: string) => {
-    // Always update, even with partial selections - this allows dropdowns to work independently
-    onChange({ fecha_nacimiento: `${newYear}-${newMonth}-${newDay}` });
+    // Siempre actualizar el estado local para que los dropdowns muestren la selección del usuario
+    setLocalDateParts({ day: newDay, month: newMonth, year: newYear });
+
+    // Solo generar fecha ISO válida cuando los 3 campos estén completos
+    // Si falta algún campo, guardar string vacío para evitar errores de validación ISO 8601
+    if (newYear && newMonth && newDay) {
+      onChange({ fecha_nacimiento: `${newYear}-${newMonth}-${newDay}` });
+    } else {
+      // Guardar vacío si la fecha está incompleta - evita enviar formatos inválidos como "-01-15"
+      onChange({ fecha_nacimiento: "" });
+    }
   };
 
   return (
@@ -365,7 +392,11 @@ export function PersonalInfoStep({ formData, onChange, disabled, onValidationCha
               onChange={(e) => handleDateChange(e.target.value, month, year)}
               disabled={disabled}
               style={{ backgroundColor: '#ffffff' }}
-              className="h-9 w-[70px] rounded-md border border-gray-300 px-3 py-1 text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
+              className={`h-9 w-[70px] rounded-md border px-3 py-1 text-sm focus:outline-none focus:ring-1 ${
+                (month || year) && !day
+                  ? 'border-red-400 focus:border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 focus:border-black focus:ring-black'
+              }`}
             >
               <option value="">Día</option>
               {days.map((d) => (
@@ -379,7 +410,11 @@ export function PersonalInfoStep({ formData, onChange, disabled, onValidationCha
               onChange={(e) => handleDateChange(day, e.target.value, year)}
               disabled={disabled}
               style={{ backgroundColor: '#ffffff' }}
-              className="h-9 flex-1 rounded-md border border-gray-300 px-3 py-1 text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
+              className={`h-9 flex-1 rounded-md border px-3 py-1 text-sm focus:outline-none focus:ring-1 ${
+                (day || year) && !month
+                  ? 'border-red-400 focus:border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 focus:border-black focus:ring-black'
+              }`}
             >
               <option value="">Mes</option>
               {months.map((m) => (
@@ -393,7 +428,11 @@ export function PersonalInfoStep({ formData, onChange, disabled, onValidationCha
               onChange={(e) => handleDateChange(day, month, e.target.value)}
               disabled={disabled}
               style={{ backgroundColor: '#ffffff' }}
-              className="h-9 w-[90px] rounded-md border border-gray-300 px-3 py-1 text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
+              className={`h-9 w-[90px] rounded-md border px-3 py-1 text-sm focus:outline-none focus:ring-1 ${
+                (day || month) && !year
+                  ? 'border-red-400 focus:border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 focus:border-black focus:ring-black'
+              }`}
             >
               <option value="">Año</option>
               {years.map((y) => (
@@ -403,6 +442,32 @@ export function PersonalInfoStep({ formData, onChange, disabled, onValidationCha
               ))}
             </select>
           </div>
+          {/* Mensaje de error cuando faltan campos de fecha */}
+          {(day || month || year) && (!day || !month || !year) && (
+            <p className="text-xs text-red-600 flex items-center gap-1 mt-1">
+              <span className="font-bold">✗</span>
+              {!day && !month && !year
+                ? "Selecciona día, mes y año"
+                : !day && !month
+                  ? "Falta seleccionar el día y el mes"
+                  : !day && !year
+                    ? "Falta seleccionar el día y el año"
+                    : !month && !year
+                      ? "Falta seleccionar el mes y el año"
+                      : !day
+                        ? "Falta seleccionar el día"
+                        : !month
+                          ? "Falta seleccionar el mes"
+                          : "Falta seleccionar el año"}
+            </p>
+          )}
+          {/* Mensaje de éxito cuando la fecha está completa */}
+          {day && month && year && (
+            <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
+              <span className="font-bold">✓</span>
+              Fecha completa
+            </p>
+          )}
         </div>
       </div>
 

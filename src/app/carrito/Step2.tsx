@@ -21,6 +21,17 @@ import {
   getTradeInValidationMessage,
 } from "./utils/validateTradeIn";
 import { toast } from "sonner";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface GuestUserResponse {
   address: {
@@ -216,6 +227,13 @@ export default function Step2({
     setFieldErrors(validateFields(newForm));
   };
 
+  // Manejar cambios en Select de shadcn (usa onValueChange en lugar de onChange)
+  const handleSelectChange = (name: string, value: string) => {
+    const newForm = { ...guestForm, [name]: value };
+    setGuestForm(newForm);
+    setFieldErrors(validateFields(newForm));
+  };
+
   // Aplicar descuento si el código es válido
   // (Eliminado: handleDiscountApply no se usa)
 
@@ -296,7 +314,7 @@ export default function Step2({
 
       // Verificar el tipo de error específico
       const lowerErrorMessage = errorMessage.toLowerCase();
-      
+
       // Error de EMAIL
       if (
         (lowerErrorMessage.includes("email") || lowerErrorMessage.includes("correo")) &&
@@ -315,7 +333,7 @@ export default function Step2({
         }));
         return;
       }
-      
+
       // Error de TELÉFONO
       if (
         (lowerErrorMessage.includes("teléfono") || lowerErrorMessage.includes("telefono") || lowerErrorMessage.includes("celular")) &&
@@ -329,7 +347,7 @@ export default function Step2({
         }));
         return;
       }
-      
+
       // Error de DOCUMENTO
       if (
         (lowerErrorMessage.includes("documento") || lowerErrorMessage.includes("cédula") || lowerErrorMessage.includes("cedula")) &&
@@ -421,10 +439,10 @@ export default function Step2({
           });
 
           // console.log("📦 [Step2] Respuesta auto-login:", {
-//             hasToken: !!autoLoginResult.access_token,
-//             hasUser: !!autoLoginResult.user,
-//             userRol: autoLoginResult.user?.rol
-//           });
+          //             hasToken: !!autoLoginResult.access_token,
+          //             hasUser: !!autoLoginResult.user,
+          //             userRol: autoLoginResult.user?.rol
+          //           });
 
           if (autoLoginResult.access_token && autoLoginResult.user) {
             // Preservar el carrito antes de guardar el usuario
@@ -548,10 +566,10 @@ export default function Step2({
       }
 
       // console.log("✅ [Step2 handleVerifyOTP] OTP verificado, resultado:", {
-//         hasToken: !!result.access_token,
-//         hasUser: !!result.user,
-//         userId: result.user?.id
-//       });
+      //         hasToken: !!result.access_token,
+      //         hasUser: !!result.user,
+      //         userId: result.user?.id
+      //       });
 
       // IMPORTANTE: Solo ahora guardamos en localStorage después de verificar OTP
       if (result.access_token && result.user) {
@@ -622,6 +640,8 @@ export default function Step2({
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error al verificar código";
       setError(msg);
+      // Limpiar el código OTP para evitar re-intentos automáticos
+      setOtpCode("");
     } finally {
       setLoading(false);
     }
@@ -836,7 +856,10 @@ export default function Step2({
             });
 
             if (!response.ok) {
-              throw new Error(`Error del servidor: ${response.status}`);
+              // Fallar silenciosamente - el usuario llenará el formulario manualmente
+              console.log(`ℹ️ Geolocalización: servidor respondió ${response.status}, el usuario llenará manualmente`);
+              setIsRequestingLocation(false);
+              return;
             }
 
             const data = await response.json();
@@ -844,7 +867,7 @@ export default function Step2({
 
             // Procesar y mapear los datos de respuesta al formato esperado
             // console.log('🗺️ Datos recibidos del endpoint:', data);
-            
+
             // Extraer información de address_components para completar campos
             let departamento = data.departamento || '';
             let ciudad = data.ciudad || data.city || '';
@@ -853,7 +876,7 @@ export default function Step2({
             let numero_secundario = data.numero_secundario || '';
             let numero_complementario = data.numero_complementario || '';
             let barrio = data.barrio || '';
-            
+
             // Si no vienen en el formato esperado, extraer de addressComponents
             if (data.addressComponents && Array.isArray(data.addressComponents)) {
               for (const component of data.addressComponents) {
@@ -887,11 +910,11 @@ export default function Step2({
                 }
               }
             }
-            
+
             // console.log('📝 Datos procesados para formulario:', {
-//               departamento, ciudad, tipo_via, numero_principal, 
-//               numero_secundario, numero_complementario, barrio
-//             });
+            //               departamento, ciudad, tipo_via, numero_principal, 
+            //               numero_secundario, numero_complementario, barrio
+            //             });
 
             // Guardar los datos procesados en el estado
             setGeoLocationData({
@@ -995,7 +1018,7 @@ export default function Step2({
         try {
           const tradeInString = JSON.stringify(tradeInDataToSave);
           localStorage.setItem("imagiq_trade_in", tradeInString);
-          
+
           // Verificar que se guardó correctamente
           const verifySave = localStorage.getItem("imagiq_trade_in");
           if (!verifySave || verifySave !== tradeInString) {
@@ -1005,7 +1028,7 @@ export default function Step2({
           } else {
             // console.log("✅ Trade-In guardado correctamente en Step2");
           }
-          
+
           // Disparar eventos de storage
           try {
             globalThis.dispatchEvent(new CustomEvent("localStorageChange", {
@@ -1034,7 +1057,7 @@ export default function Step2({
       try {
         const tradeInString = JSON.stringify(newTradeInData);
         localStorage.setItem("imagiq_trade_in", tradeInString);
-        
+
         // Verificar que se guardó correctamente
         const verifySave = localStorage.getItem("imagiq_trade_in");
         if (!verifySave || verifySave !== tradeInString) {
@@ -1044,7 +1067,7 @@ export default function Step2({
         } else {
           // console.log("✅ Trade-In guardado correctamente en Step2 (fallback)");
         }
-        
+
         // Disparar eventos de storage
         try {
           globalThis.dispatchEvent(new CustomEvent("localStorageChange", {
@@ -1076,15 +1099,15 @@ export default function Step2({
   // Handler para cuando se agrega una dirección exitosamente
   const handleAddressAdded = async (address: Address) => {
     // console.log("🎯 [handleAddressAdded] INICIO - Dirección recibida:", {
-//       id: address.id,
-//       ciudad: address.ciudad,
-//       hasId: !!address.id
-//     });
+    //       id: address.id,
+    //       ciudad: address.ciudad,
+    //       hasId: !!address.id
+    //     });
     // console.log("✅ Dirección agregada exitosamente:", address);
     // console.log("📦 DEBUG - Productos en carrito:", {
-//       length: cartProducts.length,
-//       products: cartProducts.map(p => ({ sku: p.sku, quantity: p.quantity, name: p.name }))
-//     });
+    //       length: cartProducts.length,
+    //       products: cartProducts.map(p => ({ sku: p.sku, quantity: p.quantity, name: p.name }))
+    //     });
 
     // CRÍTICO: Guardar la dirección en checkout-address INMEDIATAMENTE
     // Esto es necesario para que Step3 y Step4 puedan leer la dirección
@@ -1110,9 +1133,9 @@ export default function Step2({
       };
       localStorage.setItem('checkout-address', JSON.stringify(checkoutAddress));
       // console.log('✅ Dirección guardada en checkout-address con userId consistente:', {
-//         ...checkoutAddress,
-//         usuario_id: checkoutAddress.usuario_id
-//       });
+      //         ...checkoutAddress,
+      //         usuario_id: checkoutAddress.usuario_id
+      //       });
     } catch (error) {
       console.error('❌ Error guardando dirección en checkout-address:', error);
     }
@@ -1161,9 +1184,9 @@ export default function Step2({
       const userId = getUserId();
 
       // console.log('👤 DEBUG - Usuario obtenido:', {
-//         userId,
-//         hasUserId: !!userId
-//       });
+      //         userId,
+      //         hasUserId: !!userId
+      //       });
 
       if (!userId) {
         console.error('❌ No se encontró user_id para consultar candidate stores');
@@ -1184,9 +1207,9 @@ export default function Step2({
       }));
 
       // console.log('📦 DEBUG - Productos preparados:', {
-//         productsCount: products.length,
-//         products
-//       });
+      //         productsCount: products.length,
+      //         products
+      //       });
 
       // IMPORTANTE: Usar el addressId de la dirección recién agregada
       // Si no hay ID en address, intentar leer de checkout-address que acabamos de guardar
@@ -1205,11 +1228,11 @@ export default function Step2({
       }
 
       // console.log('📦 Consultando candidate stores con:', {
-//         userId,
-//         addressId,
-//         productsCount: products.length,
-//         products: products.map(p => ({ sku: p.sku, quantity: p.quantity }))
-//       });
+      //         userId,
+      //         addressId,
+      //         productsCount: products.length,
+      //         products: products.map(p => ({ sku: p.sku, quantity: p.quantity }))
+      //       });
 
       // console.log('🌐 Llamando a productEndpoints.getCandidateStores...');
       // Llamar al endpoint de candidate stores y procesar la respuesta
@@ -1220,11 +1243,11 @@ export default function Step2({
       // console.log('✅ Respuesta recibida del endpoint');
 
       // console.log('✅ Candidate stores consultados exitosamente:', {
-//         canPickUp: response?.data?.canPickUp,
-//         storesCount: response?.data?.stores ? Object.keys(response.data.stores).length : 0,
-//         hasData: !!response?.data,
-//         responseKeys: response?.data ? Object.keys(response.data) : []
-//       });
+      //         canPickUp: response?.data?.canPickUp,
+      //         storesCount: response?.data?.stores ? Object.keys(response.data.stores).length : 0,
+      //         hasData: !!response?.data,
+      //         responseKeys: response?.data ? Object.keys(response.data) : []
+      //       });
 
       // IMPORTANTE: Procesar y guardar la respuesta en el caché
       // Esto es crucial para que Step3 pueda leer los datos del caché
@@ -1251,10 +1274,10 @@ export default function Step2({
         // Guardar en caché con la respuesta completa
         setGlobalCanPickUpCache(cacheKey, response.data.canPickUp, response.data, addressId);
         // console.log('✅ [handleAddressAdded] Respuesta guardada en caché:', {
-//           cacheKey,
-//           canPickUp: response.data.canPickUp,
-//           addressId
-//         });
+        //           cacheKey,
+        //           canPickUp: response.data.canPickUp,
+        //           addressId
+        //         });
 
         // Verificar que se guardó correctamente
         if (typeof window !== 'undefined') {
@@ -1280,11 +1303,11 @@ export default function Step2({
 
       // IMPORTANTE: Solo avanzar DESPUÉS de guardar en caché exitosamente
       // console.log('🏁 [handleAddressAdded] Candidate stores calculado y guardado en caché, ahora sí avanzando a Step3');
-      
+
       // Marcar que se agregó la dirección exitosamente
       setHasAddedAddress(true);
       setIsSavingAddress(false);
-      
+
       if (typeof onContinue === "function") {
         // console.log("✅ Avanzando automáticamente a Step3");
         onContinue();
@@ -1350,9 +1373,9 @@ export default function Step2({
       const productsToVerify = uniqueSkus.filter((sku) => {
         const product = cartProducts.find((p) => p.sku === sku);
         // Solo productos sin bundleInfo y sin indRetoma definido
-        const needsVerification = 
-          product && 
-          !product.bundleInfo && 
+        const needsVerification =
+          product &&
+          !product.bundleInfo &&
           product.indRetoma === undefined;
         const notVerifiedYet = !verifiedSkusRef.current.has(sku);
         const notFailedBefore = !failedSkusRef.current.has(sku);
@@ -1480,19 +1503,21 @@ export default function Step2({
         <div className="col-span-2 flex flex-col gap-8">
           {/* Login - Solo mostrar si no está registrado como invitado */}
           {!isRegisteredAsGuest && (
-            <div className="bg-[#F3F3F3] rounded-xl p-8 shadow flex flex-col gap-4">
-              <h2 className="text-xl font-bold mb-2">Continua con Log-in</h2>
-              <p className="text-gray-700 mb-4">
-                Inicia sesión para tener envío gratis, acumular puntos y más
-                beneficios
-              </p>
-              <div className="flex gap-4 items-center">
-                <button
+            <Card className="bg-[#F3F3F3] border-0 shadow">
+              <CardHeader>
+                <CardTitle className="text-xl">Continua con inicio de sesión</CardTitle>
+                <CardDescription className="text-gray-700">
+                  Inicia sesión para tener envío gratis, acumular puntos y más
+                  beneficios
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-4 items-center">
+                <Button
                   onClick={() => router.push("/login")}
-                  className="bg-[#333] text-white font-bold py-3 px-8 rounded-lg text-base hover:bg-[#222] transition cursor-pointer"
+                  className="bg-[#333] hover:bg-[#222] text-white font-bold py-3 px-8 h-auto"
                 >
                   Iniciar sesión
-                </button>
+                </Button>
                 <span className="text-gray-600">No tienes cuenta aún?</span>
                 <Link
                   href="/login/create-account"
@@ -1500,299 +1525,268 @@ export default function Step2({
                 >
                   Regístrate aquí
                 </Link>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Invitado - Mostrar formulario solo en paso 'form' */}
           {guestStep === 'form' && !isRegisteredAsGuest && (
-            <div className="bg-[#ECE9E6] rounded-xl p-8 flex flex-col gap-4 border border-[#e5e5e5]">
-            <h2 className="text-xl font-bold mb-2">Continua como invitado</h2>
-            <p className="text-gray-700 mb-4">
-              ¿Estás usando el proceso de compra como invitado? Podrías estar
-              perdiendo Puntos beneficios exclusivos
-            </p>
-            <form
-              className="flex flex-col gap-4"
-              autoComplete="off"
-              onSubmit={handleGuestSubmit}
-            >
-              <div className="flex flex-col gap-1">
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Correo electrónico (ejemplo: usuario@dominio.com)"
-                  className={`input-samsung ${
-                    fieldErrors.email ? "border-red-500" : ""
-                  }`}
-                  value={guestForm.email}
-                  onChange={handleGuestChange}
-                  required
-                  disabled={loading || isRegisteredAsGuest}
-                  autoFocus
-                  inputMode="email"
-                  autoComplete="email"
-                  pattern="^[\w-.]+@[\w-]+\.[\w-]{2,4}$"
-                />
-                {fieldErrors.email && (
-                  <span
-                    className="text-red-500 text-xs"
-                    style={{ marginTop: 2 }}
-                  >
-                    {fieldErrors.email}
-                  </span>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
-                  <input
-                    type="text"
-                    name="nombre"
-                    placeholder="Nombre (solo letras)"
-                    className={`input-samsung ${
-                      fieldErrors.nombre ? "border-red-500" : ""
-                    }`}
-                    value={guestForm.nombre}
-                    onChange={handleGuestChange}
-                    required
-                    disabled={loading || isRegisteredAsGuest}
-                    inputMode="text"
-                    autoComplete="given-name"
-                    pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+"
-                  />
-                  {fieldErrors.nombre && (
-                    <span
-                      className="text-red-500 text-xs"
-                      style={{ marginTop: 2 }}
-                    >
-                      {fieldErrors.nombre}
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1">
-                  <input
-                    type="text"
-                    name="apellido"
-                    placeholder="Apellido (solo letras)"
-                    className={`input-samsung ${
-                      fieldErrors.apellido ? "border-red-500" : ""
-                    }`}
-                    value={guestForm.apellido}
-                    onChange={handleGuestChange}
-                    required
-                    disabled={loading || isRegisteredAsGuest}
-                    inputMode="text"
-                    autoComplete="family-name"
-                    pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+"
-                  />
-                  {fieldErrors.apellido && (
-                    <span
-                      className="text-red-500 text-xs"
-                      style={{ marginTop: 2 }}
-                    >
-                      {fieldErrors.apellido}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-700">
-                  Tipo de Documento *
-                </label>
-                <select
-                  id="tipo_documento"
-                  name="tipo_documento"
-                  className={`input-samsung ${
-                    fieldErrors.tipo_documento ? "border-red-500" : ""
-                  }`}
-                  value={guestForm.tipo_documento}
-                  onChange={handleGuestChange}
-                  required
-                  disabled={loading || isRegisteredAsGuest}
+            <Card className="border-gray-200">
+              <CardHeader>
+                <CardTitle className="text-xl">Continua como invitado</CardTitle>
+                <CardDescription className="text-gray-700">
+                  Podrías estar
+                  perdiendo Puntos beneficios exclusivos
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form
+                  className="flex flex-col gap-4"
                   autoComplete="off"
+                  onSubmit={handleGuestSubmit}
                 >
-                  <option value="">-- Selecciona --</option>
-                  <option value="CC">Cédula de Ciudadanía (CC)</option>
-                  <option value="CE">Cédula de Extranjería (CE)</option>
-                  <option value="NIT">NIT</option>
-                  <option value="PP">Pasaporte (PP)</option>
-                </select>
-                {fieldErrors.tipo_documento && (
-                  <span
-                    className="text-red-500 text-xs"
-                    style={{ marginTop: 2 }}
-                  >
-                    {fieldErrors.tipo_documento}
-                  </span>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]{6,10}"
-                    name="cedula"
-                    placeholder="No. de Cédula (6 a 10 números, sin puntos ni espacios)"
-                    className={`input-samsung ${
-                      fieldErrors.cedula ? "border-red-500" : ""
-                    }`}
-                    value={guestForm.cedula}
-                    onChange={handleGuestChange}
-                    required
-                    disabled={loading || isRegisteredAsGuest}
-                    maxLength={10}
-                    autoComplete="off"
-                  />
-                  {fieldErrors.cedula && (
-                    <span
-                      className="text-red-500 text-xs"
-                      style={{ marginTop: 2 }}
-                    >
-                      {fieldErrors.cedula}
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1">
-                  <div className="flex flex-col w-full">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="3[0-9]{9}"
-                      name="celular"
-                      placeholder="Celular colombiano (10 números, empieza con 3)"
-                      className={`input-samsung ${
-                        fieldErrors.celular ? "border-red-500" : ""
-                      }`}
-                      value={guestForm.celular}
+                  {/* Email */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Label htmlFor="email">Correo electrónico *</Label>
+                      {fieldErrors.email && (
+                        <span className="text-red-500 text-xs">{fieldErrors.email}</span>
+                      )}
+                    </div>
+                    <Input
+                      id="email"
+                      type="email"
+                      name="email"
+                      placeholder="usuario@dominio.com"
+                      value={guestForm.email}
                       onChange={handleGuestChange}
                       required
                       disabled={loading || isRegisteredAsGuest}
-                      style={{ minWidth: 120 }}
-                      maxLength={10}
-                      autoComplete="tel"
+                      autoFocus
+                      className={`!h-11 ${fieldErrors.email ? "border-red-500" : ""}`}
                     />
                   </div>
-                  {fieldErrors.celular && (
-                    <span
-                      className="text-red-500 text-xs"
-                      style={{ marginTop: 2 }}
-                    >
-                      {fieldErrors.celular}
-                    </span>
+
+                  {/* Nombre y Apellido */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Label htmlFor="nombre">Nombre *</Label>
+                        {fieldErrors.nombre && (
+                          <span className="text-red-500 text-xs">{fieldErrors.nombre}</span>
+                        )}
+                      </div>
+                      <Input
+                        id="nombre"
+                        type="text"
+                        name="nombre"
+                        placeholder="Solo letras"
+                        value={guestForm.nombre}
+                        onChange={handleGuestChange}
+                        required
+                        disabled={loading || isRegisteredAsGuest}
+                        className={`!h-11 ${fieldErrors.nombre ? "border-red-500" : ""}`}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Label htmlFor="apellido">Apellido *</Label>
+                        {fieldErrors.apellido && (
+                          <span className="text-red-500 text-xs">{fieldErrors.apellido}</span>
+                        )}
+                      </div>
+                      <Input
+                        id="apellido"
+                        type="text"
+                        name="apellido"
+                        placeholder="Solo letras"
+                        value={guestForm.apellido}
+                        onChange={handleGuestChange}
+                        required
+                        disabled={loading || isRegisteredAsGuest}
+                        className={`!h-11 ${fieldErrors.apellido ? "border-red-500" : ""}`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Tipo de Documento y No. de Documento */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Label>Tipo de Documento *</Label>
+                        {fieldErrors.tipo_documento && (
+                          <span className="text-red-500 text-xs">{fieldErrors.tipo_documento}</span>
+                        )}
+                      </div>
+                      <Select
+                        value={guestForm.tipo_documento}
+                        onValueChange={(value) => handleSelectChange("tipo_documento", value)}
+                        disabled={loading || isRegisteredAsGuest}
+                      >
+                        <SelectTrigger className={`!h-11 w-full ${fieldErrors.tipo_documento ? "border-red-500" : ""}`}>
+                          <SelectValue placeholder="-- Selecciona --" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="CC">Cédula de Ciudadanía (CC)</SelectItem>
+                          <SelectItem value="CE">Cédula de Extranjería (CE)</SelectItem>
+                          <SelectItem value="NIT">NIT</SelectItem>
+                          <SelectItem value="PP">Pasaporte (PP)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Label htmlFor="cedula">No. de Documento *</Label>
+                        {fieldErrors.cedula && (
+                          <span className="text-red-500 text-xs">{fieldErrors.cedula}</span>
+                        )}
+                      </div>
+                      <Input
+                        id="cedula"
+                        type="text"
+                        inputMode="numeric"
+                        name="cedula"
+                        placeholder="6 a 10 números"
+                        value={guestForm.cedula}
+                        onChange={handleGuestChange}
+                        required
+                        disabled={loading || isRegisteredAsGuest}
+                        maxLength={10}
+                        className={`!h-11 ${fieldErrors.cedula ? "border-red-500" : ""}`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Celular con código de país */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Label htmlFor="celular">Celular *</Label>
+                      {fieldErrors.celular && (
+                        <span className="text-red-500 text-xs">{fieldErrors.celular}</span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Select defaultValue="57" disabled={loading || isRegisteredAsGuest}>
+                        <SelectTrigger className="!h-11 w-24 shrink-0">
+                          <SelectValue placeholder="+57" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="57">🇨🇴 +57</SelectItem>
+                          <SelectItem value="1">🇺🇸 +1</SelectItem>
+                          <SelectItem value="34">🇪🇸 +34</SelectItem>
+                          <SelectItem value="52">🇲🇽 +52</SelectItem>
+                          <SelectItem value="54">🇦🇷 +54</SelectItem>
+                          <SelectItem value="56">🇨🇱 +56</SelectItem>
+                          <SelectItem value="51">🇵🇪 +51</SelectItem>
+                          <SelectItem value="593">🇪🇨 +593</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        id="celular"
+                        type="text"
+                        inputMode="numeric"
+                        name="celular"
+                        placeholder="10 números, empieza con 3"
+                        value={guestForm.celular}
+                        onChange={handleGuestChange}
+                        required
+                        disabled={loading || isRegisteredAsGuest}
+                        maxLength={10}
+                        className={`!h-11 flex-1 ${fieldErrors.celular ? "border-red-500" : ""}`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Mensaje de error general */}
+                  {error && (
+                    <div className="text-red-500 text-sm mt-2 text-center bg-red-50 py-2 px-4 rounded-lg">
+                      {error}
+                    </div>
                   )}
-                </div>
-              </div>
-              {/* Mensaje de error general debajo del botón principal */}
-              {error && (
-                <div className="text-red-500 text-sm mt-2 text-center">
-                  {error}
-                </div>
-              )}
-              <style jsx>{`
-                .input-samsung {
-                  background: #fff;
-                  border-radius: 0.75rem;
-                  border: 1px solid #d1d5db;
-                  padding: 0.85rem 1.1rem;
-                  font-size: 1rem;
-                  color: #222;
-                  font-family: inherit;
-                  outline: none;
-                  transition: border 0.2s;
-                  box-shadow: none;
-                }
-                .input-samsung:focus {
-                  border-color: #0074e8;
-                }
-                .border-red-500 {
-                  border-color: #ef4444 !important;
-                }
-              `}</style>
-            </form>
-          </div>
+                </form>
+              </CardContent>
+            </Card>
           )}
 
           {/* Vista OTP - Mostrar cuando está en paso 'otp' */}
           {guestStep === 'otp' && !isRegisteredAsGuest && (
-            <div className="bg-[#ECE9E6] rounded-xl p-8 flex flex-col gap-4 border border-[#e5e5e5]">
-              <h2 className="text-xl font-bold mb-2">Verifica tu cuenta</h2>
-              <p className="text-gray-700 mb-4">
-                Te enviamos un código de verificación para completar tu registro
-              </p>
-              
-              <OTPStep
-                email={guestForm.email}
-                telefono={guestForm.celular}
-                otpCode={otpCode}
-                otpSent={otpSent}
-                sendMethod={sendMethod}
-                onOTPChange={setOtpCode}
-                onSendOTP={handleSendOTP}
-                onMethodChange={setSendMethod}
-                onChangeEmail={async (newEmail: string) => {
-                  // Actualizar el email en el formulario
-                  setGuestForm({ ...guestForm, email: newEmail });
-                  setOtpSent(false);
-                  setOtpCode("");
-                }}
-                onChangePhone={async (newPhone: string) => {
-                  // Actualizar el teléfono en el formulario
-                  setGuestForm({ ...guestForm, celular: newPhone });
-                  setOtpSent(false);
-                  setOtpCode("");
-                }}
-                disabled={loading}
-                showSendButton={true}
-                onVerifyOTP={handleVerifyOTP}
-                loading={loading}
-              />
+            <Card className="border-gray-200">
+              <CardHeader className="flex flex-row items-baseline gap-2 flex-wrap">
+                <CardTitle className="text-xl">Verifica tu cuenta</CardTitle>
+                <CardDescription className="text-gray-700 mt-0">
+                  Enviaremos un código de verificación para completar tu registro
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <OTPStep
+                  email={guestForm.email}
+                  telefono={guestForm.celular}
+                  otpCode={otpCode}
+                  otpSent={otpSent}
+                  sendMethod={sendMethod}
+                  onOTPChange={(code) => {
+                    setOtpCode(code);
+                    // Limpiar error cuando el usuario empieza a escribir un nuevo código
+                    if (error) setError("");
+                  }}
+                  onSendOTP={handleSendOTP}
+                  onMethodChange={setSendMethod}
+                  onChangeEmail={async (newEmail: string) => {
+                    // Actualizar el email en el formulario
+                    setGuestForm({ ...guestForm, email: newEmail });
+                    setOtpSent(false);
+                    setOtpCode("");
+                  }}
+                  onChangePhone={async (newPhone: string) => {
+                    // Actualizar el teléfono en el formulario
+                    setGuestForm({ ...guestForm, celular: newPhone });
+                    setOtpSent(false);
+                    setOtpCode("");
+                  }}
+                  disabled={loading}
+                  showSendButton={true}
+                  onVerifyOTP={handleVerifyOTP}
+                  loading={loading}
+                  error={error}
+                />
 
-              {error && (
-                <div className="text-red-500 text-sm mt-2 text-center bg-red-50 py-2 px-4 rounded-lg">
-                  {error}
-                </div>
-              )}
-
-              {/* Botón para volver al formulario */}
-              <button
-                type="button"
-                onClick={() => {
-                  setGuestStep('form');
-                  setOtpSent(false);
-                  setOtpCode("");
-                  sessionStorage.removeItem("guest-otp-process");
-                }}
-                disabled={loading}
-                className="text-gray-600 hover:text-gray-800 text-sm underline disabled:opacity-50"
-              >
-                ← Volver a editar datos
-              </button>
-            </div>
+                {/* Botón para volver al formulario */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setGuestStep('form');
+                    setOtpSent(false);
+                    setOtpCode("");
+                    sessionStorage.removeItem("guest-otp-process");
+                  }}
+                  disabled={loading}
+                  className="text-gray-600 hover:text-gray-800 text-sm"
+                >
+                  ← Volver a editar datos
+                </Button>
+              </CardContent>
+            </Card>
           )}
 
           {/* Formulario de dirección - Mostrar siempre cuando está registrado como invitado */}
           {isRegisteredAsGuest && (
-            <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-200">
-              <h2 className="text-2xl font-bold mb-2 text-gray-900">
-                ¿Dónde te encuentras?
-              </h2>
-              <p className="text-gray-600 mb-6">
-                Necesitamos que agregues una dirección para conocer tu ubicación
-              </p>
-              <AddNewAddressForm
-                onAddressAdded={handleAddressAdded}
-                onCancel={() => setIsRegisteredAsGuest(false)}
-                withContainer={false}
-                onSubmitRef={addressFormSubmitRef}
-                onFormValidChange={setIsAddressFormValid}
-                disabled={hasAddedAddress}
-                geoLocationData={geoLocationData}
-                isRequestingLocation={isRequestingLocation}
-                enableAutoSelect={true}
-              />
-            </div>
+            <Card className="shadow-lg">
+              <CardContent className="pt-6">
+                <AddNewAddressForm
+                  onAddressAdded={handleAddressAdded}
+                  onCancel={() => setIsRegisteredAsGuest(false)}
+                  withContainer={false}
+                  onSubmitRef={addressFormSubmitRef}
+                  onFormValidChange={setIsAddressFormValid}
+                  disabled={hasAddedAddress}
+                  geoLocationData={geoLocationData}
+                  isRequestingLocation={isRequestingLocation}
+                  enableAutoSelect={true}
+                  headerTitle="¿Dónde te encuentras?"
+                />
+              </CardContent>
+            </Card>
           )}
         </div>
         {/* Resumen de compra con Step4OrderSummary - Hidden en mobile */}
@@ -1803,10 +1797,10 @@ export default function Step2({
                 // Si está registrado como invitado y no tiene dirección, hacer submit del formulario
                 isRegisteredAsGuest && !hasAddedAddress
                   ? () => {
-                      if (addressFormSubmitRef.current) {
-                        addressFormSubmitRef.current();
-                      }
+                    if (addressFormSubmitRef.current) {
+                      addressFormSubmitRef.current();
                     }
+                  }
                   : handleContinue
               }
               onBack={onBack}
@@ -1814,16 +1808,16 @@ export default function Step2({
                 loading
                   ? "Procesando..."
                   : isSavingAddress
-                  ? "Guardando"
-                  : guestStep === 'form'
-                  ? "Registrarse como invitado"
-                  : guestStep === 'otp' && !otpSent
-                  ? "Enviar código"
-                  : guestStep === 'otp' && otpSent
-                  ? "Verificar código"
-                  : !hasAddedAddress
-                  ? "Agregar dirección"
-                  : "Continuar pago"
+                    ? "Guardando"
+                    : guestStep === 'form'
+                      ? "Registrarse como invitado"
+                      : guestStep === 'otp' && !otpSent
+                        ? "Enviar código"
+                        : guestStep === 'otp' && otpSent
+                          ? "Verificar código"
+                          : !hasAddedAddress
+                            ? "Agregar dirección"
+                            : "Continuar pago"
               }
               disabled={
                 loading ||
@@ -1835,22 +1829,24 @@ export default function Step2({
                 !tradeInValidation.isValid
               }
               isProcessing={loading || isSavingAddress}
-              isSticky={false}
+              isSticky={true}
               deliveryMethod={
                 globalThis.window !== undefined
                   ? (() => {
-                      const method = globalThis.window.localStorage.getItem(
-                        "checkout-delivery-method"
-                      );
-                      if (method === "tienda") return "pickup";
-                      if (method === "domicilio") return "delivery";
-                      if (method === "delivery" || method === "pickup")
-                        return method;
-                      return undefined;
-                    })()
+                    const method = globalThis.window.localStorage.getItem(
+                      "checkout-delivery-method"
+                    );
+                    if (method === "tienda") return "pickup";
+                    if (method === "domicilio") return "delivery";
+                    if (method === "delivery" || method === "pickup")
+                      return method;
+                    return undefined;
+                  })()
                   : undefined
               }
               shouldCalculateCanPickUp={false}
+              buttonVariant={guestStep === 'form' && !isRegisteredAsGuest ? "green" : "default"}
+              hideButton={guestStep === 'otp' || (isRegisteredAsGuest && !hasAddedAddress)}
             />
             {/* Estilo personalizado para el botón "Registrarse como invitado" - más alto y texto en dos líneas */}
             <style jsx global>{`
@@ -1910,15 +1906,14 @@ export default function Step2({
 
           {/* Botón continuar */}
           <button
-            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
-              loading ||
-              isSavingAddress ||
-              (!isRegisteredAsGuest && !isGuestFormValid) ||
-              (isRegisteredAsGuest && !hasAddedAddress) ||
-              !tradeInValidation.isValid
+            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${loading ||
+                isSavingAddress ||
+                (!isRegisteredAsGuest && !isGuestFormValid) ||
+                (isRegisteredAsGuest && !hasAddedAddress) ||
+                !tradeInValidation.isValid
                 ? "bg-gray-400 cursor-not-allowed opacity-70"
                 : "bg-[#222] hover:bg-[#333] cursor-pointer"
-            }`}
+              }`}
             onClick={handleContinue}
             disabled={
               loading ||
@@ -1932,12 +1927,12 @@ export default function Step2({
             {loading
               ? "Procesando..."
               : isSavingAddress
-              ? "Guardando"
-              : !isRegisteredAsGuest
-              ? "Registrarse como invitado"
-              : !hasAddedAddress
-              ? "Agregar dirección"
-              : "Continuar pago"}
+                ? "Guardando"
+                : !isRegisteredAsGuest
+                  ? "Registrarse como invitado"
+                  : !hasAddedAddress
+                    ? "Agregar dirección"
+                    : "Continuar pago"}
           </button>
         </div>
       </div>

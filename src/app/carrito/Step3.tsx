@@ -1496,6 +1496,7 @@ export default function Step3({
               <Step4OrderSummary
                 onFinishPayment={handleContinue}
                 buttonText="Continuar"
+                buttonVariant="green"
                 onBack={onBack}
                 disabled={!canContinue || !tradeInValidation.isValid}
                 isProcessing={isWaitingForCanPickUp}
@@ -1556,7 +1557,7 @@ export default function Step3({
           <button
             className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${!canContinue || !tradeInValidation.isValid || isWaitingForCanPickUp
               ? "bg-gray-400 cursor-not-allowed opacity-70"
-              : "bg-[#222] hover:bg-[#333] cursor-pointer"
+              : "bg-green-600 hover:bg-green-700 cursor-pointer"
               }`}
             onClick={handleContinue}
             disabled={!canContinue || !tradeInValidation.isValid || isWaitingForCanPickUp}

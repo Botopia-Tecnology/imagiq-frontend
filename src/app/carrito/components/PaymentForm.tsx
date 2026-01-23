@@ -345,9 +345,12 @@ export default function PaymentForm({
 
       {/* Sección de Recomendados */}
       <div className="mb-6">
-        <h3 className="text-base font-semibold text-gray-700 mb-3">
-          Recomendados
-        </h3>
+        {/* Solo mostrar "Recomendados" para usuarios con tarjetas guardadas (rol 2 o 4) */}
+        {canSaveCards && (
+          <h3 className="text-base font-semibold text-gray-700 mb-3">
+            Recomendados
+          </h3>
+        )}
         <div
           className="rounded-xl overflow-hidden"
           style={{

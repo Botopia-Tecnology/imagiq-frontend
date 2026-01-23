@@ -55,7 +55,7 @@ const AnimatedCard: React.FC<AnimatedCardProps> = ({
   return (
     <div className="w-full max-w-md mx-auto perspective-1000">
       <div
-        className={`relative w-full h-56 md:h-60 transition-transform duration-700 transform-style-3d ${isFlipped ? "rotate-y-180" : ""
+        className={`relative w-full aspect-[1.6/1] transition-transform duration-700 transform-style-3d ${isFlipped ? "rotate-y-180" : ""
           }`}
         onMouseEnter={() => cvv && !externalIsFlipped && setInternalIsFlipped(true)}
         onMouseLeave={() => !externalIsFlipped && setInternalIsFlipped(false)}
@@ -74,21 +74,21 @@ const AnimatedCard: React.FC<AnimatedCardProps> = ({
 
           {/* Número de tarjeta */}
           <div>
-            <div className="text-gray-800 text-xl md:text-2xl font-mono tracking-wider mb-5 font-semibold">
+            <div className="text-gray-800 text-lg md:text-xl font-mono tracking-wider mb-5 font-semibold">
               {formatCardNumber(cardNumber)}
             </div>
 
             {/* Titular y fecha */}
             <div className="flex justify-between items-end">
               <div>
-                <div className="text-gray-700 text-xs mb-1 font-semibold">TITULAR</div>
-                <div className="text-gray-800 text-sm md:text-base font-bold tracking-wide uppercase">
+                <div className="text-gray-700 text-[10px] mb-1 font-semibold">TITULAR</div>
+                <div className="text-gray-800 text-xs md:text-sm font-bold tracking-wide uppercase">
                   {cardHolder || "NOMBRE APELLIDO"}
                 </div>
               </div>
               <div>
-                <div className="text-gray-700 text-xs mb-1 font-semibold">VENCE</div>
-                <div className="text-gray-800 text-sm md:text-base font-mono font-semibold">
+                <div className="text-gray-700 text-[10px] mb-1 font-semibold">VENCE</div>
+                <div className="text-gray-800 text-xs md:text-sm font-mono font-semibold">
                   {expiryDate || "MM/AA"}
                 </div>
               </div>
@@ -106,11 +106,11 @@ const AnimatedCard: React.FC<AnimatedCardProps> = ({
           {/* CVV */}
           <div className="px-6 md:px-7 mt-8">
             <div className="bg-white h-12 rounded flex items-center justify-end px-4">
-              <div className="text-black font-mono text-xl italic font-semibold">
+              <div className="text-black font-mono text-lg italic font-semibold">
                 {cvv || "•••"}
               </div>
             </div>
-            <div className="text-gray-200 text-xs mt-2 text-right font-semibold">CVV</div>
+            <div className="text-gray-200 text-[10px] mt-2 text-right font-semibold">CVV</div>
           </div>
 
         </div>

@@ -561,6 +561,9 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       if (onContinue) {
         onContinue();
       }
+
+      // Reset processing state in case navigation doesn't unmount component immediately
+      setIsProcessing(false);
     } catch (error) {
       console.error("Error en handleContinue:", error);
       toast.error("Ocurrió un error. Por favor intenta de nuevo");
@@ -621,11 +624,18 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
           </div>
 
           {addresses.toSorted(sortAddressesByDefault).map((address) => (
-            <button
+            <div
               key={address.id}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => handleAddressSelect(address)}
-              className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleAddressSelect(address);
+                }
+              }}
+              className={`w-full text-left p-4 rounded-lg border-2 transition-all cursor-pointer ${
                 selectedAddressId === address.id
                   ? "border-black bg-gray-50"
                   : "border-gray-200 hover:border-gray-300 bg-white"
@@ -686,7 +696,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                   </button>
                 )}
               </div>
-            </button>
+            </div>
           ))}
         </div>
       );
@@ -1015,6 +1025,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
+              buttonVariant="green"
               disabled={!tradeInValidation.isValid || isProcessing}
               isProcessing={isProcessing}
               isSticky={false}
@@ -1069,7 +1080,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
             className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
               !tradeInValidation.isValid || isProcessing
                 ? "bg-gray-400 cursor-not-allowed opacity-70"
-                : "bg-[#222] hover:bg-[#333] cursor-pointer"
+                : "bg-green-600 hover:bg-green-700 cursor-pointer"
             }`}
             onClick={handleContinue}
             disabled={!tradeInValidation.isValid || isProcessing}

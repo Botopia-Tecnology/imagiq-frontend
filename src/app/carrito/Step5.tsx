@@ -451,6 +451,7 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
+              buttonVariant="green"
               disabled={selectedInstallments === null || !tradeInValidation.isValid}
               isSticky={false}
               deliveryMethod={
@@ -503,7 +504,7 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
           <button
             className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${selectedInstallments === null || !tradeInValidation.isValid
               ? "bg-gray-400 cursor-not-allowed opacity-70"
-              : "bg-[#222] hover:bg-[#333] cursor-pointer"
+              : "bg-green-600 hover:bg-green-700 cursor-pointer"
               }`}
             onClick={handleContinue}
             disabled={selectedInstallments === null || !tradeInValidation.isValid}

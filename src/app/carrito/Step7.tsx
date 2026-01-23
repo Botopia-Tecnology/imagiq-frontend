@@ -2616,6 +2616,7 @@ export default function Step7({ onBack }: Step7Props) {
                 onFinishPayment={handleConfirmOrder}
                 onBack={onBack}
                 buttonText="Confirmar y pagar"
+                buttonVariant="green"
                 disabled={isProcessing || isValidatingTradeIn || !tradeInValidation.isValid}
                 isSticky={false}
                 shippingVerification={shippingVerification}
@@ -2825,7 +2826,7 @@ export default function Step7({ onBack }: Step7Props) {
           <button
             className={`w-full font-bold py-3 rounded-lg text-base transition text-white flex items-center justify-center gap-4 ${isProcessing || isValidatingTradeIn || !tradeInValidation.isValid
               ? "bg-gray-400 cursor-not-allowed opacity-70"
-              : "bg-[#222] hover:bg-[#333] cursor-pointer"
+              : "bg-green-600 hover:bg-green-700 cursor-pointer"
               }`}
             onClick={handleConfirmOrder}
             disabled={isProcessing || isValidatingTradeIn || !tradeInValidation.isValid}

@@ -1006,6 +1006,7 @@ export default function Step1({
             shouldCalculateCanPickUp={true}
             products={cartProducts}
             calculations={calculations}
+            buttonVariant="green"
           />
           )}
         </aside>

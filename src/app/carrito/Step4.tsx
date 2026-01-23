@@ -398,6 +398,7 @@ export default function Step4({
             }}
             onBack={onBack}
             buttonText="Continuar"
+            buttonVariant="green"
             disabled={(() => {
               const isDisabled = isProcessing || isValidatingCard || !tradeInValidation.isValid || !isPaymentMethodValid;
               // console.log('🔘 [Step4] Button disabled check:', {

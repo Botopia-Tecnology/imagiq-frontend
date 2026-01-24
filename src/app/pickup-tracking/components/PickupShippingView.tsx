@@ -202,10 +202,10 @@ export function PickupShippingView({
                     </div>
                   </div>
 
-                  {/* Imagen centrada sin fondo - Flex grow para ocupar el resto del espacio */}
-                  <div className="relative w-full flex-1 flex items-center justify-center min-h-0">
+                  {/* Imagen centrada sin fondo - Altura mínima para móvil */}
+                  <div className="relative w-full flex-1 flex items-center justify-center min-h-[200px] lg:min-h-0">
                     {currentProduct?.imagen ? (
-                      <div className="relative w-full h-full">
+                      <div className="relative w-full h-full min-h-[200px]">
                         <Image
                           src={currentProduct.imagen}
                           alt={currentProduct.nombre}

@@ -1113,9 +1113,9 @@ export default function AddNewAddressForm({
           <h3 className="text-base md:text-lg font-semibold text-gray-900">Nueva dirección de facturación</h3>
         )}
 
-        {/* Botón Continuar - solo visible en paso 1, oculto en mobile (usa sticky bar) */}
+        {/* Botón Continuar - visible en paso 1 en todas las pantallas */}
         {currentStep === 1 ? (
-          <div className="relative hidden lg:block">
+          <div className="relative">
             <button
               type="button"
               onClick={() => {
@@ -1134,9 +1134,9 @@ export default function AddNewAddressForm({
               {billingOnly ? (isLoading ? "Guardando..." : "Guardar dirección") : "Continuar"}
             </button>
 
-            {/* Tooltip mostrando campos faltantes */}
+            {/* Tooltip mostrando campos faltantes - solo en desktop */}
             {showTooltip && !isStep1Complete && missingFields.length > 0 && (
-              <div className="absolute bottom-full right-0 mb-2 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg z-50">
+              <div className="hidden lg:block absolute bottom-full right-0 mb-2 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg z-50">
                 <div className="font-semibold mb-2">Campos faltantes:</div>
                 <ul className="space-y-1">
                   {missingFields.map((field, index) => (
@@ -1468,6 +1468,7 @@ export default function AddNewAddressForm({
             />
           </div>
         )}
+
         </div>
       )}
 

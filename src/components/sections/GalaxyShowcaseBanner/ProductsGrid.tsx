@@ -25,7 +25,7 @@ export function ProductsGrid() {
         <div className="md:hidden overflow-x-auto scrollbar-hide">
           <div className="flex gap-0 px-4">
             {FEATURED_PRODUCTS.map((product) => (
-              <div key={product.id} className="flex-shrink-0 w-[280px] h-[420px]">
+              <div key={product.id} className="flex-shrink-0 w-[calc(100vw-32px)] sm:w-[280px] h-[420px]">
                 <ProductCard product={product} />
               </div>
             ))}

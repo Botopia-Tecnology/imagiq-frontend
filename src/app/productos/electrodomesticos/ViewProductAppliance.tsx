@@ -159,7 +159,7 @@ export default function ViewProductAppliance({
   const ExploreProducts = dynamic(() => import("./ExploreProducts"), {
     loading: () => (
       <div className="bg-white">
-        <div className="grid gap-6 grid-cols-2 md:grid-cols-4 lg:grid-cols-4 max-w-7xl mx-auto pl-4 pr-4 py-8">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 max-w-7xl mx-auto px-4 py-8">
           {Array.from({ length: 4 }).map((_, i) => (
             <SkeletonCard key={i} />
           ))}

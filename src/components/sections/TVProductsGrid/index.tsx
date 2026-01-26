@@ -47,7 +47,7 @@ export default function TVProductsGrid() {
           <div className="md:hidden overflow-x-auto scrollbar-hide">
             <div className="flex gap-[25px] px-4">
               {Array.from({ length: 4 }, (_, i) => (
-                <div key={`skeleton-mobile-${i}`} className="flex-shrink-0 w-[280px]">
+                <div key={`skeleton-mobile-${i}`} className="flex-shrink-0 w-[calc(100vw-32px)] sm:w-[280px]">
                   <SkeletonCard />
                 </div>
               ))}
@@ -84,10 +84,10 @@ export default function TVProductsGrid() {
         <div className="md:hidden overflow-x-auto scrollbar-hide">
           <div className="flex gap-[25px] px-4">
             {displayProducts.map((product) => (
-              <div key={product.id} className="flex-shrink-0 w-[280px]">
+              <div key={product.id} className="flex-shrink-0 w-[calc(100vw-32px)] sm:w-[280px]">
                 <ProductCard
                   {...product}
-                  
+
                 />
               </div>
             ))}

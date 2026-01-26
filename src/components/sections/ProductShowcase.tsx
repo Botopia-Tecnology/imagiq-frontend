@@ -216,7 +216,7 @@ export default function ProductShowcase({ initialProducts }: ProductShowcaseProp
           <div className="md:hidden overflow-x-auto scrollbar-hide">
             <div className="flex gap-[25px] px-4">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="shrink-0 w-[280px]">
+                <div key={i} className="shrink-0 w-[calc(100vw-32px)] sm:w-[280px]">
                   <SkeletonCard />
                 </div>
               ))}
@@ -252,7 +252,7 @@ export default function ProductShowcase({ initialProducts }: ProductShowcaseProp
             {products.map((product) => (
               <div
                 key={product.id}
-                className="shrink-0 w-[280px]"
+                className="shrink-0 w-[calc(100vw-32px)] sm:w-[280px]"
               >
                 <ProductCard
                   {...product}

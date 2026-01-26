@@ -331,7 +331,7 @@ export default function CategorySection({
   }
 
   return (
-    <div className="px-4 md:px-10">
+    <div className="px-2 md:px-6 lg:px-10">
       {/* Breadcrumbs */}
       <div className="mb-4 mt-2">
         <Breadcrumbs />
@@ -375,8 +375,10 @@ export default function CategorySection({
 
       <div
         className={cn(
-          "flex gap-6 items-start",
-          device === "mobile" || device === "tablet" ? "flex-col" : "flex-row"
+          "flex gap-6",
+          device === "mobile" || device === "tablet"
+            ? "flex-col items-stretch"
+            : "flex-row items-start"
         )}
       >
         {(device === "desktop" || device === "large") && (
@@ -429,10 +431,7 @@ export default function CategorySection({
 
         <div
           ref={productsRef}
-          className={cn(
-            "flex-1 min-w-0",
-            device === "mobile" ? "px-2" : device === "tablet" ? "px-4" : "px-0"
-          )}
+          className="flex-1 min-w-0 w-full"
         >
           {/* Mostrar grid de productos (incluye skeleton, mensaje de vacío o productos) */}
           <CategoryProductsGrid

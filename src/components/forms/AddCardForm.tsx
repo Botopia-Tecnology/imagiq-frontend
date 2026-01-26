@@ -821,18 +821,18 @@ const AddCardForm = React.forwardRef<AddCardFormHandle, AddCardFormProps>(({
           )}
         </div>
 
-        <div className="flex flex-col md:flex-row gap-8 items-start">
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
           {/* Columna Izquierda: Tarjeta animada */}
-          <div className="w-full md:w-1/2 sticky top-4">
+          <div className="w-full lg:w-1/2 sticky top-4">
             <div className="flex items-start justify-center pt-4">
-              <div className="w-full scale-110 md:scale-125">
+              <div className="w-full scale-110 lg:scale-125">
                 {renderCardVisual()}
               </div>
             </div>
           </div>
 
           {/* Columna Derecha: Formulario */}
-          <div className="w-full md:w-1/2">
+          <div className="w-full lg:w-1/2">
             <form onSubmit={(e) => handleSubmit(e, true)} className="space-y-6">
               {renderMessages()}
               {renderFormFields()}
@@ -869,9 +869,9 @@ const AddCardForm = React.forwardRef<AddCardFormHandle, AddCardFormProps>(({
 
       {/* Side-by-side Layout for embedded (guest users) / Stacked for non-embedded */}
       {embedded ? (
-        <div className="flex flex-col md:flex-row gap-6 items-start">
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
           {/* Columna Izquierda: Tarjeta animada */}
-          <div className="w-full md:w-1/2">
+          <div className="w-full lg:w-1/2">
             <div className="flex items-start justify-center">
               <div className="w-full max-w-[320px]">
                 {renderCardVisual()}
@@ -880,7 +880,7 @@ const AddCardForm = React.forwardRef<AddCardFormHandle, AddCardFormProps>(({
           </div>
 
           {/* Columna Derecha: Formulario */}
-          <div className="w-full md:w-1/2">
+          <div className="w-full lg:w-1/2">
             {renderFormFields()}
           </div>
         </div>

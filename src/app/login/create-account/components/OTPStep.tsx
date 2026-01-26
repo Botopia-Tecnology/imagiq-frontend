@@ -62,7 +62,7 @@ function OTPInputBoxes({
   };
 
   return (
-    <div className="flex gap-2 justify-center">
+    <div className="flex gap-1.5 sm:gap-2 justify-center">
       {[0, 1, 2, 3, 4, 5].map((index) => (
         <input
           key={index}
@@ -75,7 +75,7 @@ function OTPInputBoxes({
           onKeyDown={(e) => handleKeyDown(index, e)}
           onPaste={handlePaste}
           disabled={disabled}
-          className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           autoComplete="one-time-code"
         />
       ))}
@@ -293,7 +293,8 @@ export function OTPStep({
   return (
     <div className="space-y-4">
       {/* Layout de dos columnas: Datos de verificación (izq) + Selector de método (der) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Usar lg:grid-cols-2 en lugar de md para que en tablet (768px) se mantenga en una columna */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Columna izquierda: Datos de verificación */}
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
           <p className="text-xs text-gray-600 font-bold">Datos de verificación</p>

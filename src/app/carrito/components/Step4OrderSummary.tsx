@@ -49,6 +49,7 @@ interface Step4OrderSummaryProps {
   }; // Información de debug sobre tiendas
   readonly buttonVariant?: "default" | "green"; // Variante de color del botón
   readonly hideButton?: boolean; // Ocultar el botón principal (útil para pasos intermedios como OTP)
+  readonly shouldAnimateButton?: boolean; // Animación bounce cuando el botón se habilita
 }
 
 export default function Step4OrderSummary({
@@ -70,6 +71,7 @@ export default function Step4OrderSummary({
   debugStoresInfo,
   buttonVariant = "default",
   hideButton = false,
+  shouldAnimateButton = false,
 }: Step4OrderSummaryProps) {
   const router = useRouter();
   const {
@@ -1181,6 +1183,24 @@ export default function Step4OrderSummary({
   const stickyClasses = isSticky ? " sticky top-8" : "";
   const containerClasses = `${baseContainerClasses}${stickyClasses}`;
 
+  // Reutilizar lógica de deshabilitado para el botón primario
+  const isPrimaryDisabled =
+    isProcessing || disabled || (!isStep2 && (userClickedWhileLoading || isArtificialLoading));
+
+  const primaryButtonBaseClasses =
+    "flex-1 text-white font-bold py-3 px-6 rounded-xl text-sm transition-all duration-200 flex items-center justify-center";
+
+  const primaryButtonVariantClasses =
+    buttonVariant === "green"
+      ? [
+          "bg-green-600",
+          !isPrimaryDisabled &&
+            "hover:bg-green-700 border-2 border-green-500 hover:border-green-600 shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50",
+        ]
+          .filter(Boolean)
+          .join(" ")
+      : "bg-black hover:bg-gray-900";
+
   if (isEmpty) {
     return (
       <aside className={containerClasses}>
@@ -1214,7 +1234,7 @@ export default function Step4OrderSummary({
         {productSavings > 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-green-600 font-medium">
-              Descuento productos
+              Descuento
             </span>
             <span className="text-green-600 font-semibold">
               -{cartFormatPrice(productSavings)}
@@ -1294,12 +1314,8 @@ export default function Step4OrderSummary({
         {!hideButton && (
           <button
             type="button"
-            className={`flex-1 ${buttonVariant === "green" ? "bg-green-600 hover:bg-green-700" : "bg-black hover:bg-gray-900"} text-white font-bold py-3 px-6 rounded-lg text-sm transition flex items-center justify-center ${buttonText === "Registrarse como invitado" ? "min-h-[4.5rem] whitespace-normal flex-wrap" : ""
-              } ${isProcessing || disabled || (!isStep2 && (userClickedWhileLoading || isArtificialLoading))
-                ? "opacity-70 cursor-not-allowed"
-                : "cursor-pointer"
-              }`}
-            disabled={isProcessing || disabled || (!isStep2 && (userClickedWhileLoading || isArtificialLoading))}
+            className={`${primaryButtonBaseClasses} ${primaryButtonVariantClasses} ${isPrimaryDisabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer"} ${shouldAnimateButton ? "animate-buttonBounce" : ""}`}
+            disabled={isPrimaryDisabled}
             data-testid="checkout-finish-btn"
             data-button-text={buttonText}
             aria-busy={isProcessing || userClickedWhileLoading || isArtificialLoading}
@@ -1418,8 +1434,7 @@ export default function Step4OrderSummary({
         >
           {(isProcessing || userClickedWhileLoading) ? (
             <span
-              className={`flex gap-2 ${buttonText === "Registrarse como invitado" ? "flex-wrap items-center justify-center whitespace-normal text-center" : "items-center justify-center"
-                }`}
+              className="flex gap-2 items-center justify-center"
               aria-live="polite"
             >
               <svg
@@ -1441,13 +1456,7 @@ export default function Step4OrderSummary({
                   d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                 />
               </svg>
-              <span className={buttonText === "Registrarse como invitado" ? "whitespace-normal text-center break-words" : ""}>
-                {buttonText}
-              </span>
-            </span>
-          ) : buttonText === "Registrarse como invitado" ? (
-            <span className="whitespace-normal text-center break-words leading-tight">
-              Registrarse<br />como invitado
+              <span>{buttonText}</span>
             </span>
           ) : (
             buttonText

@@ -331,7 +331,7 @@ export default function CategorySection({
   }
 
   return (
-    <div className="px-2 md:px-6 lg:px-10">
+    <div className="px-4 sm:px-6 lg:px-8">
       {/* Breadcrumbs */}
       <div className="mb-4 mt-2">
         <Breadcrumbs />

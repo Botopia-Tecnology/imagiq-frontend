@@ -156,9 +156,6 @@ export default function Step2({
   // Ref para controlar la navegación entre pasos del formulario de dirección (paso 1 → 2 o submit en paso 2)
   const addressFormContinueRef = React.useRef<(() => void) | null>(null);
 
-  // Estado para rastrear el paso actual del formulario de dirección
-  const [addressFormStep, setAddressFormStep] = useState<1 | 2>(1);
-
   // Redirección automática: Si el usuario ya tiene sesión y dirección, ir a Step1
   // Esto maneja el caso de swipe back en mobile desde Step3
   React.useEffect(() => {

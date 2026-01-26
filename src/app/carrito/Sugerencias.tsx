@@ -518,7 +518,7 @@ export default function Sugerencias({
         {productos.map((producto, idx) => (
           <div
             key={producto.sku[0] || idx}
-            className="flex-shrink-0 flex flex-col items-center w-32 snap-start last:pr-6 md:last:pr-0 md:w-28 md:flex-shrink-0 md:snap-align-none"
+            className="flex-shrink-0 flex flex-col items-center w-[calc(50vw-24px)] sm:w-32 snap-start last:pr-6 md:last:pr-0 md:w-28 md:flex-shrink-0 md:snap-align-none"
           >
             <div className="relative w-28 h-28 mb-2 flex items-center justify-center">
               <div className="w-full h-full rounded-xl bg-[#F4F4F4] flex items-center justify-center overflow-hidden">

@@ -67,12 +67,8 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
     return categoria;
   }, [currentMenu, dynamicCategory, categoria]);
   
-  let devicePaddingClass = "px-0";
-  if (device === "mobile") {
-    devicePaddingClass = "px-2";
-  } else if (device === "tablet") {
-    devicePaddingClass = "px-4";
-  }
+  // Padding manejado centralmente en CategorySection para evitar acumulación
+  const devicePaddingClass = "px-0";
 
   // Tracking de vista de página (debe estar antes de returns condicionales)
   useEffect(() => {

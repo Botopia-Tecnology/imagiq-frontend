@@ -62,7 +62,7 @@ export default function ExploreProducts({
   if (loading) {
     return (
       <div className="bg-white">
-        <div className="grid gap-6 grid-cols-2 md:grid-cols-4 lg:grid-cols-4 max-w-7xl mx-auto pl-4 pr-4 py-8">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 max-w-7xl mx-auto px-4 py-8">
           {Array.from({ length: 4 }).map((_, i) => (
             <SkeletonCard key={i} />
           ))}
@@ -101,9 +101,10 @@ export default function ExploreProducts({
         {title}
       </h3>
       <div
-        className={cn("grid gap-6 bg-white max-w-7xl mx-auto pl-4 pr-4", {
-          "grid-cols-2": true,
-          "md:grid-cols-4": true,
+        className={cn("grid gap-4 bg-white max-w-7xl mx-auto px-4", {
+          "grid-cols-1": true,
+          "sm:grid-cols-2": true,
+          "md:grid-cols-3": true,
           "lg:grid-cols-4": true,
         })}
       >

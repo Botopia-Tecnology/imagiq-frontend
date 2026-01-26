@@ -3,7 +3,7 @@
  * Paso 2 del carrito de compras: Datos de envío y pago
  * Layout profesional, estilo Samsung, código limpio y escalable
  */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useCart, type BundleInfo } from "@/hooks/useCart";
 import { useRouter } from "next/navigation";
@@ -62,9 +62,7 @@ export default function Step2({
   // Usar el hook centralizado useCart
   const { products: cartProducts, calculations } = useCart();
   const router = useRouter();
-  // Recibe onContinue para avanzar al siguiente paso
-  // onBack ya existe
-  // onContinue?: () => void
+
   // Estado para formulario de invitado
   // Formulario de invitado: incluye dirección línea uno y ciudad
   const [guestForm, setGuestForm] = useState({
@@ -89,13 +87,25 @@ export default function Step2({
     tipo_documento: "",
   });
 
+  // Estado para saber si el usuario interactuó con cada campo
+  const [fieldTouched, setFieldTouched] = useState({
+    email: false,
+    nombre: false,
+    apellido: false,
+    cedula: false,
+    celular: false,
+    tipo_documento: false,
+  });
+
+  // Estado para saber si ya intentó enviar el formulario (para mostrar errores globales)
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+
   // Trade-In state management
   const [tradeInData, setTradeInData] = useState<{
     completed: boolean;
     deviceName: string;
     value: number;
   } | null>(null);
-
   // Estado para controlar el modal de Trade-In
   const [isTradeInModalOpen, setIsTradeInModalOpen] = useState(false);
 
@@ -105,9 +115,6 @@ export default function Step2({
     name: string;
     skuPostback?: string;
   } | null>(null);
-
-  // Estado para verificar si el usuario ya tiene dirección agregada
-  const [hasAddedAddress, setHasAddedAddress] = useState(false);
 
   // Estado para verificar si ya se registró como invitado
   const [isRegisteredAsGuest, setIsRegisteredAsGuest] = useState(false);
@@ -119,11 +126,13 @@ export default function Step2({
   const [sendMethod, setSendMethod] = useState<'email' | 'whatsapp'>('whatsapp');
   const [guestUserId, setGuestUserId] = useState<string | null>(null);
 
-  // Estado para verificar si el formulario de dirección está completo y válido
-  const [isAddressFormValid, setIsAddressFormValid] = useState(false);
-
   // Estado para rastrear cuando se está guardando la dirección
   const [isSavingAddress, setIsSavingAddress] = useState(false);
+
+  // Estados agregados para recuperar funcionalidad perdida
+  const [hasAddedAddress, setHasAddedAddress] = useState(false);
+  const [isRequestingLocation, setIsRequestingLocation] = useState(false);
+  const [isAddressFormValid, setIsAddressFormValid] = useState(false);
 
   // Estado para datos de geolocalización
   const [geoLocationData, setGeoLocationData] = useState<{
@@ -136,18 +145,16 @@ export default function Step2({
     barrio?: string;
   } | null>(null);
 
+  // Estado para rastrear el paso actual del formulario de dirección
+  const [addressFormStep, setAddressFormStep] = useState<1 | 2>(1);
+
   // Ref para saber si ya se solicitó geolocalización
   const geoLocationRequestedRef = React.useRef(false);
 
-  // Estado para rastrear si la geolocalización está en proceso
-  const [isRequestingLocation, setIsRequestingLocation] = useState(false);
-
   // Ref para poder hacer submit del formulario de dirección desde el botón del sidebar
   const addressFormSubmitRef = React.useRef<(() => void) | null>(null);
-  // Ref para poder avanzar al paso 2 del formulario de dirección
-  const addressContinueToStep2Ref = React.useRef<(() => void) | null>(null);
-  // Estado para rastrear el paso actual del formulario de dirección
-  const [addressFormStep, setAddressFormStep] = useState<1 | 2>(1);
+  // Ref para controlar la navegación entre pasos del formulario de dirección (paso 1 → 2 o submit en paso 2)
+  const addressFormContinueRef = React.useRef<(() => void) | null>(null);
 
   // Redirección automática: Si el usuario ya tiene sesión y dirección, ir a Step1
   // Esto maneja el caso de swipe back en mobile desde Step3
@@ -259,6 +266,10 @@ export default function Step2({
     return errors;
   }
 
+  // Mostrar error solo si el campo fue tocado o si ya intentó enviar
+  const shouldShowError = (field: keyof typeof fieldErrors) =>
+    (fieldTouched[field] || submitAttempted) && Boolean(fieldErrors[field]);
+
   // Manejar cambios en el formulario invitado
   const handleGuestChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -271,11 +282,19 @@ export default function Step2({
     setFieldErrors(validateFields(newForm));
   };
 
+  const handleGuestBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name } = e.target;
+    if (!name) return;
+    setFieldTouched((prev) => ({ ...prev, [name]: true }));
+    setFieldErrors(validateFields(guestForm));
+  };
+
   // Manejar cambios en Select de shadcn (usa onValueChange en lugar de onChange)
   const handleSelectChange = (name: string, value: string) => {
     const newForm = { ...guestForm, [name]: value };
     setGuestForm(newForm);
     setFieldErrors(validateFields(newForm));
+    setFieldTouched((prev) => ({ ...prev, [name]: true }));
   };
 
   // Aplicar descuento si el código es válido
@@ -294,6 +313,7 @@ export default function Step2({
     if (e) {
       e.preventDefault();
     }
+    setSubmitAttempted(true);
     setError("");
     const errors = validateFields(guestForm);
     setFieldErrors(errors);
@@ -1137,6 +1157,55 @@ export default function Step2({
     setIsTradeInModalOpen(false);
   };
 
+  // Calcular ahorro total por descuentos de productos (como en Step4OrderSummary)
+  const productSavings = React.useMemo(() => {
+    return cartProducts.reduce((total, product) => {
+      if (product.originalPrice && product.originalPrice > product.price) {
+        const saving = (product.originalPrice - product.price) * product.quantity;
+        return total + saving;
+      }
+      return total;
+    }, 0);
+  }, [cartProducts]);
+
+  // Estado derivado para reutilizar lógica de deshabilitado en el botón móvil
+  const isMobileContinueDisabled =
+    loading ||
+    isSavingAddress ||
+    (!isRegisteredAsGuest && !isGuestFormValid) ||
+    (isRegisteredAsGuest && !hasAddedAddress && !isAddressFormValid) ||
+    (guestStep !== 'verified' && guestStep !== 'form' && isRegisteredAsGuest) ||
+    !tradeInValidation.isValid;
+
+  // Estado para animación de bounce cuando el botón se habilita
+  const wasDisabledRef = useRef(true);
+  const [shouldAnimateButton, setShouldAnimateButton] = useState(false);
+
+  useEffect(() => {
+    const isDisabled = isMobileContinueDisabled;
+
+    // Si estaba disabled y ahora está enabled → animar
+    if (wasDisabledRef.current && !isDisabled) {
+      setShouldAnimateButton(true);
+      const timer = setTimeout(() => setShouldAnimateButton(false), 500);
+      return () => clearTimeout(timer);
+    }
+
+    wasDisabledRef.current = isDisabled;
+  }, [isMobileContinueDisabled]);
+
+  // Clases consistentes con el botón verde del resumen (desktop)
+  const mobileContinueButtonClasses = [
+    "flex-shrink-0 font-bold py-4 px-6 rounded-xl text-lg transition text-white",
+    "bg-green-600",
+    !isMobileContinueDisabled &&
+    "hover:bg-green-700 border-2 border-green-500 hover:border-green-600 shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50",
+    isMobileContinueDisabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer",
+    shouldAnimateButton && "animate-buttonBounce",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   // Ref para guardar el timeout de auto-avance
   const autoContinueTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -1548,34 +1617,35 @@ export default function Step2({
           {/* Login - Solo mostrar si no está registrado como invitado */}
           {!isRegisteredAsGuest && (
             <Card className="bg-[#F3F3F3] border-0 shadow">
-              <CardHeader>
-                <CardTitle className="text-xl">Continua con inicio de sesión</CardTitle>
-                <CardDescription className="text-gray-700">
-                  Inicia sesión para tener envío gratis, acumular puntos y más
-                  beneficios
-                </CardDescription>
+              <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <CardTitle className="text-xl">Continua con inicio de sesión</CardTitle>
+                  <CardDescription className="text-gray-700">
+                    Envío gratis, acumular puntos y más
+                    beneficios
+                  </CardDescription>
+                </div>
+                <div className="flex flex-wrap gap-3 items-center">
+                  <Button
+                    onClick={() => router.push("/login")}
+                    className="bg-[#333] hover:bg-[#222] text-white font-bold py-3 px-8 h-auto"
+                  >
+                    Iniciar sesión
+                  </Button>
+                  <Link
+                    href="/login/create-account"
+                    className="text-[#0074E8] font-semibold underline"
+                  >
+                    Regístrate aquí
+                  </Link>
+                </div>
               </CardHeader>
-              <CardContent className="flex flex-wrap gap-4 items-center">
-                <Button
-                  onClick={() => router.push("/login")}
-                  className="bg-[#333] hover:bg-[#222] text-white font-bold py-3 px-8 h-auto"
-                >
-                  Iniciar sesión
-                </Button>
-                <span className="text-gray-600">No tienes cuenta aún?</span>
-                <Link
-                  href="/login/create-account"
-                  className="text-[#0074E8] font-semibold underline"
-                >
-                  Regístrate aquí
-                </Link>
-              </CardContent>
             </Card>
           )}
 
           {/* Invitado - Mostrar formulario solo en paso 'form' */}
           {guestStep === 'form' && !isRegisteredAsGuest && (
-            <Card className="border-gray-200">
+            <Card className="border-0 shadow">
               <CardHeader>
                 <CardTitle className="text-xl">Continua como invitado</CardTitle>
                 <CardDescription className="text-gray-700">
@@ -1593,7 +1663,7 @@ export default function Step2({
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Label htmlFor="email">Correo electrónico *</Label>
-                      {fieldErrors.email && (
+                      {shouldShowError("email") && (
                         <span className="text-red-500 text-xs">{fieldErrors.email}</span>
                       )}
                     </div>
@@ -1604,19 +1674,20 @@ export default function Step2({
                       placeholder="usuario@dominio.com"
                       value={guestForm.email}
                       onChange={handleGuestChange}
+                      onBlur={handleGuestBlur}
                       required
                       disabled={loading || isRegisteredAsGuest}
                       autoFocus
-                      className={`!h-11 ${fieldErrors.email ? "border-red-500" : ""}`}
+                      className={`!h-11 ${shouldShowError("email") ? "border-red-500" : ""}`}
                     />
                   </div>
 
                   {/* Nombre y Apellido */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Label htmlFor="nombre">Nombre *</Label>
-                        {fieldErrors.nombre && (
+                        {shouldShowError("nombre") && (
                           <span className="text-red-500 text-xs">{fieldErrors.nombre}</span>
                         )}
                       </div>
@@ -1627,15 +1698,16 @@ export default function Step2({
                         placeholder="Solo letras"
                         value={guestForm.nombre}
                         onChange={handleGuestChange}
+                        onBlur={handleGuestBlur}
                         required
                         disabled={loading || isRegisteredAsGuest}
-                        className={`!h-11 ${fieldErrors.nombre ? "border-red-500" : ""}`}
+                        className={`!h-11 ${shouldShowError("nombre") ? "border-red-500" : ""}`}
                       />
                     </div>
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Label htmlFor="apellido">Apellido *</Label>
-                        {fieldErrors.apellido && (
+                        {shouldShowError("apellido") && (
                           <span className="text-red-500 text-xs">{fieldErrors.apellido}</span>
                         )}
                       </div>
@@ -1646,19 +1718,21 @@ export default function Step2({
                         placeholder="Solo letras"
                         value={guestForm.apellido}
                         onChange={handleGuestChange}
+                        onBlur={handleGuestBlur}
                         required
                         disabled={loading || isRegisteredAsGuest}
-                        className={`!h-11 ${fieldErrors.apellido ? "border-red-500" : ""}`}
+                        className={`!h-11 ${shouldShowError("apellido") ? "border-red-500" : ""}`}
                       />
                     </div>
                   </div>
 
-                  {/* Tipo de Documento y No. de Documento */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Tipo de Documento y No. de Documento - Siempre en la misma línea */}
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4">
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Label>Tipo de Documento *</Label>
-                        {fieldErrors.tipo_documento && (
+                        <Label htmlFor="tipo_documento" className="hidden sm:inline">Tipo de Documento *</Label>
+                        <Label htmlFor="tipo_documento" className="sm:hidden">Tipo Doc. *</Label>
+                        {shouldShowError("tipo_documento") && (
                           <span className="text-red-500 text-xs">{fieldErrors.tipo_documento}</span>
                         )}
                       </div>
@@ -1667,21 +1741,25 @@ export default function Step2({
                         onValueChange={(value) => handleSelectChange("tipo_documento", value)}
                         disabled={loading || isRegisteredAsGuest}
                       >
-                        <SelectTrigger className={`!h-11 w-full ${fieldErrors.tipo_documento ? "border-red-500" : ""}`}>
-                          <SelectValue placeholder="-- Selecciona --" />
+                        <SelectTrigger
+                          id="tipo_documento"
+                          className={`!h-11 w-full ${shouldShowError("tipo_documento") ? "border-red-500" : ""}`}
+                        >
+                          <SelectValue placeholder="Tipo" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="CC">Cédula de Ciudadanía (CC)</SelectItem>
-                          <SelectItem value="CE">Cédula de Extranjería (CE)</SelectItem>
+                          <SelectItem value="CC">CC</SelectItem>
+                          <SelectItem value="CE">CE</SelectItem>
                           <SelectItem value="NIT">NIT</SelectItem>
-                          <SelectItem value="PP">Pasaporte (PP)</SelectItem>
+                          <SelectItem value="PP">PP</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Label htmlFor="cedula">No. de Documento *</Label>
-                        {fieldErrors.cedula && (
+                        <Label htmlFor="cedula" className="hidden sm:inline">No. de Documento *</Label>
+                        <Label htmlFor="cedula" className="sm:hidden">No. Doc. *</Label>
+                        {shouldShowError("cedula") && (
                           <span className="text-red-500 text-xs">{fieldErrors.cedula}</span>
                         )}
                       </div>
@@ -1693,10 +1771,11 @@ export default function Step2({
                         placeholder="6 a 10 números"
                         value={guestForm.cedula}
                         onChange={handleGuestChange}
+                        onBlur={handleGuestBlur}
                         required
                         disabled={loading || isRegisteredAsGuest}
                         maxLength={10}
-                        className={`!h-11 ${fieldErrors.cedula ? "border-red-500" : ""}`}
+                        className={`!h-11 ${shouldShowError("cedula") ? "border-red-500" : ""}`}
                       />
                     </div>
                   </div>
@@ -1705,7 +1784,7 @@ export default function Step2({
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Label htmlFor="celular">Celular *</Label>
-                      {fieldErrors.celular && (
+                      {shouldShowError("celular") && (
                         <span className="text-red-500 text-xs">{fieldErrors.celular}</span>
                       )}
                     </div>
@@ -1733,10 +1812,11 @@ export default function Step2({
                         placeholder="10 números, empieza con 3"
                         value={guestForm.celular}
                         onChange={handleGuestChange}
+                        onBlur={handleGuestBlur}
                         required
                         disabled={loading || isRegisteredAsGuest}
                         maxLength={10}
-                        className={`!h-11 flex-1 ${fieldErrors.celular ? "border-red-500" : ""}`}
+                        className={`!h-11 flex-1 ${shouldShowError("celular") ? "border-red-500" : ""}`}
                       />
                     </div>
                   </div>
@@ -1822,9 +1902,9 @@ export default function Step2({
                   onCancel={() => setIsRegisteredAsGuest(false)}
                   withContainer={false}
                   onSubmitRef={addressFormSubmitRef}
-                  onContinueToStep2Ref={addressContinueToStep2Ref}
+                  onContinueRef={addressFormContinueRef}
                   onFormValidChange={setIsAddressFormValid}
-                  onCurrentStepChange={setAddressFormStep}
+                  onStepChange={setAddressFormStep}
                   disabled={hasAddedAddress}
                   geoLocationData={geoLocationData}
                   isRequestingLocation={isRequestingLocation}
@@ -1856,13 +1936,13 @@ export default function Step2({
                   : isSavingAddress
                     ? "Guardando"
                     : guestStep === 'form'
-                      ? "Registrarse como invitado"
+                      ? "Registrarse"
                       : guestStep === 'otp' && !otpSent
                         ? "Enviar código"
                         : guestStep === 'otp' && otpSent
                           ? "Verificar código"
                           : !hasAddedAddress
-                            ? "Agregar dirección"
+                            ? (addressFormStep === 1 ? "Continuar" : "Agregar dirección")
                             : "Continuar pago"
               }
               disabled={
@@ -1891,31 +1971,10 @@ export default function Step2({
                   : undefined
               }
               shouldCalculateCanPickUp={false}
-              buttonVariant={guestStep === 'form' && !isRegisteredAsGuest ? "green" : "default"}
+              buttonVariant="green"
               hideButton={guestStep === 'otp' || (isRegisteredAsGuest && !hasAddedAddress)}
+              shouldAnimateButton={shouldAnimateButton}
             />
-            {/* Estilo personalizado para el botón "Registrarse como invitado" - más alto y texto en dos líneas */}
-            <style jsx global>{`
-              aside.hidden.lg\\:flex button[data-testid="checkout-finish-btn"][data-button-text="Registrarse como invitado"] {
-                min-height: 4.5rem !important;
-                padding: 1rem 0.75rem !important;
-                white-space: normal !important;
-                word-wrap: break-word !important;
-                word-break: break-word !important;
-                line-height: 1.3 !important;
-                text-align: center !important;
-                flex-wrap: wrap !important;
-                align-items: center !important;
-                justify-content: center !important;
-              }
-              aside.hidden.lg\\:flex button[data-testid="checkout-finish-btn"][data-button-text="Registrarse como invitado"] span {
-                white-space: normal !important;
-                word-wrap: break-word !important;
-                word-break: break-word !important;
-                text-align: center !important;
-                line-height: 1.3 !important;
-              }
-            `}</style>
           </div>
 
           {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
@@ -1934,68 +1993,50 @@ export default function Step2({
         </aside>
       </div>
 
-      {/* Sticky Bottom Bar - Mobile y Tablet */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
-        <div className="p-4">
-          {/* Resumen compacto */}
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-xs text-gray-500">
-                Total ({cartProducts.reduce((acc, p) => acc + p.quantity, 0)}{" "}
-                productos)
+      {/* Sticky Bottom Bar - Solo Mobile */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div className="p-4 pb-8 flex items-center justify-between gap-4">
+          {/* Izquierda: Total y descuentos */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-gray-500">
+              Total ({cartProducts.reduce((acc, p) => acc + p.quantity, 0)} productos)
+            </p>
+            <p className="text-2xl font-bold text-gray-900">
+              $ {Number(calculations.total).toLocaleString()}
+            </p>
+            {productSavings > 0 && (
+              <p className="text-sm text-green-600 font-medium">
+                -$ {Number(productSavings).toLocaleString()} desc.
               </p>
-              <p className="text-2xl font-bold text-gray-900">
-                $ {Number(calculations.total).toLocaleString()}
-              </p>
-            </div>
+            )}
           </div>
 
-          {/* Botón continuar */}
+          {/* Derecha: Botón continuar */}
           <button
-            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${loading ||
-                isSavingAddress ||
-                (!isRegisteredAsGuest && !isGuestFormValid) ||
-                (isRegisteredAsGuest && !hasAddedAddress && addressFormStep === 2 && !isAddressFormValid) ||
-                !tradeInValidation.isValid
-                ? "bg-gray-400 cursor-not-allowed opacity-70"
-                : "bg-[#222] hover:bg-[#333] cursor-pointer"
-              }`}
+            className={mobileContinueButtonClasses}
             onClick={() => {
-              // Si está registrado como invitado y no tiene dirección
-              if (isRegisteredAsGuest && !hasAddedAddress) {
-                // Si está en paso 1 del formulario de dirección, avanzar al paso 2
-                if (addressFormStep === 1) {
-                  if (addressContinueToStep2Ref.current) {
-                    addressContinueToStep2Ref.current();
-                  }
-                } else {
-                  // Si está en paso 2, hacer submit del formulario
-                  if (addressFormSubmitRef.current) {
-                    addressFormSubmitRef.current();
-                  }
-                }
+              // Si está en el formulario de dirección, usar el ref de continuar
+              if (isRegisteredAsGuest && !hasAddedAddress && addressFormContinueRef.current) {
+                addressFormContinueRef.current();
               } else {
                 handleContinue();
               }
             }}
-            disabled={
-              loading ||
-              isSavingAddress ||
-              (!isRegisteredAsGuest && !isGuestFormValid) ||
-              (isRegisteredAsGuest && !hasAddedAddress && addressFormStep === 2 && !isAddressFormValid) ||
-              (guestStep !== 'verified' && guestStep !== 'form' && isRegisteredAsGuest) ||
-              !tradeInValidation.isValid
-            }
+            disabled={isMobileContinueDisabled}
           >
             {loading
               ? "Procesando..."
               : isSavingAddress
                 ? "Guardando"
-                : !isRegisteredAsGuest
-                  ? "Registrarse como invitado"
-                  : !hasAddedAddress
-                    ? (addressFormStep === 1 ? "Continuar" : "Agregar dirección")
-                    : "Continuar pago"}
+                : guestStep === 'form' && !isRegisteredAsGuest
+                  ? "Registrarse"
+                  : guestStep === 'otp' && !otpSent
+                    ? "Enviar código"
+                    : guestStep === 'otp' && otpSent
+                      ? "Verificar código"
+                      : !hasAddedAddress
+                        ? (addressFormStep === 1 ? "Continuar" : "Agregar dirección")
+                        : "Continuar"}
           </button>
         </div>
       </div>

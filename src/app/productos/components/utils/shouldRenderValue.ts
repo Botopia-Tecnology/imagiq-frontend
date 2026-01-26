@@ -65,3 +65,36 @@ export function renderIfValid<T>(
   }
   return renderFn(value as NonNullable<T>);
 }
+
+/**
+ * Valida si un valor de color hex es válido para renderizar
+ * @param hex - Código de color hex (ej: "#000000")
+ * @returns true si es un hex válido (#RGB o #RRGGBB)
+ */
+export function isValidHexColor(hex: string | null | undefined): boolean {
+  if (!hex || typeof hex !== 'string') return false;
+
+  const trimmed = hex.trim();
+
+  // Debe empezar con # y tener 7 caracteres (#RRGGBB) o 4 caracteres (#RGB)
+  return /^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/.test(trimmed);
+}
+
+/**
+ * Valida si un color (hex + nombre) debe mostrarse
+ * @param hex - Código hex del color
+ * @param colorName - Nombre del color
+ * @returns true si ambos valores son válidos para mostrar
+ */
+export function shouldRenderColor(
+  hex: string | null | undefined,
+  colorName: string | null | undefined
+): boolean {
+  // El hex debe ser válido
+  if (!isValidHexColor(hex)) return false;
+
+  // El nombre debe pasar la validación estándar
+  if (!shouldRenderValue(colorName)) return false;
+
+  return true;
+}

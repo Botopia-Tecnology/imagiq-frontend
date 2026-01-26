@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
@@ -138,6 +138,18 @@ export default function Step7({ onBack }: Step7Props) {
   const [shippingVerification, setShippingVerification] =
     useState<ShippingVerification | null>(null);
   const { products, calculations } = useCart();
+
+  // Calcular ahorro total por descuentos de productos
+  const productSavings = useMemo(() => {
+    return products.reduce((total, product) => {
+      if (product.originalPrice && product.originalPrice > product.price) {
+        const saving = (product.originalPrice - product.price) * product.quantity;
+        return total + saving;
+      }
+      return total;
+    }, 0);
+  }, [products]);
+
   const [error, setError] = useState<string | string[] | null>(null);
   const [isLoadingShippingMethod, setIsLoadingShippingMethod] = useState(false);
   // NUEVO: Estado separado para skeleton (solo espera canPickUp) y botón (espera cálculo de envío)
@@ -2807,27 +2819,32 @@ export default function Step7({ onBack }: Step7Props) {
       </div>
 
       {/* Sticky Bottom Bar - Solo Mobile */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 shadow-lg z-50">
-        <div className="p-4">
-          {/* Resumen compacto */}
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-xs text-gray-500">
-                Total ({products.reduce((acc, p) => acc + p.quantity, 0)}{" "}
-                productos)
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div className="p-4 pb-8 flex items-center justify-between gap-4">
+          {/* Izquierda: Total y descuentos */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-gray-500">
+              Total ({products.reduce((acc, p) => acc + p.quantity, 0)}{" "}
+              productos)
+            </p>
+            <p className="text-2xl font-bold text-gray-900">
+              $ {Number(calculations.total).toLocaleString()}
+            </p>
+            {/* Mostrar descuento si existe */}
+            {productSavings > 0 && (
+              <p className="text-sm text-green-600 font-medium">
+                -$ {Number(productSavings).toLocaleString()} desc.
               </p>
-              <p className="text-2xl font-bold text-gray-900">
-                $ {Number(calculations.total).toLocaleString()}
-              </p>
-            </div>
+            )}
           </div>
 
-          {/* Botón confirmar */}
+          {/* Derecha: Botón confirmar - destacado con sombra y glow */}
           <button
-            className={`w-full font-bold py-3 rounded-lg text-base transition text-white flex items-center justify-center gap-4 ${isProcessing || isValidatingTradeIn || !tradeInValidation.isValid
-              ? "bg-gray-400 cursor-not-allowed opacity-70"
-              : "bg-green-600 hover:bg-green-700 cursor-pointer"
-              }`}
+            className={`flex-shrink-0 font-bold py-4 px-6 rounded-xl text-lg transition-all duration-200 text-white border-2 flex items-center gap-2 ${
+              isProcessing || isValidatingTradeIn || !tradeInValidation.isValid
+                ? "bg-gray-400 border-gray-300 cursor-not-allowed opacity-70"
+                : "bg-green-600 border-green-500 hover:bg-green-700 hover:border-green-600 cursor-pointer shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50"
+            }`}
             onClick={handleConfirmOrder}
             disabled={isProcessing || isValidatingTradeIn || !tradeInValidation.isValid}
           >
@@ -2837,7 +2854,7 @@ export default function Step7({ onBack }: Step7Props) {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             )}
-            <span>Confirmar y pagar</span>
+            <span>{isProcessing || isValidatingTradeIn ? "Procesando..." : "Confirmar y pagar"}</span>
           </button>
         </div>
       </div>

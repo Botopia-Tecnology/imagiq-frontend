@@ -41,50 +41,26 @@ function normalizeString(str: string): string {
 
 /**
  * Determina si un producto debe mostrar selector de color
- * basándose en su categoría o subcategoría
  *
- * @param categoria - Categoría del producto (puede venir de apiProduct.categoria)
- * @param subcategoria - Subcategoría del producto (opcional)
- * @returns true si debe mostrar selector de color, false en caso contrario
+ * CAMBIO: Ahora retorna true siempre porque la visibilidad
+ * se determina por la disponibilidad de datos válidos (hex + nombre),
+ * no por la categoría del producto.
  *
- * @example
- * ```ts
- * shouldShowColorSelector('Dispositivos móviles'); // true
- * shouldShowColorSelector('Televisores', 'Accesorios'); // true
- * shouldShowColorSelector('Electrodomésticos'); // false
- * ```
+ * La validación de datos se hace en:
+ * - shouldRenderColor() en shouldRenderValue.ts
+ * - El filtrado de colores en ProductCard.tsx
+ *
+ * @param categoria - Categoría del producto (ignorado)
+ * @param subcategoria - Subcategoría del producto (ignorado)
+ * @returns true siempre - la visibilidad depende de datos válidos
  */
 export function shouldShowColorSelector(
   categoria?: string | null,
   subcategoria?: string | null
 ): boolean {
-  // Si no hay categoría ni subcategoría, MOSTRAR selector por defecto
-  // Esto mantiene compatibilidad con productos legacy y dispositivos móviles
-  if (!categoria && !subcategoria) {
-    return true;
-  }
-
-  // Normalizar para comparación
-  const normalizedCategoria = categoria ? normalizeString(categoria) : '';
-  const normalizedSubcategoria = subcategoria ? normalizeString(subcategoria) : '';
-
-  // Verificar si la categoría está en la lista permitida
-  const categoryMatch = CATEGORIES_WITH_COLOR_SELECTOR.some(cat => {
-    const normalized = normalizeString(cat);
-    return normalized === normalizedCategoria;
-  });
-
-  if (categoryMatch) {
-    return true;
-  }
-
-  // Verificar si la subcategoría está en la lista permitida
-  const subcategoryMatch = SUBCATEGORIES_WITH_COLOR_SELECTOR.some(subcat => {
-    const normalized = normalizeString(subcat);
-    return normalized === normalizedSubcategoria;
-  });
-
-  return subcategoryMatch;
+  // Siempre mostrar selector si hay colores válidos disponibles
+  // La validación de datos (hex válido + nombre válido) se hace en el componente
+  return true;
 }
 
 /**

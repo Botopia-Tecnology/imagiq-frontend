@@ -35,7 +35,7 @@ import {
 } from "./utils/categoryColorConfig";
 import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
-import { shouldRenderValue } from "./utils/shouldRenderValue";
+import { shouldRenderValue, shouldRenderColor } from "./utils/shouldRenderValue";
 import { prefetchFlixmediaScript } from "@/lib/flixmedia";
 import CeroInteresSection from "@/components/CeroInteresSection";
 import { ZeroInterestSkuResult } from "@/services/cero-interes-sku.service";
@@ -874,9 +874,9 @@ export default function ProductCard({
               )}
           </div>
 
-          {/* Nombre de color del API (antes del selector) - Mostrar solo si es válido */}
-          {displayedSelectedColor?.nombreColorDisplay &&
-            shouldRenderValue(displayedSelectedColor.nombreColorDisplay) && (
+          {/* Nombre de color del API (antes del selector) - Mostrar solo si hex Y nombre son válidos */}
+          {displayedSelectedColor &&
+            shouldRenderColor(displayedSelectedColor.hex, displayedSelectedColor.nombreColorDisplay) && (
               <div className="px-3 mb-1">
                 <p className="text-xs text-gray-600 font-medium">
                   {`Color: ${displayedSelectedColor.nombreColorDisplay}`}
@@ -888,36 +888,37 @@ export default function ProductCard({
           <div className="px-3 flex gap-2 items-start">
             {/* Columna izquierda: Selectores */}
             <div className="flex-1 space-y-2">
-              {/* Selector de colores - Solo para categorías específicas Y si hay colores disponibles */}
-              {showColorSelector &&
-                (apiProduct
-                  ? productSelection.availableColors.length > 0
-                  : colors && colors.length > 0) && (
+              {/* Selector de colores - Mostrar si hay colores válidos (hex + nombre) */}
+              {(() => {
+                // Filtrar colores válidos (hex válido + nombre válido)
+                const validColors = apiProduct
+                  ? productSelection
+                      .getColorOptions()
+                      .filter((c) => shouldRenderColor(c.hex, c.nombreColorDisplay || c.color))
+                      .map((colorOption) => ({
+                        name: colorOption.color,
+                        hex: colorOption.hex,
+                        label: colorOption.nombreColorDisplay || colorOption.color,
+                        nombreColorDisplay: colorOption.nombreColorDisplay || undefined,
+                        sku: colorOption.variants[0]?.sku || "",
+                        ean: colorOption.variants[0]?.ean || "",
+                      }))
+                  : (colors || []).filter((c) =>
+                      shouldRenderColor(c.hex, c.nombreColorDisplay || c.label)
+                    );
+
+                // Solo mostrar si hay al menos un color válido
+                return validColors.length > 0 && (
                   <div className="min-h-[48px]">
                     <ColorSelector
-                      colors={
-                        apiProduct
-                          ? productSelection
-                            .getColorOptions()
-                            .map((colorOption) => ({
-                              name: colorOption.color,
-                              hex: colorOption.hex,
-                              label:
-                                colorOption.nombreColorDisplay ||
-                                colorOption.color,
-                              nombreColorDisplay:
-                                colorOption.nombreColorDisplay || undefined,
-                              sku: colorOption.variants[0]?.sku || "",
-                              ean: colorOption.variants[0]?.ean || "",
-                            }))
-                          : colors
-                      }
+                      colors={validColors}
                       selectedColor={displayedSelectedColor}
                       onColorSelect={handleColorSelect}
                       onShowMore={handleMoreInfo}
                     />
                   </div>
-                )}
+                );
+              })()}
 
               {/* Selector de capacidad - Solo para categorías específicas Y si hay capacidades disponibles */}
               {showCapacitySelector &&

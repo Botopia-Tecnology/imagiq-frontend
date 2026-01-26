@@ -145,7 +145,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     <>
       {/* Mobile: Layout horizontal compacto estilo Mercado Libre */}
       <div className="md:hidden">
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="bg-white p-4">
           <div className="flex gap-3">
             {/* Imagen */}
             <div className="flex flex-col items-center gap-1">
@@ -216,69 +216,72 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 </div>
               )}
 
-              {/* Cantidad */}
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex items-center gap-1 border border-gray-300 rounded-lg">
-                  <button
-                    onClick={() => onQuantityChange(Math.max(1, cantidad - 1))}
-                    className="p-1.5 hover:bg-gray-100 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                    disabled={cantidad <= 1}
-                    aria-label="Disminuir cantidad"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="w-8 text-center text-sm font-semibold">
-                    {cantidad}
-                  </span>
-                  <button
-                    onClick={() =>
-                      onQuantityChange(Math.min(limiteMax, cantidad + 1))
-                    }
-                    className="p-1.5 hover:bg-gray-100 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                    disabled={cantidad >= limiteMax}
-                    aria-label="Aumentar cantidad"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
-                  <span className="text-xs text-gray-500">
-                    Disponibles: {disponible}
-                  </span>
-                )}
-                {isLoadingCanPickUp && (
-                  <div className="h-3 w-20 bg-gray-200 animate-pulse rounded mt-1" />
-                )}
-                {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && !isLoadingCanPickUp && (
-                  <span className="text-xs text-gray-400">
-                    canPickUp: {canPickUp ? "true" : "false"}
-                  </span>
-                )}
-                {isLoadingIndRetoma && (
-                  <div className="h-3 w-16 bg-gray-200 animate-pulse rounded mt-1" />
-                )}
-                {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && indRetoma !== undefined && !isLoadingIndRetoma && (
-                  <span className="text-xs text-gray-400">
-                    retoma: {indRetoma}
-                  </span>
-                )}
-              </div>
-
-              {/* Precios */}
-              <div className="flex flex-col">
-                {descuento && (
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <span className="text-xs font-semibold text-green-600">
-                      -{descuento}%
+              {/* Cantidad y Precio en la misma fila */}
+              <div className="flex items-center justify-between gap-2">
+                {/* Cantidad */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 border border-gray-300 rounded-lg">
+                    <button
+                      onClick={() => onQuantityChange(Math.max(1, cantidad - 1))}
+                      className="p-1.5 hover:bg-gray-100 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                      disabled={cantidad <= 1}
+                      aria-label="Disminuir cantidad"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="w-8 text-center text-sm font-semibold">
+                      {cantidad}
                     </span>
-                    <span className="text-xs text-gray-400 line-through">
-                      ${precioOriginal?.toLocaleString()}
-                    </span>
+                    <button
+                      onClick={() =>
+                        onQuantityChange(Math.min(limiteMax, cantidad + 1))
+                      }
+                      className="p-1.5 hover:bg-gray-100 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                      disabled={cantidad >= limiteMax}
+                      aria-label="Aumentar cantidad"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                )}
-                <span className="text-lg font-bold text-gray-900">
-                  ${precio.toLocaleString()}
-                </span>
+                  {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
+                    <span className="text-xs text-gray-500">
+                      Disponibles: {disponible}
+                    </span>
+                  )}
+                  {isLoadingCanPickUp && (
+                    <div className="h-3 w-20 bg-gray-200 animate-pulse rounded mt-1" />
+                  )}
+                  {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && !isLoadingCanPickUp && (
+                    <span className="text-xs text-gray-400">
+                      canPickUp: {canPickUp ? "true" : "false"}
+                    </span>
+                  )}
+                  {isLoadingIndRetoma && (
+                    <div className="h-3 w-16 bg-gray-200 animate-pulse rounded mt-1" />
+                  )}
+                  {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && indRetoma !== undefined && !isLoadingIndRetoma && (
+                    <span className="text-xs text-gray-400">
+                      retoma: {indRetoma}
+                    </span>
+                  )}
+                </div>
+
+                {/* Precios al lado derecho */}
+                <div className="flex flex-col items-end">
+                  {descuento && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-semibold text-green-600">
+                        -{descuento}%
+                      </span>
+                      <span className="text-xs text-gray-400 line-through">
+                        ${precioOriginal?.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                  <span className="text-lg font-bold text-gray-900">
+                    ${precio.toLocaleString()}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -299,10 +302,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
         )}
       </div>
 
-      {/* Desktop: Layout horizontal */}
+      {/* Desktop/Tablet: Layout horizontal */}
       <div className="hidden md:block">
         <div className="flex bg-white p-4 gap-4 items-start">
-          {/* Imagen con botón Eliminar dentro */}
+          {/* Imagen */}
           <div className="relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0 bg-gray-100 rounded-xl">
             <Image
               src={imagen}
@@ -313,82 +316,82 @@ const ProductCard: React.FC<ProductCardProps> = ({
             />
           </div>
 
-          {/* Detalles - 80% */}
+          {/* Detalles - Centro */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <div className="mb-2 flex-1 min-w-0">
-                <h3 className="text-sm font-bold text-gray-900 line-clamp-2 mb-1">
-                  {nombre} - {colorName && <span>{colorName}</span>}
-                </h3>
-                {/* Detalles de variante */}
-                {(color || capacityValida || ramValida) && (
-                  <div className="text-sm text-gray-600 mb-1 flex flex-wrap gap-1 items-center">
-                    {color && (
-                      <div
-                        className="w-5 h-5 rounded-full ring-1 ring-gray-300"
-                        style={{ backgroundColor: color }}
-                        title={colorName || color}
-                      />
-                    )}
-                    {color && (capacityValida || ramValida) && <span>•</span>}
-                    {capacityValida && <span>{capacity}</span>}
-                    {capacityValida && ramValida && <span>•</span>}
-                    {ramValida && <span>{ram}</span>}
-                  </div>
+            <h3 className="text-sm font-bold text-gray-900 line-clamp-2 mb-1">
+              {nombre} - {colorName && <span>{colorName}</span>}
+            </h3>
+            {/* Detalles de variante */}
+            {(color || capacityValida || ramValida) && (
+              <div className="text-sm text-gray-600 mb-1 flex flex-wrap gap-1 items-center">
+                {color && (
+                  <div
+                    className="w-5 h-5 rounded-full ring-1 ring-gray-300"
+                    style={{ backgroundColor: color }}
+                    title={colorName || color}
+                  />
                 )}
+                {color && (capacityValida || ramValida) && <span>•</span>}
+                {capacityValida && <span>{capacity}</span>}
+                {capacityValida && ramValida && <span>•</span>}
+                {ramValida && <span>{ram}</span>}
+              </div>
+            )}
 
-                {mostrarOrigen && (
-                  <div className="mt-1">
-                    {isLoadingShippingInfo ? (
-                      <>
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-32 mb-1"></div>
-                        <div className="h-3 bg-gray-200 rounded animate-pulse w-40"></div>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-sm text-gray-500">
-                          En {shippingCity}
-                        </p>
-                        {shippingStore && (
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            {shippingStore}
-                          </p>
-                        )}
-                      </>
+            {mostrarOrigen && (
+              <div className="mt-1">
+                {isLoadingShippingInfo ? (
+                  <>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-32 mb-1"></div>
+                    <div className="h-3 bg-gray-200 rounded animate-pulse w-40"></div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-gray-500">
+                      En {shippingCity}
+                    </p>
+                    {shippingStore && (
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {shippingStore}
+                      </p>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
-              <button
-                onClick={onRemove}
-                className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-                title="Eliminar producto"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+            )}
 
-            {/* Precios */}
-            <div className="flex flex-col gap-1 mt-2">
-              <div className="flex items-baseline gap-2 flex-wrap">
-                <span className="text-sm font-semibold text-gray-900">
-                  ${precio.toLocaleString()}
-                </span>
-                {descuento && (
+            {/* Precios - debajo del nombre */}
+            <div className="flex flex-col mt-2">
+              <span className="text-sm font-semibold text-gray-900">
+                ${precio.toLocaleString()}
+              </span>
+              {descuento && (
+                <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-xs text-gray-400 line-through">
                     ${precioOriginal?.toLocaleString()}
                   </span>
-                )}
-                {descuento && precioOriginal && (
-                  <span className="text-xs text-sky-600 font-medium">
-                    Ahorras ${(precioOriginal - precio).toLocaleString()}
-                  </span>
-                )}
-              </div>
+                  {precioOriginal && (
+                    <span className="text-xs text-green-600 font-medium">
+                      Ahorras ${(precioOriginal - precio).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
+          </div>
+
+          {/* Columna derecha: Eliminar y Cantidad */}
+          <div className="flex flex-col items-end gap-3 flex-shrink-0">
+            <button
+              onClick={onRemove}
+              className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+              title="Eliminar producto"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
 
             {/* Selector de cantidad */}
-            <div className="flex items-center gap-2 mt-3">
+            <div className="flex flex-col items-end gap-1">
               <span className="text-xs text-gray-500">Cantidad:</span>
               <div className="flex items-center border border-gray-200 rounded bg-white">
                 <button
@@ -413,25 +416,25 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   <Plus className="w-3 h-3 text-gray-600" />
                 </button>
               </div>
-
-              {/* Debug info */}
-              {isLoadingCanPickUp && (
-                <div className="h-3 w-20 bg-gray-200 animate-pulse rounded ml-2" />
-              )}
-              {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && !isLoadingCanPickUp && (
-                <span className="text-xs text-gray-400 ml-2">
-                  canPickUp: {canPickUp ? "true" : "false"}
-                </span>
-              )}
-              {isLoadingIndRetoma && (
-                <div className="h-3 w-16 bg-gray-200 animate-pulse rounded ml-2" />
-              )}
-              {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && indRetoma !== undefined && !isLoadingIndRetoma && (
-                <span className="text-xs text-gray-400 ml-2">
-                  retoma: {indRetoma}
-                </span>
-              )}
             </div>
+
+            {/* Debug info */}
+            {isLoadingCanPickUp && (
+              <div className="h-3 w-20 bg-gray-200 animate-pulse rounded" />
+            )}
+            {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && !isLoadingCanPickUp && (
+              <span className="text-xs text-gray-400">
+                canPickUp: {canPickUp ? "true" : "false"}
+              </span>
+            )}
+            {isLoadingIndRetoma && (
+              <div className="h-3 w-16 bg-gray-200 animate-pulse rounded" />
+            )}
+            {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && indRetoma !== undefined && !isLoadingIndRetoma && (
+              <span className="text-xs text-gray-400">
+                retoma: {indRetoma}
+              </span>
+            )}
           </div>
         </div>
 

@@ -28,9 +28,9 @@ interface AddNewAddressFormProps {
   onCancel?: () => void;
   withContainer?: boolean; // Si debe mostrar el contenedor con padding y border
   onSubmitRef?: React.MutableRefObject<(() => void) | null>; // Ref para exponer la función de submit
-  onContinueToStep2Ref?: React.MutableRefObject<(() => void) | null>; // Ref para exponer la función de ir al paso 2
+  onContinueRef?: React.MutableRefObject<(() => void) | null>; // Ref para exponer la función de continuar (paso 1 → 2 o submit en paso 2)
   onFormValidChange?: (isValid: boolean) => void; // Callback para notificar cuando el formulario es válido
-  onCurrentStepChange?: (step: 1 | 2) => void; // Callback para notificar cuando cambia el paso actual
+  onStepChange?: (step: 1 | 2) => void; // Callback para notificar cuando cambia el paso del formulario
   disabled?: boolean; // Si los campos deben estar deshabilitados
   geoLocationData?: {
     departamento?: string;
@@ -54,9 +54,9 @@ export default function AddNewAddressForm({
   onCancel,
   withContainer = true,
   onSubmitRef,
-  onContinueToStep2Ref,
+  onContinueRef,
   onFormValidChange,
-  onCurrentStepChange,
+  onStepChange,
   disabled = false,
   geoLocationData,
   isRequestingLocation = false,
@@ -137,11 +137,20 @@ export default function AddNewAddressForm({
   ]);
 
   // Notificar cuando el formulario es válido
+  // NOTA: Este useEffect solo maneja isFormComplete (paso 2)
+  // La validez del paso 1 se maneja en un useEffect separado después de isStep1Complete
   React.useEffect(() => {
-    if (onFormValidChange) {
+    if (onFormValidChange && currentStep === 2) {
       onFormValidChange(isFormComplete);
     }
-  }, [isFormComplete, onFormValidChange]);
+  }, [isFormComplete, onFormValidChange, currentStep]);
+
+  // Notificar cuando cambia el paso del formulario
+  React.useEffect(() => {
+    if (onStepChange) {
+      onStepChange(currentStep);
+    }
+  }, [currentStep, onStepChange]);
 
   // Estados para departamentos y ciudades dinámicas
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -379,6 +388,13 @@ export default function AddNewAddressForm({
     formData.numeroComplementario,
     formData.setsReferencia
   ]);
+
+  // Notificar validez del paso 1 al padre
+  React.useEffect(() => {
+    if (onFormValidChange && currentStep === 1) {
+      onFormValidChange(isStep1Complete);
+    }
+  }, [isStep1Complete, onFormValidChange, currentStep]);
 
   // Calcular campos faltantes para mostrar en tooltip
   const missingFields = useMemo(() => {
@@ -1061,23 +1077,26 @@ export default function AddNewAddressForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onSubmitRef, selectedAddress?.placeId, formData.nombreDireccion, formData.instruccionesEntrega, formData.usarMismaParaFacturacion]);
 
-  // Exponer función para continuar al paso 2
+  // Exponer función de continuar (paso 1 → 2 o submit en paso 2) a través del ref
   React.useEffect(() => {
-    if (onContinueToStep2Ref) {
-      onContinueToStep2Ref.current = () => {
-        if (isStep1Complete) {
-          setCurrentStep(2);
+    if (onContinueRef) {
+      onContinueRef.current = async () => {
+        if (currentStep === 1) {
+          // En paso 1: verificar que esté completo y avanzar a paso 2
+          if (isStep1Complete) {
+            setCurrentStep(2);
+          }
+        } else {
+          // En paso 2: hacer submit
+          if (!validateForm() || !selectedAddress) {
+            return;
+          }
+          await handleSubmitInternal();
         }
       };
     }
-  }, [onContinueToStep2Ref, isStep1Complete]);
-
-  // Notificar cuando cambia el paso actual
-  React.useEffect(() => {
-    if (onCurrentStepChange) {
-      onCurrentStepChange(currentStep);
-    }
-  }, [currentStep, onCurrentStepChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onContinueRef, currentStep, isStep1Complete, selectedAddress?.placeId, formData.nombreDireccion, formData.instruccionesEntrega, formData.usarMismaParaFacturacion]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1087,35 +1106,41 @@ export default function AddNewAddressForm({
   const formContent = (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Título, indicador de pasos y botón continuar */}
-      <div className="flex flex-wrap items-center justify-between mb-4 md:mb-6 gap-2 md:gap-4">
-        {/* Título (si se proporciona) */}
-        {headerTitle && (
-          <h2 className="text-lg md:text-2xl font-bold">{headerTitle}</h2>
-        )}
+      <div className="flex items-center justify-between mb-6 gap-4">
+        {/* Título + Indicador de pasos */}
+        <div className="flex items-center gap-4">
+          {/* Título (si se proporciona) */}
+          {headerTitle && (
+            <h2 className="text-xl sm:text-2xl font-bold whitespace-nowrap">{headerTitle}</h2>
+          )}
 
-        {/* Solo mostrar indicador de pasos si NO es billingOnly */}
-        {!billingOnly ? (
-          <div className={`flex items-center ${!withContainer ? 'gap-1' : 'gap-1 md:gap-2'}`}>
-            <div className={`flex items-center justify-center ${!withContainer ? 'w-5 h-5 text-[10px]' : 'w-6 h-6 md:w-8 md:h-8 text-xs md:text-sm'} rounded-full font-bold ${
-              currentStep === 1 ? "bg-black text-white" : "bg-gray-200 text-gray-600"
-            }`}>
-              1
+          {/* Solo mostrar indicador de pasos si NO es billingOnly */}
+          {!billingOnly ? (
+            <div className={`flex items-center ${!withContainer ? 'gap-1' : 'gap-2'}`}>
+              <div className={`flex items-center justify-center ${!withContainer ? 'w-6 h-6 text-xs' : 'w-8 h-8 text-sm'} rounded-full font-bold ${
+                currentStep === 1 ? "bg-black text-white" : "bg-gray-200 text-gray-600"
+              }`}>
+                1
+              </div>
+              <div className={`${!withContainer ? 'w-8' : 'w-12'} h-0.5 bg-gray-300`}></div>
+              <div className={`flex items-center justify-center ${!withContainer ? 'w-6 h-6 text-xs' : 'w-8 h-8 text-sm'} rounded-full font-bold ${
+                currentStep === 2 ? "bg-black text-white" : "bg-gray-200 text-gray-600"
+              }`}>
+                2
+              </div>
             </div>
-            <div className={`${!withContainer ? 'w-6' : 'w-6 md:w-12'} h-0.5 bg-gray-300`}></div>
-            <div className={`flex items-center justify-center ${!withContainer ? 'w-5 h-5 text-[10px]' : 'w-6 h-6 md:w-8 md:h-8 text-xs md:text-sm'} rounded-full font-bold ${
-              currentStep === 2 ? "bg-black text-white" : "bg-gray-200 text-gray-600"
-            }`}>
-              2
-            </div>
-          </div>
-        ) : (
-          /* Título para modo billingOnly */
-          <h3 className="text-base md:text-lg font-semibold text-gray-900">Nueva dirección de facturación</h3>
-        )}
+          ) : (
+            /* Título para modo billingOnly */
+            <h3 className="text-lg font-semibold text-gray-900">Nueva dirección de facturación</h3>
+          )}
+        </div>
 
-        {/* Botón Continuar - visible en paso 1 en todas las pantallas */}
+        {/* Botón Continuar - solo visible en paso 1
+            - En desktop: siempre visible
+            - En mobile: visible solo si NO hay onContinueRef (modal independiente)
+            - Si hay onContinueRef, el control viene del padre (sticky bar en Step2) */}
         {currentStep === 1 ? (
-          <div className="relative">
+          <div className={`relative ${onContinueRef ? 'hidden sm:block' : ''}`}>
             <button
               type="button"
               onClick={() => {
@@ -1129,7 +1154,11 @@ export default function AddNewAddressForm({
               disabled={!isStep1Complete || (billingOnly && isLoading)}
               onMouseEnter={() => !isStep1Complete && setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
-              className="px-4 md:px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
+              className={`px-6 py-2 bg-green-600 text-white rounded-xl font-bold transition ${
+                isStep1Complete && !(billingOnly && isLoading)
+                  ? "hover:bg-green-700 border-2 border-green-500 hover:border-green-600 shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50"
+                  : "opacity-70 cursor-not-allowed"
+              }`}
             >
               {billingOnly ? (isLoading ? "Guardando..." : "Guardar dirección") : "Continuar"}
             </button>
@@ -1152,8 +1181,9 @@ export default function AddNewAddressForm({
             )}
           </div>
         ) : (
-          /* Espacio vacío para mantener la alineación cuando no hay botón - solo en desktop */
-          <div className="hidden lg:block w-[120px]"></div>
+          /* Espacio vacío para mantener la alineación cuando no hay botón
+             - Solo oculto en mobile si hay onContinueRef (control externo) */
+          <div className={`${onContinueRef ? 'hidden sm:block' : ''} w-[120px]`}></div>
         )}
       </div>
 
@@ -1173,15 +1203,17 @@ export default function AddNewAddressForm({
       {/* PASO 1: Datos esenciales de la dirección */}
       {currentStep === 1 && (
         <div className="space-y-4">
-          {/* Grid de campos según Samsung: Departamento y Ciudad */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Grid de campos: Departamento y Ciudad siempre en la misma fila */}
+          <div className="grid grid-cols-2 gap-2 sm:gap-4">
           {/* Departamento */}
           <div>
             <label
               htmlFor="departamento"
               className="block text-sm font-bold text-gray-900 mb-1"
             >
-              Departamento <span className="text-red-500">*</span>
+              <span className="hidden sm:inline">Departamento</span>
+              <span className="sm:hidden">Depto.</span>
+              <span className="text-red-500"> *</span>
             </label>
             <select
               id="departamento"
@@ -1192,7 +1224,7 @@ export default function AddNewAddressForm({
                 handleInputChange("ciudad", "");
               }}
               disabled={disabled || loadingDepartments}
-              className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+              className={`w-full px-2 sm:px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
                 disabled || loadingDepartments
                   ? "bg-gray-100 cursor-not-allowed opacity-60"
                   : getFieldBackgroundClass(formData.departamento)
@@ -1227,7 +1259,7 @@ export default function AddNewAddressForm({
               value={formData.ciudad}
               onChange={(e) => handleInputChange("ciudad", e.target.value)}
               disabled={disabled || !formData.departamento || loadingCities}
-              className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+              className={`w-full px-2 sm:px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
                 disabled || !formData.departamento || loadingCities
                   ? "bg-gray-100 cursor-not-allowed border-gray-300 opacity-60"
                   : `${getFieldBackgroundClass(formData.ciudad)} ${getFieldBorderClass(formData.ciudad, !!errors.ciudad)}`
@@ -1374,8 +1406,8 @@ export default function AddNewAddressForm({
           </div>
         </div>
 
-        {/* Grid: Barrio y Complemento en una sola fila */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Grid: Barrio y Complemento siempre en la misma fila */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-4">
           {/* Barrio */}
           <div>
             <label
@@ -1391,7 +1423,7 @@ export default function AddNewAddressForm({
               onChange={(e) => handleInputChange("barrio", e.target.value)}
               placeholder="ej: Chicó"
               disabled={disabled}
-              className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+              className={`w-full px-2 sm:px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
                 disabled
                   ? "bg-gray-100 cursor-not-allowed opacity-60"
                   : getFieldBackgroundClass(formData.barrio)
@@ -1416,9 +1448,9 @@ export default function AddNewAddressForm({
               onChange={(e) =>
                 handleInputChange("setsReferencia", e.target.value)
               }
-              placeholder="ej: Oficina 204"
+              placeholder="ej: Ofi. 204"
               disabled={disabled}
-              className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+              className={`w-full px-2 sm:px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
                 disabled
                   ? "bg-gray-100 cursor-not-allowed opacity-60"
                   : getFieldBackgroundClass(formData.setsReferencia)
@@ -1612,7 +1644,11 @@ export default function AddNewAddressForm({
                   !formData.instruccionesEntrega ||
                   (!formData.usarMismaParaFacturacion && !selectedBillingAddress)
                 }
-                className="flex-1 bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`flex-1 bg-green-600 text-white px-6 py-3 rounded-xl font-bold transition ${
+                  !(disabled || isLoading || !selectedAddress || !formData.nombreDireccion || !formData.instruccionesEntrega || (!formData.usarMismaParaFacturacion && !selectedBillingAddress))
+                    ? "hover:bg-green-700 border-2 border-green-500 hover:border-green-600 shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50"
+                    : "opacity-70 cursor-not-allowed"
+                }`}
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -1657,7 +1693,11 @@ export default function AddNewAddressForm({
                   !formData.instruccionesEntrega ||
                   (!formData.usarMismaParaFacturacion && !selectedBillingAddress)
                 }
-                className="flex-1 bg-black text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-800 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`flex-1 bg-green-600 text-white px-6 py-3 rounded-xl font-bold transition ${
+                  !(isLoading || !selectedAddress || !formData.nombreDireccion || !formData.instruccionesEntrega || (!formData.usarMismaParaFacturacion && !selectedBillingAddress))
+                    ? "hover:bg-green-700 border-2 border-green-500 hover:border-green-600 shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50"
+                    : "opacity-70 cursor-not-allowed"
+                }`}
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center gap-2">

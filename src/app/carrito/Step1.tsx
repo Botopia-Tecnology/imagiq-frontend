@@ -463,6 +463,17 @@ export default function Step1({
   // Usar cálculos del hook centralizado
   const total = calculations.total;
 
+  // Calcular ahorro total por descuentos de productos (para mostrar en sticky bar mobile)
+  const productSavings = useMemo(() => {
+    return cartProducts.reduce((acc, product) => {
+      if (product.originalPrice && product.originalPrice > product.price) {
+        const saving = (product.originalPrice - product.price) * product.quantity;
+        return acc + saving;
+      }
+      return acc;
+    }, 0);
+  }, [cartProducts]);
+
   // Cambiar cantidad de producto usando el hook
   const handleQuantityChange = (idx: number, cantidad: number) => {
     const product = cartProducts[idx];
@@ -902,7 +913,7 @@ export default function Step1({
 
               {/* Productos individuales (sin bundle) */}
               {nonBundleProducts.length > 0 && (
-                <div className="flex flex-col bg-white rounded-lg overflow-hidden border border-gray-200 divide-y divide-gray-200">
+                <div className="flex flex-col bg-white rounded-lg overflow-hidden divide-y divide-gray-200">
                   {nonBundleProducts.map((product) => {
                     const idx = cartProducts.findIndex((p) => p.sku === product.sku);
                     // Obtener datos de Trade-In para este producto específico
@@ -998,7 +1009,7 @@ export default function Step1({
 
               onContinue();
             }}
-            buttonText="Continuar pago"
+            buttonText="Continuar"
             disabled={cartProducts.length === 0 || !tradeInValidation.isValid}
             isSticky={false}
             isStep1={true}
@@ -1023,34 +1034,38 @@ export default function Step1({
       {/* Sticky Bottom Bar - Solo Mobile */}
       {isClient && cartProducts.length > 0 && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
-          <div className="p-4">
-            {/* Resumen compacto */}
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-xs text-gray-500">
-                  Total ({cartProducts.reduce((acc, p) => acc + p.quantity, 0)}{" "}
-                  productos)
+          <div className="p-4 pb-8 flex items-center justify-between gap-4">
+            {/* Izquierda: Total y descuentos */}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-gray-500">
+                Total ({cartProducts.reduce((acc, p) => acc + p.quantity, 0)}{" "}
+                productos)
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                $ {Number(total).toLocaleString()}
+              </p>
+              {/* Mostrar descuento si existe */}
+              {productSavings > 0 && (
+                <p className="text-sm text-green-600 font-medium">
+                  -{formatPrice(productSavings)} desc.
                 </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  $ {Number(total).toLocaleString()}
-                </p>
-              </div>
+              )}
             </div>
 
-            {/* Botón continuar */}
+            {/* Derecha: Botón continuar - destacado con sombra y glow */}
             <button
-              className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${!tradeInValidation.isValid 
-                ? "bg-gray-400 cursor-not-allowed opacity-70"
+              className={`flex-shrink-0 font-bold py-4 px-8 rounded-xl text-lg transition-all duration-200 text-white border-2 ${!tradeInValidation.isValid
+                ? "bg-gray-400 border-gray-300 cursor-not-allowed opacity-70"
                 : userClickedWhileLoading
-                ? "bg-gray-600 cursor-not-allowed opacity-90"
-                : "bg-[#222] hover:bg-[#333] cursor-pointer"
+                ? "bg-gray-600 border-gray-500 cursor-not-allowed opacity-90"
+                : "bg-green-600 border-green-500 hover:bg-green-700 hover:border-green-600 cursor-pointer shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50"
                 }`}
               onClick={handleContinue}
               disabled={!tradeInValidation.isValid || userClickedWhileLoading}
             >
               {userClickedWhileLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                     <circle
                       className="opacity-25"
                       cx="12"
@@ -1066,10 +1081,10 @@ export default function Step1({
                       d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                     />
                   </svg>
-                  Continuar pago
+                  Continuar
                 </span>
               ) : (
-                "Continuar pago"
+                "Continuar"
               )}
             </button>
           </div>

@@ -159,13 +159,16 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
 
   // Agrupar precios por color
   const MAX_PRICE = 100000000; // Filtrar precios corruptos
+  const isValidHex = (c: string) => /^#[0-9A-Fa-f]{6}$/i.test(c?.trim() || '');
+
   for (let index = 0; index < apiProduct.color.length; index++) {
     const color = apiProduct.color[index];
     const precioNormal = apiProduct.precioNormal[index] || 0;
     const precioeccommerce = apiProduct.precioeccommerce[index] || 0;
 
-    // Solo incluir colores con precios válidos (mayores a 0 y menores al máximo)
-    if ((precioNormal > 0 && precioNormal < MAX_PRICE) || (precioeccommerce > 0 && precioeccommerce < MAX_PRICE)) {
+    // Solo incluir colores con hex válido Y precios válidos (mayores a 0 y menores al máximo)
+    const hasValidPrice = (precioNormal > 0 && precioNormal < MAX_PRICE) || (precioeccommerce > 0 && precioeccommerce < MAX_PRICE);
+    if (isValidHex(color) && hasValidPrice) {
       const key = color.toLowerCase();
 
       if (!colorPriceMap.has(key)) {

@@ -50,6 +50,17 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
     bankName?: string;
   } | null>(null);
 
+  // Calcular ahorro total por descuentos de productos
+  const productSavings = React.useMemo(() => {
+    return products.reduce((total, product) => {
+      if (product.originalPrice && product.originalPrice > product.price) {
+        const saving = (product.originalPrice - product.price) * product.quantity;
+        return total + saving;
+      }
+      return total;
+    }, 0);
+  }, [products]);
+
   // Cargar cuotas guardadas de localStorage
   useEffect(() => {
     // console.log("🚀 [Step5] Mounting Step5 component");
@@ -486,26 +497,31 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
 
       {/* Sticky Bottom Bar - Solo Mobile */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
-        <div className="p-4">
-          {/* Resumen compacto */}
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-xs text-gray-500">
-                Total ({products.reduce((acc, p) => acc + p.quantity, 0)}{" "}
-                productos)
+        <div className="p-4 pb-8 flex items-center justify-between gap-4">
+          {/* Izquierda: Total y descuentos */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-gray-500">
+              Total ({products.reduce((acc, p) => acc + p.quantity, 0)}{" "}
+              productos)
+            </p>
+            <p className="text-2xl font-bold text-gray-900">
+              $ {Number(calculations.total).toLocaleString()}
+            </p>
+            {/* Mostrar descuento si existe */}
+            {productSavings > 0 && (
+              <p className="text-sm text-green-600 font-medium">
+                -$ {Number(productSavings).toLocaleString()} desc.
               </p>
-              <p className="text-2xl font-bold text-gray-900">
-                $ {Number(calculations.total).toLocaleString()}
-              </p>
-            </div>
+            )}
           </div>
 
-          {/* Botón continuar */}
+          {/* Derecha: Botón continuar - destacado con sombra y glow */}
           <button
-            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${selectedInstallments === null || !tradeInValidation.isValid
-              ? "bg-gray-400 cursor-not-allowed opacity-70"
-              : "bg-green-600 hover:bg-green-700 cursor-pointer"
-              }`}
+            className={`flex-shrink-0 font-bold py-4 px-6 rounded-xl text-lg transition-all duration-200 text-white border-2 ${
+              selectedInstallments === null || !tradeInValidation.isValid
+                ? "bg-gray-400 border-gray-300 cursor-not-allowed opacity-70"
+                : "bg-green-600 border-green-500 hover:bg-green-700 hover:border-green-600 cursor-pointer shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50"
+            }`}
             onClick={handleContinue}
             disabled={selectedInstallments === null || !tradeInValidation.isValid}
           >

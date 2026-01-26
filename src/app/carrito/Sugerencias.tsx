@@ -513,11 +513,12 @@ export default function Sugerencias({
   // Componente reutilizable para renderizar una fila de productos
   const renderProductRow = (productos: ProductApiData[]) => (
     <div className="mb-6 last:mb-0">
-      <div className="flex flex-col md:flex-row gap-6 justify-center items-center">
+      {/* Mobile: scroll horizontal | Desktop/Tablet: flex-wrap justify-start */}
+      <div className="flex gap-12 overflow-x-auto pt-3 pb-2 snap-x snap-mandatory pl-6 md:pl-0 md:pt-0 md:overflow-x-visible md:flex-wrap md:justify-start md:gap-28 lg:gap-32 scrollbar-hide">
         {productos.map((producto, idx) => (
           <div
             key={producto.sku[0] || idx}
-            className="flex flex-col items-center w-full md:w-1/4 px-2"
+            className="flex-shrink-0 flex flex-col items-center w-32 snap-start last:pr-6 md:last:pr-0 md:w-28 md:flex-shrink-0 md:snap-align-none"
           >
             <div className="relative w-28 h-28 mb-2 flex items-center justify-center">
               <div className="w-full h-full rounded-xl bg-[#F4F4F4] flex items-center justify-center overflow-hidden">
@@ -538,7 +539,7 @@ export default function Sugerencias({
               </button>
             </div>
             <div className="text-center mt-2">
-              <div className="font-semibold text-gray-900 text-sm mb-1 line-clamp-2">
+              <div className="font-semibold text-gray-900 text-sm md:text-xs lg:text-sm mb-1 line-clamp-2">
                 {producto.desDetallada[0] || producto.nombreMarket?.[0] || ''}
               </div>
               <div className="text-base font-bold text-gray-900">
@@ -569,8 +570,9 @@ export default function Sugerencias({
     : "Agrega a tu compra";
 
   return (
-    <section className="rounded-2xl p-6 mt-2">
-      <h2 className="font-bold text-lg mb-4">{titulo}</h2>
+    <section className="rounded-2xl py-3 md:p-6">
+      {/* Título con padding horizontal en móvil */}
+      <h2 className="font-bold text-lg mb-2 md:mb-4 px-6 md:px-0">{titulo}</h2>
 
       {/* Fila 1: Accesorios compatibles con el modelo */}
       {hasCompatibles && renderProductRow(sugerenciasCompatibles)}

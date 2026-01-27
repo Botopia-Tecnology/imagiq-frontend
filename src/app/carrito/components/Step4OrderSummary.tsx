@@ -1192,13 +1192,9 @@ export default function Step4OrderSummary({
 
   const primaryButtonVariantClasses =
     buttonVariant === "green"
-      ? [
-          "bg-green-600",
-          !isPrimaryDisabled &&
-            "hover:bg-green-700 border-2 border-green-500 hover:border-green-600 shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50",
-        ]
-          .filter(Boolean)
-          .join(" ")
+      ? isPrimaryDisabled
+        ? "bg-gray-400 border-2 border-gray-300"
+        : "bg-green-600 border-2 border-green-500 hover:bg-green-700 hover:border-green-600 shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50"
       : "bg-black hover:bg-gray-900";
 
   if (isEmpty) {
@@ -1314,7 +1310,7 @@ export default function Step4OrderSummary({
         {!hideButton && (
           <button
             type="button"
-            className={`${primaryButtonBaseClasses} ${primaryButtonVariantClasses} ${isPrimaryDisabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer"} ${shouldAnimateButton ? "animate-buttonBounce" : ""}`}
+            className={`${primaryButtonBaseClasses} ${primaryButtonVariantClasses} ${isPrimaryDisabled ? "cursor-not-allowed" : "cursor-pointer"} ${shouldAnimateButton ? "animate-buttonBounce" : ""}`}
             disabled={isPrimaryDisabled}
             data-testid="checkout-finish-btn"
             data-button-text={buttonText}

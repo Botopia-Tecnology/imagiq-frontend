@@ -37,8 +37,8 @@ export default function CheckoutActions({
       {/* Finish Payment Button */}
       <button
         type="button"
-        className={`w-full bg-[#2563EB] text-white font-bold py-3 rounded-lg text-base hover:bg-blue-700 transition flex items-center justify-center ${
-          isProcessing ? "opacity-70 cursor-not-allowed" : ""
+        className={`w-full text-white font-bold py-3 rounded-lg text-base transition flex items-center justify-center ${
+          isProcessing ? "bg-gray-400 cursor-not-allowed" : "bg-[#2563EB] hover:bg-blue-700"
         }`}
         disabled={!isAccepted || isProcessing}
         data-testid="checkout-finish-btn"

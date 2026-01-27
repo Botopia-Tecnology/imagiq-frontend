@@ -457,14 +457,14 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
           </div>
 
           {/* Resumen de compra y Trade-In - Hidden en mobile */}
-          <aside className="hidden md:block lg:col-span-1 space-y-4">
+          <aside className="hidden md:block lg:col-span-1 space-y-4 self-start">
             <Step4OrderSummary
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
               buttonVariant="green"
               disabled={selectedInstallments === null || !tradeInValidation.isValid}
-              isSticky={false}
+              isSticky={true}
               deliveryMethod={
                 typeof window !== "undefined"
                   ? (() => {
@@ -519,7 +519,7 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
           <button
             className={`flex-shrink-0 font-bold py-4 px-6 rounded-xl text-lg transition-all duration-200 text-white border-2 ${
               selectedInstallments === null || !tradeInValidation.isValid
-                ? "bg-gray-400 border-gray-300 cursor-not-allowed opacity-70"
+                ? "bg-gray-400 border-gray-300 cursor-not-allowed"
                 : "bg-green-600 border-green-500 hover:bg-green-700 hover:border-green-600 cursor-pointer shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50"
             }`}
             onClick={handleContinue}

@@ -1154,10 +1154,10 @@ export default function AddNewAddressForm({
               disabled={!isStep1Complete || (billingOnly && isLoading)}
               onMouseEnter={() => !isStep1Complete && setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
-              className={`px-6 py-2 bg-green-600 text-white rounded-xl font-bold transition ${
+              className={`px-6 py-2 text-white rounded-xl font-bold transition border-2 ${
                 isStep1Complete && !(billingOnly && isLoading)
-                  ? "hover:bg-green-700 border-2 border-green-500 hover:border-green-600 shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50"
-                  : "opacity-70 cursor-not-allowed"
+                  ? "bg-green-600 border-green-500 hover:bg-green-700 hover:border-green-600 shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50"
+                  : "bg-gray-400 border-gray-300 cursor-not-allowed"
               }`}
             >
               {billingOnly ? (isLoading ? "Guardando..." : "Guardar dirección") : "Continuar"}
@@ -1644,10 +1644,10 @@ export default function AddNewAddressForm({
                   !formData.instruccionesEntrega ||
                   (!formData.usarMismaParaFacturacion && !selectedBillingAddress)
                 }
-                className={`flex-1 bg-green-600 text-white px-6 py-3 rounded-xl font-bold transition ${
+                className={`flex-1 text-white px-6 py-3 rounded-xl font-bold transition border-2 ${
                   !(disabled || isLoading || !selectedAddress || !formData.nombreDireccion || !formData.instruccionesEntrega || (!formData.usarMismaParaFacturacion && !selectedBillingAddress))
-                    ? "hover:bg-green-700 border-2 border-green-500 hover:border-green-600 shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50"
-                    : "opacity-70 cursor-not-allowed"
+                    ? "bg-green-600 border-green-500 hover:bg-green-700 hover:border-green-600 shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50"
+                    : "bg-gray-400 border-gray-300 cursor-not-allowed"
                 }`}
               >
                 {isLoading ? (
@@ -1693,10 +1693,10 @@ export default function AddNewAddressForm({
                   !formData.instruccionesEntrega ||
                   (!formData.usarMismaParaFacturacion && !selectedBillingAddress)
                 }
-                className={`flex-1 bg-green-600 text-white px-6 py-3 rounded-xl font-bold transition ${
+                className={`flex-1 text-white px-6 py-3 rounded-xl font-bold transition border-2 ${
                   !(isLoading || !selectedAddress || !formData.nombreDireccion || !formData.instruccionesEntrega || (!formData.usarMismaParaFacturacion && !selectedBillingAddress))
-                    ? "hover:bg-green-700 border-2 border-green-500 hover:border-green-600 shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50"
-                    : "opacity-70 cursor-not-allowed"
+                    ? "bg-green-600 border-green-500 hover:bg-green-700 hover:border-green-600 shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50"
+                    : "bg-gray-400 border-gray-300 cursor-not-allowed"
                 }`}
               >
                 {isLoading ? (

@@ -963,7 +963,7 @@ export default function Step1({
           )}
         </section>
         {/* Resumen de compra - Solo Desktop */}
-        <aside className="hidden md:block space-y-4">
+        <aside className="hidden md:block space-y-4 self-start">
           {!isClient ? (
             <div className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
               <div className="h-6 bg-gray-200 rounded w-1/2 mb-4" />
@@ -1055,9 +1055,9 @@ export default function Step1({
             {/* Derecha: Botón continuar - destacado con sombra y glow */}
             <button
               className={`flex-shrink-0 font-bold py-4 px-8 rounded-xl text-lg transition-all duration-200 text-white border-2 ${!tradeInValidation.isValid
-                ? "bg-gray-400 border-gray-300 cursor-not-allowed opacity-70"
+                ? "bg-gray-400 border-gray-300 cursor-not-allowed"
                 : userClickedWhileLoading
-                ? "bg-gray-600 border-gray-500 cursor-not-allowed opacity-90"
+                ? "bg-gray-500 border-gray-400 cursor-not-allowed"
                 : "bg-green-600 border-green-500 hover:bg-green-700 hover:border-green-600 cursor-pointer shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50"
                 }`}
               onClick={handleContinue}

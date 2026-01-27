@@ -175,10 +175,10 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
               </div>
             </div>
 
-            {/* Lista de direcciones */}
-            {addresses.length > 0 && (
+            {/* Lista de direcciones - Filtrar direcciones de facturación */}
+            {addresses.filter(a => a.nombreDireccion?.toLowerCase() !== "dirección de facturación").length > 0 && (
               <div className="space-y-2 max-h-[calc(100vh-350px)] overflow-y-auto pr-2">
-                {addresses.map((ad, i) => {
+                {addresses.filter(a => a.nombreDireccion?.toLowerCase() !== "dirección de facturación").map((ad, i) => {
                   const icon = getTipoDireccionIcon(ad.tipoDireccion);
                   const label = getTipoDireccionLabel(ad.tipoDireccion);
                   const mainAddress = ad.direccionFormateada || ad.nombreDireccion || 'Dirección';

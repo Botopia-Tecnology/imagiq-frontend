@@ -602,6 +602,17 @@ export default function Step3({
     }
   }, [hasActiveTradeIn, hasProductWithoutPickup, deliveryMethod, setDeliveryMethod, effectiveCanPickUp]);
 
+  // Auto-seleccionar "tienda" cuando canPickUp es true
+  // Esto asegura que el botón "Continuar" tenga un método válido seleccionado
+  React.useEffect(() => {
+    // Si canPickUp es true, auto-seleccionar tienda
+    // IMPORTANTE: Solo cambiar si actualmente es "domicilio" para no interferir con selección manual
+    if (effectiveCanPickUp === true && deliveryMethod === "domicilio") {
+      console.log('🏪 [Step3] Auto-seleccionando "tienda" porque canPickUp es true');
+      setDeliveryMethod("tienda");
+    }
+  }, [effectiveCanPickUp, deliveryMethod, setDeliveryMethod]);
+
   // Ref para rastrear si ya cargamos tiendas para el trade-in actual (evita loops)
   const tradeInStoresLoadedRef = React.useRef(false);
 

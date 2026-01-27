@@ -73,21 +73,21 @@ export const StorePickupSelector: React.FC<StorePickupSelectorProps> = ({
           </div>
         </div>
 
-        {/* Vista previa de tienda - SIEMPRE visible */}
-        {!disabled && !isLoading && availableStoresWhenCanPickUpFalse.length > 0 && (
+        {/* Vista previa de tienda - SIEMPRE visible cuando hay tienda disponible o seleccionada */}
+        {!disabled && !isLoading && (selectedStore || availableStoresWhenCanPickUpFalse.length > 0) && (
           <div className="ml-9 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 bg-white rounded-lg border border-gray-200">
             <div className="flex-1">
               <h4 className="text-sm font-semibold text-gray-900 mb-1">
                 {selectedStore ? "Tienda seleccionada" : "Tienda disponible"}
               </h4>
               <p className="text-sm text-gray-600">
-                {selectedStore ? selectedStore.descripcion : availableStoresWhenCanPickUpFalse[0].descripcion}
+                {selectedStore ? selectedStore.descripcion : availableStoresWhenCanPickUpFalse[0]?.descripcion}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                {selectedStore ? selectedStore.direccion : availableStoresWhenCanPickUpFalse[0].direccion}
+                {selectedStore ? selectedStore.direccion : availableStoresWhenCanPickUpFalse[0]?.direccion}
                 {selectedStore
                   ? (selectedStore.ciudad && `, ${selectedStore.ciudad}`)
-                  : (availableStoresWhenCanPickUpFalse[0].ciudad && `, ${availableStoresWhenCanPickUpFalse[0].ciudad}`)
+                  : (availableStoresWhenCanPickUpFalse[0]?.ciudad && `, ${availableStoresWhenCanPickUpFalse[0].ciudad}`)
                 }
               </p>
             </div>

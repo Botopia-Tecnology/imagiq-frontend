@@ -1031,7 +1031,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
           </div>
 
           {/* Resumen de compra y Trade-In - Hidden en mobile */}
-          <aside className="hidden md:block lg:col-span-1 space-y-4 self-start">
+          <aside className="hidden md:block lg:col-span-1 space-y-4 self-start sticky top-24">
             <Step4OrderSummary
               onFinishPayment={handleContinue}
               onBack={onBack}

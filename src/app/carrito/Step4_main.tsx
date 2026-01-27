@@ -239,7 +239,7 @@ export default function Step4({
         </form>
 
         {/* Resumen de compra y Trade-In - Hidden en mobile */}
-        <aside className="hidden md:block space-y-4 self-start">
+        <aside className="hidden md:block space-y-4 self-start sticky top-24">
           <Step4OrderSummary
             isProcessing={isProcessing}
             onFinishPayment={() => {

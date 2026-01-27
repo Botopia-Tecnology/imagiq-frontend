@@ -963,7 +963,7 @@ export default function Step1({
           )}
         </section>
         {/* Resumen de compra - Solo Desktop */}
-        <aside className="hidden md:block space-y-4 self-start">
+        <aside className="hidden md:block space-y-4 self-start sticky top-24">
           {!isClient ? (
             <div className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
               <div className="h-6 bg-gray-200 rounded w-1/2 mb-4" />

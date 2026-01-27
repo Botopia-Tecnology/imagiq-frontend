@@ -1915,7 +1915,7 @@ export default function Step2({
           )}
         </div>
         {/* Resumen de compra con Step4OrderSummary - Hidden en mobile y tablet */}
-        <aside className="hidden lg:flex flex-col gap-4 self-start">
+        <aside className="hidden lg:flex flex-col gap-4 self-start sticky top-24">
           <div className="w-full">
             <Step4OrderSummary
               onFinishPayment={

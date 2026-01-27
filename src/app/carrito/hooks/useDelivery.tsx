@@ -848,12 +848,14 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     // Obtener user_id PRIMERO (antes de activar loading)
     // IMPORTANTE: Usar getUserId() para consistencia con el resto del código
     let userId: string | null = null;
+    console.log('🔄 [fetchCandidateStores] Iniciando obtención de userId...');
     try {
       const { getUserId } = await import('@/app/carrito/utils/getUserId');
+      console.log('✅ [fetchCandidateStores] getUserId importado correctamente');
       userId = getUserId();
       console.log('🔍 [useDelivery] userId obtenido de getUserId():', userId);
     } catch (e) {
-      console.error('Error obteniendo userId:', e);
+      console.error('❌ [fetchCandidateStores] Error obteniendo userId:', e);
     }
 
     // Fallback al método anterior si getUserId() falla
@@ -1402,16 +1404,21 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         default_direction: null
       } as unknown as CandidateStoresResponse, currentAddressId);
     } finally {
-      // CRÍTICO: Solo desactivar loading si es la última petición
-      // Esto evita que una petición antigua desactive el loading de una más reciente
-      if (thisRequestId === lastFetchRequestIdRef.current) {
-        console.log('🏁 [fetchCandidateStores] FINALLY - Desactivando storesLoading (requestId válido)');
+      // CRÍTICO: SIEMPRE desactivar loading en el finally block
+      // La lógica anterior solo desactivaba si thisRequestId === lastFetchRequestIdRef.current
+      // Esto causaba que el skeleton quedara pegado cuando se abandonaban peticiones
+      //
+      // Nueva lógica: Desactivar SIEMPRE si no hay otra petición en progreso
+      // Si hay una petición más reciente, ella se encargará de setStoresLoading(false)
+      // pero si la última petición terminó (aunque sea obsoleta), debemos asegurar que loading sea false
+      const isLastRequest = thisRequestId === lastFetchRequestIdRef.current;
+      const hasPendingRequest = isFetchingRef.current && !isLastRequest;
+
+      if (isLastRequest) {
         setStoresLoading(false);
-      } else {
-        console.warn('⚠️ [fetchCandidateStores] FINALLY - NO desactivando storesLoading (requestId obsoleto)', {
-          thisRequestId,
-          currentRequestId: lastFetchRequestIdRef.current
-        });
+      } else if (!hasPendingRequest) {
+        // Si no hay petición pendiente, forzar storesLoading = false para evitar skeleton pegado
+        setStoresLoading(false);
       }
       isFetchingRef.current = false;
 

@@ -1180,7 +1180,7 @@ export default function Step4OrderSummary({
 
   const baseContainerClasses =
     "bg-white rounded-2xl p-6 shadow flex flex-col gap-4 h-fit border border-[#E5E5E5]";
-  const stickyClasses = isSticky ? " sticky top-8" : "";
+  const stickyClasses = isSticky ? " sticky top-24" : "";
   const containerClasses = `${baseContainerClasses}${stickyClasses}`;
 
   // Reutilizar lógica de deshabilitado para el botón primario

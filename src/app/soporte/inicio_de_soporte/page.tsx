@@ -505,8 +505,8 @@ export default function InicioDeSoportePage() {
     const value = Number(normalized);
     if (Number.isNaN(value)) return raw;
     return value.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     });
   };
 

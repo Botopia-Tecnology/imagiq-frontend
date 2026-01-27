@@ -943,14 +943,16 @@ export default function InicioDeSoportePage() {
                       </Button>
                     )}
 
-                    {/* Mostrar "Descargar factura" - Cotización si no está reparado, Factura DIAN si está reparado */}
+                    {/* Mostrar "Descargar factura" solo cuando está reparado (factura DIAN real) */}
                     {(() => {
                       const isReparado = result.obtenerDocumentosResult?.documentos?.some(
                         (d) => d.estadoNombre === "En Reparación" || d.estadoNombre === "Reparado"
                       );
-                      const facturaUrl = isReparado
-                        ? result.obtenerDocumentosResult?.documentos?.find(d => d.tipo === "Factura")?.url
-                        : result.obtenerDocumentosResult?.documentos?.find(d => d.tipo === "Cotización")?.url;
+
+                      // Solo mostrar botón de factura cuando está reparado
+                      if (!isReparado) return null;
+
+                      const facturaUrl = result.obtenerDocumentosResult?.documentos?.find(d => d.tipo === "Factura")?.url;
 
                       // Limpiar la URL - quitar / después de documentkey=
                       const cleanUrl = facturaUrl?.replace('documentkey=/', 'documentkey=');
@@ -959,12 +961,7 @@ export default function InicioDeSoportePage() {
                         <Link
                           href={cleanUrl}
                           target="_blank"
-                          className={cn(
-                            "flex-1 h-11 rounded-xl inline-flex items-center justify-center font-semibold text-sm transition-all cursor-pointer",
-                            isReparado
-                              ? "bg-gray-900 text-white shadow-sm hover:bg-gray-800 hover:shadow-md"
-                              : "bg-gray-300 text-gray-700 hover:bg-gray-400"
-                          )}
+                          className="flex-1 h-11 rounded-xl inline-flex items-center justify-center font-semibold text-sm transition-all cursor-pointer bg-gray-900 text-white shadow-sm hover:bg-gray-800 hover:shadow-md"
                         >
                           Descargar factura
                         </Link>

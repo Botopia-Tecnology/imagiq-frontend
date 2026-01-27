@@ -210,7 +210,7 @@ export default function Step4({
         {/* Formulario de pago */}
         <form
           id="checkout-form"
-          className="col-span-2 flex flex-col gap-8  rounded-2xl p-8"
+          className="col-span-2 flex flex-col gap-8 rounded-2xl p-8 md:min-h-[70vh]"
           onSubmit={handleContinueToNextStep}
           autoComplete="off"
         >
@@ -239,7 +239,7 @@ export default function Step4({
         </form>
 
         {/* Resumen de compra y Trade-In - Hidden en mobile */}
-        <aside className="hidden md:block space-y-4 self-start">
+        <aside className="hidden md:block space-y-4 self-start sticky top-40">
           <Step4OrderSummary
             isProcessing={isProcessing}
             onFinishPayment={() => {
@@ -251,7 +251,7 @@ export default function Step4({
             onBack={onBack}
             buttonText="Continuar"
             disabled={isProcessing || !tradeInValidation.isValid || !isPaymentMethodValid}
-            isSticky={false}
+            isSticky={true}
             deliveryMethod={
               typeof window !== "undefined"
                 ? (() => {

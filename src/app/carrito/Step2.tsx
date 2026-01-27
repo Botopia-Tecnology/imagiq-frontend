@@ -1612,7 +1612,7 @@ export default function Step2({
       <div className="fixed inset-0 bg-white -z-10 pointer-events-none" />
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
         {/* Login y invitado */}
-        <div className="col-span-1 lg:col-span-2 flex flex-col gap-8">
+        <div className="col-span-1 lg:col-span-2 flex flex-col gap-8 lg:min-h-[70vh]">
           {/* Login - Solo mostrar si no está registrado como invitado */}
           {!isRegisteredAsGuest && (
             <Card className="bg-[#F3F3F3] border-0 shadow">
@@ -1915,7 +1915,7 @@ export default function Step2({
           )}
         </div>
         {/* Resumen de compra con Step4OrderSummary - Hidden en mobile y tablet */}
-        <aside className="hidden lg:flex flex-col gap-4 self-start">
+        <aside className="hidden lg:flex flex-col gap-4 self-start sticky top-40">
           <div className="w-full">
             <Step4OrderSummary
               onFinishPayment={

@@ -2550,7 +2550,7 @@ export default function Step7({ onBack }: Step7Props) {
           </div>
 
           {/* Resumen de compra y Trade-In - Hidden en mobile */}
-          <aside className="hidden md:block lg:col-span-1 space-y-4">
+          <aside className="hidden md:block lg:col-span-1 space-y-4 self-start">
             {isLoadingCanPickUp ? (
               /* Skeleton del resumen mientras carga */
               <div className="bg-white rounded-2xl p-4 shadow border border-[#E5E5E5] animate-pulse">
@@ -2842,7 +2842,7 @@ export default function Step7({ onBack }: Step7Props) {
           <button
             className={`flex-shrink-0 font-bold py-4 px-6 rounded-xl text-lg transition-all duration-200 text-white border-2 flex items-center gap-2 ${
               isProcessing || isValidatingTradeIn || !tradeInValidation.isValid
-                ? "bg-gray-400 border-gray-300 cursor-not-allowed opacity-70"
+                ? "bg-gray-400 border-gray-300 cursor-not-allowed"
                 : "bg-green-600 border-green-500 hover:bg-green-700 hover:border-green-600 cursor-pointer shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50"
             }`}
             onClick={handleConfirmOrder}

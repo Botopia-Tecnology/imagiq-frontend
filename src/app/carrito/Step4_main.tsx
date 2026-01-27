@@ -239,7 +239,7 @@ export default function Step4({
         </form>
 
         {/* Resumen de compra y Trade-In - Hidden en mobile */}
-        <aside className="hidden md:block space-y-4">
+        <aside className="hidden md:block space-y-4 self-start">
           <Step4OrderSummary
             isProcessing={isProcessing}
             onFinishPayment={() => {
@@ -301,7 +301,7 @@ export default function Step4({
           <button
             className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
               isProcessing || !tradeInValidation.isValid || !isPaymentMethodValid
-                ? "bg-gray-400 cursor-not-allowed opacity-70"
+                ? "bg-gray-400 cursor-not-allowed"
                 : "bg-[#222] hover:bg-[#333] cursor-pointer"
             }`}
             onClick={() => {

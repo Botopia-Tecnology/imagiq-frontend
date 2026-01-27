@@ -123,7 +123,21 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
     if (result instanceof Promise) {
       await result;
     }
+
     onAddressChange(newAddress);
+
+    // IMPORTANTE: Disparar evento para limpiar caché y recalcular tiendas candidatas
+    // Esto es crítico cuando se agrega una NUEVA dirección
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('address-changed', {
+        detail: {
+          address: newAddress,
+          addressId: newAddress.id,
+          fromHeader: true // Forzar recálculo
+        }
+      }));
+    }
+
     setShowAddForm(false);
     onEditToggle(false);
   };

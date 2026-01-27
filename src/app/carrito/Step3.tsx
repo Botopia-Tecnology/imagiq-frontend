@@ -602,16 +602,41 @@ export default function Step3({
     }
   }, [hasActiveTradeIn, hasProductWithoutPickup, deliveryMethod, setDeliveryMethod, effectiveCanPickUp]);
 
-  // Auto-seleccionar "tienda" cuando canPickUp es true
-  // Esto asegura que el botón "Continuar" tenga un método válido seleccionado
+  // Ref para rastrear si ya se hizo la auto-selección (evita loops)
+  const hasAutoSelectedMethodRef = React.useRef(false);
+
+  // Auto-seleccionar método de entrega cuando SOLO UNA opción está disponible
+  // - Si solo "domicilio" disponible (canPickUp=false, no trade-in) → seleccionar domicilio
+  // - Si solo "tienda" disponible (canPickUp=true pero domicilio deshabilitado por trade-in) → seleccionar tienda
+  // - Si ambas disponibles → NO auto-seleccionar, dejar que el usuario elija
   React.useEffect(() => {
-    // Si canPickUp es true, auto-seleccionar tienda
-    // IMPORTANTE: Solo cambiar si actualmente es "domicilio" para no interferir con selección manual
-    if (effectiveCanPickUp === true && deliveryMethod === "domicilio") {
-      console.log('🏪 [Step3] Auto-seleccionando "tienda" porque canPickUp es true');
-      setDeliveryMethod("tienda");
+    // Solo auto-seleccionar UNA vez
+    if (hasAutoSelectedMethodRef.current) {
+      return;
     }
-  }, [effectiveCanPickUp, deliveryMethod, setDeliveryMethod]);
+
+    // Determinar qué opciones están disponibles
+    const canSelectDomicilio = !hasActiveTradeIn; // domicilio deshabilitado si hay trade-in
+    const canSelectTienda = effectiveCanPickUp === true || hasActiveTradeIn; // tienda disponible si canPickUp=true o hay trade-in
+
+    // Si SOLO domicilio está disponible, auto-seleccionar domicilio
+    if (canSelectDomicilio && !canSelectTienda && deliveryMethod !== "domicilio") {
+      console.log('🚚 [Step3] Auto-seleccionando "domicilio" porque es la única opción disponible');
+      hasAutoSelectedMethodRef.current = true;
+      setDeliveryMethod("domicilio");
+      return;
+    }
+
+    // Si SOLO tienda está disponible, auto-seleccionar tienda
+    if (canSelectTienda && !canSelectDomicilio && deliveryMethod !== "tienda") {
+      console.log('🏪 [Step3] Auto-seleccionando "tienda" porque es la única opción disponible');
+      hasAutoSelectedMethodRef.current = true;
+      setDeliveryMethod("tienda");
+      return;
+    }
+
+    // Si ambas están disponibles, NO auto-seleccionar (dejar que el usuario elija)
+  }, [effectiveCanPickUp, hasActiveTradeIn, deliveryMethod, setDeliveryMethod]);
 
   // Ref para rastrear si ya cargamos tiendas para el trade-in actual (evita loops)
   const tradeInStoresLoadedRef = React.useRef(false);
@@ -942,11 +967,12 @@ export default function Step3({
   // PROTECCIÓN: Timeout de seguridad para isRecalculatingPickup
   React.useEffect(() => {
     if (isRecalculatingPickup) {
-      // Timeout de seguridad de 10 segundos para evitar skeleton infinito al cambiar dirección
+      // Timeout de seguridad de 5 segundos para evitar skeleton infinito al cambiar dirección
+      // Reducido de 10s a 5s para mejor UX
       const safetyTimer = setTimeout(() => {
-        console.warn('⚠️ [Step3] isRecalculatingPickup estancado detectado (>10s) - Forzando ocultar skeleton');
+        console.warn('⚠️ [Step3] isRecalculatingPickup estancado detectado (>5s) - Forzando ocultar skeleton');
         setIsRecalculatingPickup(false);
-      }, 10000);
+      }, 5000);
 
       return () => clearTimeout(safetyTimer);
     }

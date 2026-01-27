@@ -84,9 +84,15 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
       onRefreshStores();
     }
 
-    // Disparar eventos para que el navbar se actualice
-    globalThis.window.dispatchEvent(new CustomEvent('address-changed', { detail: { address: newAddress } }));
-    globalThis.window.dispatchEvent(new Event('storage')); // También disparar storage event
+    // Disparar evento para limpiar caché y recalcular tiendas candidatas
+    // IMPORTANTE: fromHeader: true para forzar recálculo
+    globalThis.window.dispatchEvent(new CustomEvent('address-changed', {
+      detail: {
+        address: newAddress,
+        addressId: newAddress.id,
+        fromHeader: true
+      }
+    }));
   };
 
   // Determinar qué tiendas mostrar cuando canPickUp es false pero hay Trade In activo

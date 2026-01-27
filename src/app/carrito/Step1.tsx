@@ -961,9 +961,18 @@ export default function Step1({
 
             </div>
           )}
+
+          {/* Sugerencias: dentro del grid para que el aside sticky funcione correctamente */}
+          <div className="mt-4 mb-4 md:mb-0">
+            <Sugerencias
+              key={`sugerencias-${cartProducts.map(p => p.sku).join('-')}`}
+              onAdd={handleAddSugerencia}
+              cartProducts={cartProducts}
+            />
+          </div>
         </section>
         {/* Resumen de compra - Solo Desktop */}
-        <aside className="hidden md:block space-y-4 self-start sticky top-24">
+        <aside className="hidden md:block space-y-4 self-start sticky top-40">
           {!isClient ? (
             <div className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
               <div className="h-6 bg-gray-200 rounded w-1/2 mb-4" />
@@ -1021,14 +1030,6 @@ export default function Step1({
           />
           )}
         </aside>
-      </div>
-      {/* Sugerencias: fila completa debajo del grid principal */}
-      <div className="max-w-6xl mx-auto mt-4 mb-4 md:mb-0">
-        <Sugerencias
-          key={`sugerencias-${cartProducts.map(p => p.sku).join('-')}`}
-          onAdd={handleAddSugerencia}
-          cartProducts={cartProducts}
-        />
       </div>
 
       {/* Sticky Bottom Bar - Solo Mobile */}

@@ -325,7 +325,7 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
       <div className="w-full max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Formulario de selección de cuotas */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-4 lg:min-h-[70vh]">
             <div className="bg-white rounded-lg p-6 border border-gray-200">
               {/* Título y tarjeta seleccionada */}
               <div className="flex items-center justify-between mb-6">
@@ -457,7 +457,7 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
           </div>
 
           {/* Resumen de compra y Trade-In - Hidden en mobile */}
-          <aside className="hidden md:block lg:col-span-1 space-y-4 self-start sticky top-24">
+          <aside className="hidden md:block lg:col-span-1 space-y-4 self-start sticky top-40">
             <Step4OrderSummary
               onFinishPayment={handleContinue}
               onBack={onBack}

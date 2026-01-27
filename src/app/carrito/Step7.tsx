@@ -2033,7 +2033,7 @@ export default function Step7({ onBack }: Step7Props) {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Sección de resumen */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-4 lg:min-h-[70vh]">
             {isLoadingCanPickUp ? (
               /* Skeleton de toda la sección mientras carga */
               <>
@@ -2550,7 +2550,7 @@ export default function Step7({ onBack }: Step7Props) {
           </div>
 
           {/* Resumen de compra y Trade-In - Hidden en mobile */}
-          <aside className="hidden md:block lg:col-span-1 space-y-4 self-start sticky top-24">
+          <aside className="hidden md:block lg:col-span-1 space-y-4 self-start sticky top-40">
             {isLoadingCanPickUp ? (
               /* Skeleton del resumen mientras carga */
               <div className="bg-white rounded-2xl p-4 shadow border border-[#E5E5E5] animate-pulse">

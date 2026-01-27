@@ -99,6 +99,26 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     errorMessage?: string;
   }>({ isValid: true, productsWithoutRetoma: [], hasMultipleProducts: false });
 
+  // Validación en tiempo real del formulario para habilitar/deshabilitar botón
+  const isFormValid = useMemo(() => {
+    // Validaciones comunes
+    if (!billingData.nombre.trim()) return false;
+    if (!billingData.documento.trim()) return false;
+    if (!billingData.email.trim()) return false;
+    if (!/\S+@\S+\.\S+/.test(billingData.email)) return false;
+    if (!billingData.tipoDocumento?.trim()) return false;
+    if (!billingData.telefono.trim()) return false;
+    if (!billingData.direccion) return false;
+
+    // Validaciones específicas de persona jurídica
+    if (billingType === "juridica") {
+      if (!billingData.razonSocial?.trim()) return false;
+      if (!billingData.nit?.trim()) return false;
+    }
+
+    return true;
+  }, [billingData, billingType]);
+
   // Redirigir si el carrito está vacío después de cargar
   useEffect(() => {
     if (!isCartLoading && products.length === 0) {
@@ -748,7 +768,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       <div className="w-full max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Formulario de facturación */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-4 lg:min-h-[70vh]">
             <div className="bg-white rounded-lg p-6 border border-gray-200">
               {/* Header con título y checkbox Persona Jurídica */}
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
@@ -1031,13 +1051,13 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
           </div>
 
           {/* Resumen de compra y Trade-In - Hidden en mobile */}
-          <aside className="hidden md:block lg:col-span-1 space-y-4 self-start sticky top-24">
+          <aside className="hidden md:block lg:col-span-1 space-y-4 self-start sticky top-40">
             <Step4OrderSummary
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
               buttonVariant="green"
-              disabled={!tradeInValidation.isValid || isProcessing}
+              disabled={!isFormValid || !tradeInValidation.isValid || isProcessing}
               isProcessing={isProcessing}
               isSticky={true}
               deliveryMethod={
@@ -1093,12 +1113,12 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
           {/* Derecha: Botón continuar - destacado con sombra y glow */}
           <button
             className={`flex-shrink-0 font-bold py-4 px-6 rounded-xl text-lg transition-all duration-200 text-white border-2 ${
-              !tradeInValidation.isValid || isProcessing
+              !isFormValid || !tradeInValidation.isValid || isProcessing
                 ? "bg-gray-400 border-gray-300 cursor-not-allowed"
                 : "bg-green-600 border-green-500 hover:bg-green-700 hover:border-green-600 cursor-pointer shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50"
             }`}
             onClick={handleContinue}
-            disabled={!tradeInValidation.isValid || isProcessing}
+            disabled={!isFormValid || !tradeInValidation.isValid || isProcessing}
           >
             {isProcessing ? "Procesando..." : "Continuar"}
           </button>

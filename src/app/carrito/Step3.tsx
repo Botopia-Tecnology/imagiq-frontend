@@ -1548,7 +1548,7 @@ export default function Step3({
                 onBack={onBack}
                 disabled={!canContinue || !tradeInValidation.isValid}
                 isProcessing={isWaitingForCanPickUp}
-                isSticky={false}
+                isSticky={true}
                 deliveryMethod={(() => {
                   if (deliveryMethod === "tienda") return "pickup";
                   if (deliveryMethod === "domicilio") return "delivery";

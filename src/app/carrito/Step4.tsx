@@ -421,7 +421,7 @@ export default function Step4({
 //               });
               return isDisabled;
             })()}
-            isSticky={false}
+            isSticky={true}
             shouldCalculateCanPickUp={false}
             deliveryMethod={
               typeof window !== "undefined"

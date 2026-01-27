@@ -251,7 +251,7 @@ export default function Step4({
             onBack={onBack}
             buttonText="Continuar"
             disabled={isProcessing || !tradeInValidation.isValid || !isPaymentMethodValid}
-            isSticky={false}
+            isSticky={true}
             deliveryMethod={
               typeof window !== "undefined"
                 ? (() => {

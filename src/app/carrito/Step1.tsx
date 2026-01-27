@@ -1011,7 +1011,7 @@ export default function Step1({
             }}
             buttonText="Continuar"
             disabled={cartProducts.length === 0 || !tradeInValidation.isValid}
-            isSticky={false}
+            isSticky={true}
             isStep1={true}
             onCanPickUpReady={handleCanPickUpReady}
             shouldCalculateCanPickUp={true}

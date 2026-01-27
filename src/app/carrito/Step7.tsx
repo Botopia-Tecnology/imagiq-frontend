@@ -2630,7 +2630,7 @@ export default function Step7({ onBack }: Step7Props) {
                 buttonText="Confirmar y pagar"
                 buttonVariant="green"
                 disabled={isProcessing || isValidatingTradeIn || !tradeInValidation.isValid}
-                isSticky={false}
+                isSticky={true}
                 shippingVerification={shippingVerification}
                 deliveryMethod={shippingData?.type}
                 error={error}

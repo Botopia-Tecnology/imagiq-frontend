@@ -1196,11 +1196,10 @@ export default function Step2({
 
   // Clases consistentes con el botón verde del resumen (desktop)
   const mobileContinueButtonClasses = [
-    "flex-shrink-0 font-bold py-4 px-6 rounded-xl text-lg transition text-white",
-    "bg-green-600",
-    !isMobileContinueDisabled &&
-    "hover:bg-green-700 border-2 border-green-500 hover:border-green-600 shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50",
-    isMobileContinueDisabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer",
+    "flex-shrink-0 font-bold py-4 px-6 rounded-xl text-lg transition text-white border-2",
+    isMobileContinueDisabled
+      ? "bg-gray-400 border-gray-300 cursor-not-allowed"
+      : "bg-green-600 border-green-500 hover:bg-green-700 hover:border-green-600 shadow-lg shadow-green-500/40 hover:shadow-xl hover:shadow-green-500/50 cursor-pointer",
     shouldAnimateButton && "animate-buttonBounce",
   ]
     .filter(Boolean)
@@ -1916,7 +1915,7 @@ export default function Step2({
           )}
         </div>
         {/* Resumen de compra con Step4OrderSummary - Hidden en mobile y tablet */}
-        <aside className="hidden lg:flex flex-col gap-4">
+        <aside className="hidden lg:flex flex-col gap-4 self-start">
           <div className="w-full">
             <Step4OrderSummary
               onFinishPayment={

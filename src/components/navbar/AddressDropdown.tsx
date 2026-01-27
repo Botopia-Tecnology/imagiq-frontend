@@ -622,9 +622,18 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
                 </div>
               ) : (
                 (() => {
-                  // Asegurar que la dirección visualizada esté en la lista
-                  const addressesToDisplay = [...addresses];
-                  if (displayAddress && !addresses.some(a => a.id === displayAddress.id)) {
+                  // Filtrar direcciones de facturación (no mostrarlas en el dropdown)
+                  const filteredAddresses = addresses.filter(
+                    (a) => a.nombreDireccion?.toLowerCase() !== "dirección de facturación"
+                  );
+
+                  // Asegurar que la dirección visualizada esté en la lista (si no es de facturación)
+                  const addressesToDisplay = [...filteredAddresses];
+                  if (
+                    displayAddress &&
+                    displayAddress.nombreDireccion?.toLowerCase() !== "dirección de facturación" &&
+                    !filteredAddresses.some(a => a.id === displayAddress.id)
+                  ) {
                     // Si la dirección visualizada no está en la lista (ej: local storage o no sincronizada aun), agregarla al principio
                     addressesToDisplay.unshift(displayAddress);
                   }

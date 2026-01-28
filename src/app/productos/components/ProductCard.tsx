@@ -22,6 +22,7 @@ import { posthogUtils } from "@/lib/posthogClient";
 import { useAnalytics } from "@/lib/analytics/hooks/useAnalytics";
 import { useCloudinaryImage } from "@/hooks/useCloudinaryImage";
 import { useProductSelection } from "@/hooks/useProductSelection";
+import { useChatbot } from "@/contexts/ChatbotContext";
 import {
   calculateDynamicPrices,
   calculateSavings,
@@ -152,6 +153,9 @@ export default function ProductCard({
 
   // Hook para notificaciones de stock
   const stockNotification = useStockNotification();
+  
+  // Hook para cerrar el chat cuando se redirija
+  const { closeChat } = useChatbot();
 
   // Hook para manejo inteligente de selección de productos
   const productSelection = useProductSelection(
@@ -381,7 +385,7 @@ export default function ProductCard({
           selectedColor?.name || productSelection.selection.selectedColor,
         selected_color_sku: currentSku || "",
         selected_color_ean: eanToUse,
-        source: "product_card",
+        source: isInChat ? "chatbot" : "product_card",
       });
 
       // Agrega el producto al carrito usando el contexto - SIEMPRE cantidad 1
@@ -447,6 +451,12 @@ export default function ProductCard({
           productSelection.selectedVariant?.index || 0
           ] ?? (acceptsTradeIn ? 1 : 0),
       });
+
+      // Si está en el chat, cerrar el chat y redirigir al carrito
+      if (isInChat) {
+        closeChat();
+        router.push('/carrito/step1');
+      }
     } finally {
       // Restaurar el estado después de un delay para prevenir clics rápidos
       setTimeout(() => {
@@ -526,12 +536,17 @@ export default function ProductCard({
       JSON.stringify(selectedProductData)
     );
 
+    // Si está en el chat, cerrar el chat antes de navegar
+    if (isInChat) {
+      closeChat();
+    }
+
     // Navega a la página de multimedia con contenido Flixmedia
     router.push(`/productos/multimedia/${id}`);
     posthogUtils.capture("product_more_info_click", {
       product_id: id,
       product_name: name,
-      source: "product_card",
+      source: isInChat ? "chatbot" : "product_card",
       destination: "multimedia_page",
       segment: segmento,
     });
@@ -1071,6 +1086,7 @@ export default function ProductCard({
                     process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" ||
                     isOutOfStock
                   ) {
+                    // Abrir el modal directamente - el modal tiene z-index suficiente
                     stockNotification.openModal();
                   } else {
                     handleAddToCart();
@@ -1089,6 +1105,8 @@ export default function ProductCard({
                   "Notifícame"
                 ) : isOutOfStock ? (
                   "Notifícame"
+                ) : isInChat ? (
+                  "Comprar"
                 ) : (
                   "Añadir al carrito"
                 )}

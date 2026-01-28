@@ -29,6 +29,7 @@ import { ProductProvider } from "@/features/products/ProductContext";
 import { SelectedColorProvider } from "@/contexts/SelectedColorContext";
 import { PointsProvider } from "@/contexts/PointsContext";
 import { SelectedStoreProvider } from "@/contexts/SelectedStoreContext";
+import { ChatbotProvider } from "@/contexts/ChatbotContext";
 import { HeroProvider } from "@/contexts/HeroContext";
 import MaintenanceScreen from "@/components/MaintenanceScreen";
 import DevToolsGuard from "@/components/security/DevToolsGuard";
@@ -169,15 +170,17 @@ export default function RootLayout({
                               <SelectedColorProvider>
                                 <PointsProvider>
                                   <SelectedStoreProvider>
-                                    {/* Mostrar pantalla de mantenimiento si está activada */}
-                                    {isMaintenanceMode ? (
-                                      <MaintenanceScreen />
-                                    ) : (
-                                      <ClientLayout>{safeChildren}</ClientLayout>
-                                    )}
+                                    <ChatbotProvider>
+                                      {/* Mostrar pantalla de mantenimiento si está activada */}
+                                      {isMaintenanceMode ? (
+                                        <MaintenanceScreen />
+                                      ) : (
+                                        <ClientLayout>{safeChildren}</ClientLayout>
+                                      )}
+                                      {/* Widget del chatbot - solo si NO está en mantenimiento */}
+                                      {!isMaintenanceMode && <ChatbotWidget />}
+                                    </ChatbotProvider>
                                   </SelectedStoreProvider>
-                                  {/* Widget del chatbot - solo si NO está en mantenimiento */}
-                                  {!isMaintenanceMode && <ChatbotWidget />}
                                   {/* Toast notifications */}
                                   <Toaster
                                     position="top-center"

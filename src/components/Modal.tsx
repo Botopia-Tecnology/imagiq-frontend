@@ -90,7 +90,7 @@ export default function Modal({
   const modalContent = (
     <div
       className={cn(
-        "fixed inset-0 z-[100] flex items-start justify-center pt-40 pb-4 px-4 overflow-y-auto",
+        "fixed inset-0 z-[100000] flex items-start justify-center pt-40 pb-4 px-4 overflow-y-auto",
         overlayClassName || "bg-white bg-opacity-70 backdrop-blur-sm"
       )}
       onClick={handleOverlayClick}

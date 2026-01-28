@@ -1365,7 +1365,7 @@ export default function Step3({
       <div className="w-full max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Forma de entrega */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-4 lg:min-h-[70vh]">
             <div className="bg-white rounded-lg p-6">
               {shouldShowSkeleton ? (
                 <div className="animate-pulse space-y-6">
@@ -1504,7 +1504,7 @@ export default function Step3({
           </div>
 
           {/* Resumen de compra y Trade-In - Hidden en mobile */}
-          <aside className="hidden md:block lg:col-span-1 space-y-4 self-start">
+          <aside className="hidden md:block lg:col-span-1 space-y-4 self-start sticky top-40">
             {shouldShowSkeleton && (
               <div className="bg-white rounded-2xl p-6 shadow border border-[#E5E5E5] animate-pulse">
                 <div className="space-y-4">
@@ -1548,7 +1548,7 @@ export default function Step3({
                 onBack={onBack}
                 disabled={!canContinue || !tradeInValidation.isValid}
                 isProcessing={isWaitingForCanPickUp}
-                isSticky={false}
+                isSticky={true}
                 deliveryMethod={(() => {
                   if (deliveryMethod === "tienda") return "pickup";
                   if (deliveryMethod === "domicilio") return "delivery";

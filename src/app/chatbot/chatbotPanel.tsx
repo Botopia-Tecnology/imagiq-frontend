@@ -13,6 +13,8 @@ import { sendMessageToAgent, AgentProduct } from "@/services/chatbot.service";
 import { FormattedMessage } from "@/components/chatbot/FormattedMessage";
 // Importa el componente de ProductCard para el chat
 import ChatProductCard from "./ChatProductCard";
+// Importa el contexto del chat
+import { useChatbot } from "@/contexts/ChatbotContext";
 
 // Tipo de mensaje extendido que puede incluir productos
 interface ChatMessage {
@@ -24,14 +26,10 @@ interface ChatMessage {
 export default function ChatbotPanel({ onClose }: Readonly<{ onClose: () => void }>) {
   const [step, setStep] = useState(0);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      from: "bot",
-      text: "Hola, soy tu asistente virtual de Samsung Store. ¿En qué puedo ayudarte?",
-    },
-  ]);
   const [loading, setLoading] = useState(false);
-  const [sessionId, setSessionId] = useState<string | undefined>(undefined);
+  
+  // Usar el contexto en lugar de estado local
+  const { messages, sessionId, addMessage, setSessionId } = useChatbot();
 
   // Ref para el contenedor de mensajes (auto-scroll)
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -53,7 +51,7 @@ export default function ChatbotPanel({ onClose }: Readonly<{ onClose: () => void
     e.preventDefault();
     if (!input.trim() || loading) return;
     const userMessage = input.trim();
-    setMessages((prev) => [...prev, { from: "user", text: userMessage }]);
+    addMessage({ from: "user", text: userMessage });
     setInput("");
     setLoading(true);
 
@@ -66,16 +64,13 @@ export default function ChatbotPanel({ onClose }: Readonly<{ onClose: () => void
       }
 
       // Mostrar el campo answer al usuario + productos si los hay
-      setMessages((prev) => [...prev, {
+      addMessage({
         from: "bot",
         text: response.answer,
         products: response.products && response.products.length > 0 ? response.products : undefined
-      }]);
+      });
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        { from: "bot", text: "Ocurrió un error al contactar al asistente." },
-      ]);
+      addMessage({ from: "bot", text: "Ocurrió un error al contactar al asistente." });
     } finally {
       setLoading(false);
     }
@@ -83,7 +78,7 @@ export default function ChatbotPanel({ onClose }: Readonly<{ onClose: () => void
 
   // Handle quick option buttons
   const handleQuickOption = async (optionText: string) => {
-    setMessages((prev) => [...prev, { from: "user", text: optionText }]);
+    addMessage({ from: "user", text: optionText });
     setLoading(true);
 
     try {
@@ -95,16 +90,13 @@ export default function ChatbotPanel({ onClose }: Readonly<{ onClose: () => void
       }
 
       // Mostrar el campo answer al usuario + productos si los hay
-      setMessages((prev) => [...prev, {
+      addMessage({
         from: "bot",
         text: response.answer,
         products: response.products && response.products.length > 0 ? response.products : undefined
-      }]);
+      });
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        { from: "bot", text: "Ocurrió un error al contactar al asistente." },
-      ]);
+      addMessage({ from: "bot", text: "Ocurrió un error al contactar al asistente." });
     } finally {
       setLoading(false);
     }

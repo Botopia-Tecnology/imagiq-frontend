@@ -1,19 +1,20 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import ChatbotButton from "./chatbotButton";
 import ChatbotPanel from "@/app/chatbot/chatbotPanel";
 import { useChatbotVisibility } from "@/hooks/useChatbotVisibility";
+import { useChatbot } from "@/contexts/ChatbotContext";
 
 export default function ChatbotWidget() {
-  const [showChat, setShowChat] = useState(false);
   const isVisible = useChatbotVisibility();
+  const { isOpen, openChat, closeChat } = useChatbot();
 
   // Cerrar el panel si navegamos a una ruta donde no debe verse
   useEffect(() => {
-    if (!isVisible && showChat) {
-      setShowChat(false);
+    if (!isVisible && isOpen) {
+      closeChat();
     }
-  }, [isVisible, showChat]);
+  }, [isVisible, isOpen, closeChat]);
 
   // No renderizar nada si no es visible
   if (!isVisible) {
@@ -22,8 +23,8 @@ export default function ChatbotWidget() {
 
   return (
     <>
-      {!showChat && <ChatbotButton onClick={() => setShowChat(true)} />}
-      {showChat && <ChatbotPanel onClose={() => setShowChat(false)} />}
+      {!isOpen && <ChatbotButton onClick={openChat} />}
+      {isOpen && <ChatbotPanel onClose={closeChat} />}
     </>
   );
 }

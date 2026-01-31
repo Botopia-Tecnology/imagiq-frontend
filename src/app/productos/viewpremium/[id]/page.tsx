@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use } from "react";
+import React, { use, lazy, Suspense } from "react";
 import { useProduct } from "@/features/products/useProducts";
 import { notFound } from "next/navigation";
 import ViewPremiumSkeleton from "./ViewPremiumSkeleton";
@@ -22,9 +22,11 @@ import ImageModal from "../components/ImageModal";
 import TradeInSection from "../components/sections/TradeInSection";
 import { useProductLogic } from "../hooks/useProductLogic";
 import BenefitsSection from "../../dispositivos-moviles/detalles-producto/BenefitsSection";
-import Specifications from "../../dispositivos-moviles/detalles-producto/Specifications";
 import AddToCartButton from "../components/AddToCartButton";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
+
+// Lazy load Specifications para que no bloquee la carga inicial
+const Specifications = lazy(() => import("../../dispositivos-moviles/detalles-producto/Specifications"));
 
 // @ts-expect-error Next.js infiere el tipo de params automáticamente
 export default function ProductViewPage({ params }) {
@@ -300,22 +302,9 @@ export default function ProductViewPage({ params }) {
     return notFound();
   }
 
-  // Si no hay producto del API después de cargar, mostrar not found
+  // Si no hay producto del API después de cargar, usar notFound()
   if (!apiProduct) {
-    return (
-      <div className="container mx-auto px-6 py-8">
-        <div className="flex justify-center items-center min-h-[400px]">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold mb-2">
-              Producto no encontrado
-            </h2>
-            <p className="text-gray-600">
-              El producto que buscas no está disponible.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return notFound();
   }
 
   // En este punto, apiProduct está garantizado que existe
@@ -472,14 +461,17 @@ export default function ProductViewPage({ params }) {
       {/* Beneficios imagiq - Banner que ocupa el ancho */}
       <BenefitsSection />
 
-      {/* Especificaciones y Flix Media - Solo se muestra si hay contenido */}
-      <div className="relative flex items-center justify-center w-full py-0 -mt-4">
-        <Specifications
-          product={productToUse}
-          flix={productToUse}
-          selectedSku={productSelection.selectedSku || undefined}
-        />
-      </div>
+      {/* Especificaciones - Lazy loaded para no bloquear la carga inicial */}
+      <Suspense fallback={null}>
+        <div className="relative flex items-center justify-center w-full py-0 -mt-4">
+          <Specifications
+            key={`specs-viewpremium-${productToUse.id}`}
+            product={productToUse}
+            flix={productToUse}
+            selectedSku={productSelection.selectedSku || undefined}
+          />
+        </div>
+      </Suspense>
 
       {/* Botón de añadir al carrito al final de la página */}
       <AddToCartButton

@@ -154,17 +154,11 @@ export default function ViewProduct({
     };
   }, [showNavbarFixed]);
 
+  // Si no hay colores, solo mostrar BenefitsSection
   if (!safeProduct?.colors?.length) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#17407A]">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4 text-white">
-            Producto no encontrado
-          </h2>
-          <p className="text-white/80">
-            No se pudo cargar la información del producto.
-          </p>
-        </div>
+      <div className="w-full flex flex-col mt-0 pt-0">
+        <BenefitsSection />
       </div>
     );
   }

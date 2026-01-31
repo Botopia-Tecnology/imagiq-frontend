@@ -12,7 +12,6 @@ import {
   Order,
   getOrderStatusText,
   getOrderStatusColor,
-  canCancelOrder,
 } from "@/services/orders.service";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
@@ -362,29 +361,6 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ onBack, userEmail, className })
                       {formatCurrency(order.total_amount, order.currency)}
                     </span>
                   </div>
-
-                  {/* Cancel Order Button */}
-                  {canCancelOrder(order.estado) && (
-                    <div className="mt-4">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setConfirmCancelOrderId(order.id);
-                        }}
-                        disabled={cancellingOrderId === order.id}
-                        className="w-full px-4 py-3 border-2 border-red-200 text-red-600 rounded-xl font-medium hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {cancellingOrderId === order.id ? (
-                          <span className="flex items-center justify-center gap-2">
-                            <LoadingSpinner size="sm" />
-                            Cancelando...
-                          </span>
-                        ) : (
-                          "Cancelar pedido"
-                        )}
-                      </button>
-                    </div>
-                  )}
                 </div>
               )}
             </div>

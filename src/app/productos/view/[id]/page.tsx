@@ -376,22 +376,9 @@ export default function ProductViewPage({ params }) {
     return notFound();
   }
 
-  // Si no hay producto del API después de cargar, mostrar not found
+  // Si no hay producto del API después de cargar, usar notFound()
   if (!apiProduct) {
-    return (
-      <div className="container mx-auto px-6 py-8">
-        <div className="flex justify-center items-center min-h-[400px]">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold mb-2">
-              Producto no encontrado
-            </h2>
-            <p className="text-gray-600">
-              El producto que buscas no está disponible.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return notFound();
   }
 
   // En este punto, apiProduct está garantizado que existe

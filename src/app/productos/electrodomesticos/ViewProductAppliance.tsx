@@ -113,19 +113,9 @@ export default function ViewProductAppliance({
     };
   }, [showBar]);
 
+  // Si no hay producto o colores, no renderizar nada
   if (!safeProduct || !safeProduct.colors || safeProduct.colors.length === 0) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#D9D9D9]">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4 text-gray">
-            Producto no encontrado
-          </h2>
-          <p className="text-gray/80">
-            No se pudo cargar la información del producto.
-          </p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   // Handlers

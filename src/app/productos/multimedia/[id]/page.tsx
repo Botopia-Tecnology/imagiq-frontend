@@ -156,41 +156,10 @@ export default function MultimediaPage({
     return <MultimediaPageSkeleton />;
   }
 
-  // Error state - Solo si no hay producto Y no hay datos locales
+  // Error state - Solo si no hay producto Y no hay datos locales, volver atrás
   if ((error || !product) && !selectedProductData) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-500 mb-4">
-            <svg
-              className="w-16 h-16 mx-auto"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Producto no encontrado
-          </h2>
-          <p className="text-gray-600 mb-6">
-            No pudimos cargar la información del producto
-          </p>
-          <button
-            onClick={() => router.back()}
-            className="bg-black text-white px-6 py-3 rounded-full font-semibold hover:bg-gray-800 transition-colors"
-          >
-            Volver atrás
-          </button>
-        </div>
-      </div>
-    );
+    router.back();
+    return null;
   }
 
   // Extraer TODOS los SKUs y EANs del producto desde los colores/capacidades

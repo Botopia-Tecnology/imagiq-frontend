@@ -10,7 +10,7 @@ export function TrackingHeader({
   estimatedFinalDate,
 }: Readonly<TrackingHeaderProps>) {
   return (
-    <div className="pt-2 px-4 sm:pt-3 sm:px-5 pb-1">
+    <div className="pt-2 px-1 sm:pt-3 sm:px-2 pb-1">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         {/* Left side - Order info */}
         <div>

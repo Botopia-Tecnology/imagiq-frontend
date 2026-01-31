@@ -172,6 +172,8 @@ export function ShippingOrderView({
             orderNumber={orderNumber}
             estimatedInitDate={estimatedInitDate}
             estimatedFinalDate={estimatedFinalDate}
+            guideNumber={isCoordinadora ? currentGuide?.numero_guia : currentShipment?.numero_guia}
+            shippingType={shippingType}
           />
 
           <div className="mt-8">
@@ -185,21 +187,20 @@ export function ShippingOrderView({
         {/* Right Column: PDF Viewer OR Products */}
         <div className="md:w-1/2 w-full">
           {/* Tab Switcher */}
-          <div className="flex items-center gap-4 mb-4 border-b border-gray-100 pb-1">
+          <div className="flex items-center gap-2 mb-4">
             <button
               onClick={() => setActiveTab('guide')}
-              className={`pb-2 px-1 text-sm font-medium transition-colors relative ${activeTab === 'guide' ? 'text-black' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`py-2 px-4 text-sm font-bold rounded-lg transition-all ${activeTab === 'guide' ? 'bg-black text-white' : 'bg-gray-100 text-black hover:bg-gray-200'}`}
             >
               Guía de envío
-              {activeTab === 'guide' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-black rounded-full" />}
             </button>
             <button
               onClick={() => setActiveTab('products')}
-              className={`pb-2 px-1 text-sm font-medium transition-colors relative ${activeTab === 'products' ? 'text-black' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`py-2 px-4 text-sm font-bold rounded-lg transition-all ${activeTab === 'products' ? 'bg-black text-white' : 'bg-gray-100 text-black hover:bg-gray-200'}`}
             >
               Productos
-              {activeTab === 'products' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-black rounded-full" />}
             </button>
+            <span className="text-xs text-gray-500 ml-2">← Pulsa para cambiar</span>
           </div>
 
           {activeTab === 'guide' ? (
@@ -213,7 +214,7 @@ export function ShippingOrderView({
             />
           ) : (
             // Product View
-            <div className={`w-full rounded-xl bg-white border border-gray-200 shadow-sm overflow-hidden ${isCoordinadora ? 'min-h-[400px]' : 'min-h-[600px]'}`}>
+            <div className={`w-full rounded-xl bg-white border border-gray-200 shadow-sm overflow-hidden ${isCoordinadora ? 'h-[600px]' : 'h-[600px]'}`}>
               {(isCoordinadora ? currentGuideProducts.length > 0 : guideProducts.length > 0) ? (
                 isCoordinadora ? (
                   // Vista para Coordinadora con navegación por guías
@@ -297,6 +298,14 @@ export function ShippingOrderView({
                           <div className="text-sm font-mono font-medium text-gray-900">
                             {activeProduct.numero_guia}
                           </div>
+                          <a
+                            href={`https://www.coordinadora.com/portafolio-de-servicios/servicios-en-linea/rastrear-guias/?guia=${activeProduct.numero_guia}&tipo=guia`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 underline hover:text-blue-800 mt-1 inline-block"
+                          >
+                            Rastrear en Coordinadora
+                          </a>
                         </div>
                       )}
                     </div>
@@ -407,7 +416,7 @@ export function ShippingOrderView({
       </div>
 
       {/* Contact Support Section - Full Width */}
-      <div className="w-full px-4 sm:px-8 mb-8">
+      <div className="w-full px-4 sm:px-8 mt-10 mb-8">
         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
           <svg
             className="w-5 h-5 text-black"

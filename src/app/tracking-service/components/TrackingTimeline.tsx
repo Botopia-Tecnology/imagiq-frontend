@@ -23,7 +23,7 @@ export function TrackingTimeline({ events }: Readonly<TrackingTimelineProps>) {
               {/* Timeline dot */}
               <span
                 className={`absolute left-0 top-2 w-3 h-3 rounded-full ${
-                  isLast ? "bg-black" : "bg-yellow-400"
+                  isLast ? "bg-black" : "bg-black"
                 } border-2 border-white shadow`}
                 style={{ zIndex: 1 }}
               />
@@ -38,7 +38,7 @@ export function TrackingTimeline({ events }: Readonly<TrackingTimelineProps>) {
                   className={`font-bold ${
                     isLast
                       ? "text-black text-lg"
-                      : "text-yellow-700 text-base"
+                      : "text-black text-base"
                   }`}
                 >
                   {step.evento}

@@ -165,7 +165,7 @@ export default function TokenStep({
         <Button
           onClick={onBackToEmail}
           disabled={isLoading || isResending}
-          className="w-full text-black text-sm font-medium py-2 px-4 hover:bg-gray-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full bg-black text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           ← Usar otro correo
         </Button>

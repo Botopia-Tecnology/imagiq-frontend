@@ -941,3 +941,72 @@ Prevents: Nested anchor tag hydration errors
 END STRETCHED LINK UTILITY
 =================================================================
 */
+
+/*
+=================================================================
+FLIXMEDIA ERROR HIDING
+=================================================================
+Purpose: Hide "Producto no encontrado" error messages injected by Flixmedia
+when content is not available for a product
+Effects: FlixmediaPlayer, FlixmediaDetails components
+*/
+
+/* Hide Flixmedia error containers with blue background (#17407A) */
+[style*="background-color: rgb(23, 64, 122)"],
+[style*="background-color:#17407A"],
+[style*="background-color: #17407A"],
+[style*="background:#17407A"],
+[style*="background: #17407A"],
+div[style*="17407A"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Hide Flixmedia error iframes and containers */
+.flix-error,
+.flix-no-content,
+.flixmedia-error,
+[class*="flix-error"],
+[class*="flixmedia-error"],
+[class*="no-content"] {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Hide any iframe containing error content from Flixmedia */
+iframe[src*="flixcar.com"] + div:has([style*="17407A"]),
+iframe[src*="flixmedia"] + div:has([style*="17407A"]) {
+  display: none !important;
+}
+
+/* Hide divs that contain "Producto no encontrado" text pattern */
+/* Note: This uses attribute selectors for inline styles */
+div[style*="text-align: center"][style*="padding"] {
+  /* Only hide if it has the specific blue background */
+}
+
+/* Aggressive hiding for Flixmedia injected error containers */
+#flixinpage:empty,
+#flixinpage:has(div[style*="17407A"]),
+.flix-inpage:empty,
+.flix-inpage:has(div[style*="17407A"]) {
+  display: none !important;
+  min-height: 0 !important;
+  height: 0 !important;
+}
+
+/* Hide Flixmedia placeholder when no content */
+[data-flix-mpn]:empty,
+[data-flix-ean]:empty {
+  display: none !important;
+}
+
+/*
+=================================================================
+END FLIXMEDIA ERROR HIDING
+=================================================================
+*/

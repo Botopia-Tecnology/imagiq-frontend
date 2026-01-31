@@ -1,7 +1,7 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 import FlixmediaDetails from "@/components/FlixmediaDetails";
-import { generateMpnVariants } from "@/lib/flixmedia";
+import { usePathname } from "next/navigation";
 
 interface SpecificationsProps {
   product: ProductCardProps;
@@ -11,21 +11,38 @@ interface SpecificationsProps {
 
 /**
  * Componente de Especificaciones
- * 
+ *
  * Renderiza las especificaciones técnicas del producto usando FlixmediaDetails.
  * Los datos reales se cargan dinámicamente desde Flixmedia.
- * 
- * SOLO usa skuflixmedia - sin EANs para evitar duplicados
- * Si no hay contenido disponible, no renderiza nada (sin espacio en blanco)
+ * Si no hay contenido disponible, FlixmediaDetails se oculta automáticamente.
  */
 
 const Specifications: React.FC<SpecificationsProps> = ({ product, flix, selectedSku }) => {
-  // null = verificando, true = hay contenido, false = no hay contenido
-  const [hasContent, setHasContent] = useState<boolean | null>(null);
-  // MPN que encontró contenido
-  const [validMpn, setValidMpn] = useState<string | null>(null);
+  const pathname = usePathname();
+  const [mountKey, setMountKey] = useState(() => Date.now());
+  const previousPathnameRef = useRef(pathname);
+  const previousProductIdRef = useRef(product.id);
+  const [hasFlixError, setHasFlixError] = useState(false);
 
-  // Obtener SOLO el skuflixmedia - sin EANs
+  // Detectar cambios de ruta para forzar re-montaje
+  useEffect(() => {
+    if (pathname !== previousPathnameRef.current) {
+      previousPathnameRef.current = pathname;
+      setHasFlixError(false);
+      setMountKey(Date.now());
+    }
+  }, [pathname]);
+
+  // Detectar cambios de producto
+  useEffect(() => {
+    if (product.id !== previousProductIdRef.current) {
+      previousProductIdRef.current = product.id;
+      setHasFlixError(false);
+      setMountKey(Date.now());
+    }
+  }, [product.id]);
+
+  // Obtener el SKU para Flixmedia
   const productSku = useMemo(() => {
     const flixSkuMedia = flix?.skuflixmedia ||
       flix?.apiProduct?.skuflixmedia?.[0] ||
@@ -33,93 +50,39 @@ const Specifications: React.FC<SpecificationsProps> = ({ product, flix, selected
       product.apiProduct?.skuflixmedia?.[0] ||
       selectedSku;
 
-    return flixSkuMedia?.trim() || null;
+    const fallbackSku = product.apiProduct?.sku?.[0] ||
+      product.colors?.[0]?.sku ||
+      flix?.apiProduct?.sku?.[0];
+
+    return flixSkuMedia?.trim() || fallbackSku?.trim() || null;
   }, [
     product.skuflixmedia,
     product.apiProduct?.skuflixmedia,
+    product.apiProduct?.sku,
+    product.colors,
     selectedSku,
     flix?.skuflixmedia,
-    flix?.apiProduct?.skuflixmedia
+    flix?.apiProduct?.skuflixmedia,
+    flix?.apiProduct?.sku,
   ]);
 
-  // Verificar si hay contenido de Flixmedia disponible
-  useEffect(() => {
-    if (!productSku) {
-      setHasContent(false);
-      setValidMpn(null);
-      return;
-    }
-
-    let isMounted = true;
-    setHasContent(null); // Reset a verificando
-
-    const checkContent = async () => {
-      const mpnVariants = generateMpnVariants(productSku);
-      
-      for (const variant of mpnVariants) {
-        if (!isMounted) return;
-        
-        try {
-          const matchUrl = `https://media.flixcar.com/delivery/webcall/match/17257/f5/mpn/${encodeURIComponent(variant)}`;
-          const response = await fetch(matchUrl);
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data.event === 'matchhit') {
-              if (isMounted) {
-                setHasContent(true);
-                setValidMpn(variant); // Guardar el MPN que funcionó
-              }
-              return;
-            }
-          }
-        } catch {
-          // Continuar con siguiente variante
-        }
-      }
-      
-      // No se encontró contenido con ninguna variante
-      if (isMounted) {
-        setHasContent(false);
-        setValidMpn(null);
-      }
-    };
-
-    checkContent();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [productSku]);
-
-  // No renderizar nada si:
-  // - No hay SKU
-  // - No hay contenido (false) - confirmado que no existe
-  if (!productSku || hasContent === false) {
+  // Si no hay SKU o hubo error, no renderizar
+  if (!productSku || hasFlixError) {
     return null;
   }
 
-  // Si está verificando (null) o hay contenido (true), renderizar
-  // El FlixmediaDetails maneja su propio loading state
   return (
     <section
       id="especificaciones-section"
       className="w-full max-w-5xl mx-auto px-2 sm:px-4 md:px-8 py-4 md:py-6"
       aria-label="Especificaciones técnicas"
     >
-      {validMpn ? (
-        <FlixmediaDetails
-          key={`flix-specs-${validMpn}`}
-          mpn={validMpn}
-          className="w-full"
-        />
-      ) : (
-        <div className="w-full h-40 flex items-center justify-center">
-          <div className="animate-pulse text-gray-400">
-            Cargando especificaciones...
-          </div>
-        </div>
-      )}
+      <FlixmediaDetails
+        key={`flix-specs-${productSku}-${mountKey}`}
+        mpn={productSku}
+        className="w-full"
+        onError={() => setHasFlixError(true)}
+      />
     </section>
   );
 };

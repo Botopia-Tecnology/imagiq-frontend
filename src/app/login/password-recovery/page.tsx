@@ -100,7 +100,7 @@ export default function PasswordRecoveryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 flex items-start justify-center pt-24 pb-12 px-4">
       <div className="w-full">
         {step === "email" && (
           <EmailStep

@@ -91,6 +91,8 @@ function FlixmediaPlayerComponent({
   const router = useRouter();
   const [containerId] = useState(() => `flix-inpage-${Date.now()}`);
   const [hasContent, setHasContent] = useState<boolean | null>(null);
+  // Estado para ocultar si Flixmedia muestra error después de cargar
+  const [hasFlixError, setHasFlixError] = useState(false);
 
   // Precargar recursos de Flixmedia temprano
   useFlixmediaPreload();
@@ -119,6 +121,20 @@ function FlixmediaPlayerComponent({
         visibility: hidden !important;
       }
       [id^="flix-inpage"] { width: 100%; min-height: 200px; }
+
+      /* Ocultar errores de Flixmedia con fondo azul */
+      [style*="background-color: rgb(23, 64, 122)"],
+      [style*="background-color:#17407A"],
+      [style*="background-color: #17407A"],
+      [style*="background:#17407A"],
+      [style*="background: #17407A"],
+      div[style*="17407A"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+      }
     `;
     document.head.appendChild(style);
   }, []);
@@ -176,6 +192,23 @@ function FlixmediaPlayerComponent({
 
   useEffect(() => {
     let isMounted = true;
+
+    // Limpiar estado global de Flixmedia para evitar conflictos
+    const cleanupFlixmediaGlobalState = () => {
+      const allFlixScripts = document.querySelectorAll('script[data-flix-inpage], script[src*="flixfacts"], script[src*="flixcar"]');
+      allFlixScripts.forEach(s => s.remove());
+
+      if (typeof window !== 'undefined') {
+        (window as typeof window & { flixJsCallbacks?: unknown }).flixJsCallbacks = undefined;
+        (window as typeof window & { flixLoaded?: unknown }).flixLoaded = undefined;
+        (window as typeof window & { _flix?: unknown })._flix = undefined;
+        (window as typeof window & { flix?: unknown }).flix = undefined;
+        (window as typeof window & { FlixMedia?: unknown }).FlixMedia = undefined;
+      }
+    };
+
+    // Limpiar estado global al inicio
+    cleanupFlixmediaGlobalState();
 
     const init = async () => {
       // Parsear SKUs
@@ -306,13 +339,60 @@ function FlixmediaPlayerComponent({
 
         script.onload = () => {
           applyStyles();
+
+          // Función para verificar si hay error de Flixmedia
+          const checkForFlixError = () => {
+            const container = document.getElementById(containerId);
+            if (!container) return false;
+
+            // Verificar texto de error
+            const text = container.textContent?.toLowerCase() || '';
+            const hasErrorText = text.includes('producto no encontrado') ||
+                                text.includes('no se pudo cargar') ||
+                                text.includes('product not found') ||
+                                text.includes('no content available');
+
+            // Verificar fondo azul característico de Flixmedia error (#17407A)
+            const hasBlueBackground = container.innerHTML.includes('17407A') ||
+                                     container.innerHTML.includes('rgb(23, 64, 122)');
+
+            return hasErrorText || hasBlueBackground;
+          };
+
+          // MutationObserver para detectar errores inyectados por Flixmedia
+          const container = document.getElementById(containerId);
+          if (container) {
+            const observer = new MutationObserver(() => {
+              if (checkForFlixError()) {
+                observer.disconnect();
+                setHasFlixError(true);
+                redirectToView();
+              }
+            });
+
+            observer.observe(container, {
+              childList: true,
+              subtree: true,
+              characterData: true,
+              attributes: true
+            });
+
+            // También verificar después de un tiempo por si acaso
+            setTimeout(() => {
+              if (checkForFlixError()) {
+                observer.disconnect();
+                setHasFlixError(true);
+                redirectToView();
+              }
+            }, 2000);
+          }
         };
 
         script.src = "//media.flixfacts.com/js/loader.js";
         document.head.appendChild(script);
 
       } catch (error) {
-        console.error('[FLIXMEDIA] Error verificando contenido:', error);
+        console.error('[FLIXMEDIA PLAYER] Error verificando contenido:', error);
         if (isMounted) {
           setHasContent(false);
           redirectToView();
@@ -326,6 +406,19 @@ function FlixmediaPlayerComponent({
       isMounted = false;
       const scripts = document.querySelectorAll(`script[data-flix-inpage="${containerId}"]`);
       scripts.forEach(s => s.remove());
+      // Limpiar el contenedor
+      const container = document.getElementById(containerId);
+      if (container) {
+        container.innerHTML = '';
+      }
+      // Limpiar estado global para que el próximo componente Flixmedia funcione
+      if (typeof window !== 'undefined') {
+        (window as typeof window & { flixJsCallbacks?: unknown }).flixJsCallbacks = undefined;
+        (window as typeof window & { flixLoaded?: unknown }).flixLoaded = undefined;
+        (window as typeof window & { _flix?: unknown })._flix = undefined;
+        (window as typeof window & { flix?: unknown }).flix = undefined;
+        (window as typeof window & { FlixMedia?: unknown }).FlixMedia = undefined;
+      }
     };
   }, [mpn, ean, containerId, applyStyles, redirectToView, router, hasPremiumContent]);
 
@@ -338,8 +431,8 @@ function FlixmediaPlayerComponent({
     );
   }
 
-  // Si no hay contenido, no renderizar nada (ya está redirigiendo)
-  if (hasContent === false) {
+  // Si no hay contenido o hay error de Flixmedia, no renderizar nada (ya está redirigiendo)
+  if (hasContent === false || hasFlixError) {
     return null;
   }
 

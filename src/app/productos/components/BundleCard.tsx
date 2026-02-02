@@ -504,8 +504,6 @@ export default function BundleCard({
 
       // Agregar el bundle al carrito (usar la misma lógica que handleAddToCart)
       if (selectedOption.productos && selectedOption.productos.length > 0) {
-        const firstProduct = selectedOption.productos[0];
-
         // Calcular precios proporcionales basados en el descuento del bundle
         // para que el total en el carrito coincida con el precio mostrado en el card
         const totalIndividualPrice = selectedOption.productos.reduce(
@@ -516,8 +514,9 @@ export default function BundleCard({
           (sum, p) => sum + (p.product_original_price || 0),
           0
         );
-        const bundleTotalPrice = firstProduct.bundle_discount || totalIndividualPrice;
-        const bundleOriginalPrice = firstProduct.bundle_price || totalOriginalPrice;
+        // Usar los precios totales del bundle desde selectedOption (ya calculados en el mapper)
+        const bundleTotalPrice = selectedOption.bundleTotalPrice || totalIndividualPrice;
+        const bundleOriginalPrice = selectedOption.bundleTotalOriginalPrice || totalOriginalPrice;
 
         // Factor para precios con descuento (para que sum(price) = bundle_discount)
         const priceFactor = totalIndividualPrice > 0
@@ -564,8 +563,8 @@ export default function BundleCard({
           codCampana,
           productSku: selectedOption.product_sku,
           skusBundle: skus_bundle,
-          bundlePrice: firstProduct.bundle_price,
-          bundleDiscount: firstProduct.bundle_discount,
+          bundlePrice: bundleOriginalPrice,    // Usar el precio total calculado
+          bundleDiscount: bundleTotalPrice,    // Usar el precio total calculado
           fechaFinal: new Date(fecha_final),
           ind_entre_estre: selectedOption.ind_entre_estre,
         };
@@ -621,8 +620,6 @@ export default function BundleCard({
 
       if (selectedOption.productos && selectedOption.productos.length > 0) {
         // Usar datos completos del backend que ya vienen en la opción
-        const firstProduct = selectedOption.productos[0];
-
         // Calcular precios proporcionales basados en el descuento del bundle
         // para que el total en el carrito coincida con el precio mostrado en el card
         const totalIndividualPrice = selectedOption.productos.reduce(
@@ -633,8 +630,9 @@ export default function BundleCard({
           (sum, p) => sum + (p.product_original_price || 0),
           0
         );
-        const bundleTotalPrice = firstProduct.bundle_discount || totalIndividualPrice;
-        const bundleOriginalPrice = firstProduct.bundle_price || totalOriginalPrice;
+        // Usar los precios totales del bundle desde selectedOption (ya calculados en el mapper)
+        const bundleTotalPrice = selectedOption.bundleTotalPrice || totalIndividualPrice;
+        const bundleOriginalPrice = selectedOption.bundleTotalOriginalPrice || totalOriginalPrice;
 
         // Factor para precios con descuento (para que sum(price) = bundle_discount)
         const priceFactor = totalIndividualPrice > 0
@@ -681,8 +679,8 @@ export default function BundleCard({
           codCampana,
           productSku: selectedOption.product_sku,
           skusBundle: skus_bundle,
-          bundlePrice: firstProduct.bundle_price,
-          bundleDiscount: firstProduct.bundle_discount,
+          bundlePrice: bundleOriginalPrice,    // Usar el precio total calculado
+          bundleDiscount: bundleTotalPrice,    // Usar el precio total calculado
           fechaFinal: new Date(fecha_final),
           ind_entre_estre: selectedOption.ind_entre_estre,
         };

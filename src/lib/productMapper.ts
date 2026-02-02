@@ -34,6 +34,9 @@ export interface BundleOptionProps {
   capacidadProductSku?: string; // Capacidad (ej: "256GB")
   memoriaRamProductSku?: string; // RAM (ej: "12GB")
   stockTotal?: number; // Stock disponible para esta variante
+  // Precios totales del bundle (numéricos, para cálculos en componentes)
+  bundleTotalPrice?: number; // Precio total con descuento del bundle (suma de product_discount_price)
+  bundleTotalOriginalPrice?: number; // Precio total original del bundle (suma de product_original_price)
 }
 
 /**
@@ -524,6 +527,9 @@ export function mapApiBundleToFrontend(apiBundle: BundleApiData): BundleCardProp
     capacidadProductSku: opcion.capacidadProductSku,
     memoriaRamProductSku: opcion.memoriaRamProductSku,
     stockTotal: opcion.stockTotal,
+    // Precios totales del bundle (numéricos, para cálculos en componentes)
+    bundleTotalPrice: opcion.bundle_discount,
+    bundleTotalOriginalPrice: opcion.bundle_price,
   }));
 
   // Usar la primera opción para mostrar datos principales
@@ -639,6 +645,9 @@ export function mapDirectBundleResponseToFrontend(
     capacidadProductSku: mainProduct?.capacidad,
     memoriaRamProductSku: mainProduct?.memoriaram,
     stockTotal: mainProduct?.stockTotal,
+    // Precios totales del bundle (numéricos, para cálculos en componentes)
+    bundleTotalPrice: bundleDiscount,
+    bundleTotalOriginalPrice: bundlePrice,
   };
 
   // Obtener imagen del bundle (usar imagen del primer producto o placeholder)

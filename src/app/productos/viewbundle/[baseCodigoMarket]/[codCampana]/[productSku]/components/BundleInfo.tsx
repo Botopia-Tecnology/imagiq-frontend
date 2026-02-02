@@ -108,8 +108,6 @@ export function BundleInfo({
         return;
       }
 
-      const firstProduct = selectedOption.productos[0];
-
       // Calcular precios proporcionales basados en el descuento del bundle
       // para que el total en el carrito coincida con el precio mostrado en el card
       const totalIndividualPrice = selectedOption.productos.reduce(
@@ -120,8 +118,10 @@ export function BundleInfo({
         (sum, p) => sum + (p.product_original_price || 0),
         0
       );
-      const bundleTotalPrice = firstProduct.bundle_discount || totalIndividualPrice;
-      const bundleOriginalPrice = firstProduct.bundle_price || totalOriginalPrice;
+      // Usar los precios totales del bundle desde selectedOption (ya calculados en el mapper)
+      // En lugar de firstProduct.bundle_discount que es solo la porción del primer producto
+      const bundleTotalPrice = selectedOption.bundleTotalPrice || totalIndividualPrice;
+      const bundleOriginalPrice = selectedOption.bundleTotalOriginalPrice || totalOriginalPrice;
 
       // Factor para precios con descuento (para que sum(price) = bundle_discount)
       const priceFactor = totalIndividualPrice > 0
@@ -163,8 +163,8 @@ export function BundleInfo({
         codCampana,
         productSku: selectedOption.product_sku,
         skusBundle: skusBundle,
-        bundlePrice: firstProduct.bundle_price,
-        bundleDiscount: firstProduct.bundle_discount,
+        bundlePrice: bundleOriginalPrice,    // Usar el precio total calculado
+        bundleDiscount: bundleTotalPrice,    // Usar el precio total calculado
         fechaFinal: bundleFechaFinal ? new Date(bundleFechaFinal) : new Date(),
       };
 

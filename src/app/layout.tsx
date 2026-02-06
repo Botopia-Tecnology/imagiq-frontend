@@ -31,6 +31,7 @@ import { PointsProvider } from "@/contexts/PointsContext";
 import { SelectedStoreProvider } from "@/contexts/SelectedStoreContext";
 import { ChatbotProvider } from "@/contexts/ChatbotContext";
 import { HeroProvider } from "@/contexts/HeroContext";
+import { CategoryMetadataProvider } from "@/contexts/CategoryMetadataContext";
 import MaintenanceScreen from "@/components/MaintenanceScreen";
 import DevToolsGuard from "@/components/security/DevToolsGuard";
 import SecurityInitializer from "@/components/security/SecurityInitializer";
@@ -159,6 +160,7 @@ export default function RootLayout({
 
           <DevToolsGuard>
             <ResponsiveProvider>
+              <CategoryMetadataProvider>
               <HeroProvider>
                 <ProductProvider>
                   <NavbarVisibilityProvider>
@@ -207,6 +209,7 @@ export default function RootLayout({
                   </NavbarVisibilityProvider>
                 </ProductProvider>
               </HeroProvider>
+              </CategoryMetadataProvider>
             </ResponsiveProvider>
           </DevToolsGuard>
         </SecurityInitializer>

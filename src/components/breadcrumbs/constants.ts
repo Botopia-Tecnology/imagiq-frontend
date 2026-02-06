@@ -1,6 +1,15 @@
 /**
+ * ========================================================================
+ * NOTA: Los mapeos de categorías ahora se obtienen dinámicamente desde la API.
+ * Usar useCategoryMetadata() de @/contexts/CategoryMetadataContext
+ * Estas constantes se mantienen temporalmente como fallback durante la migración.
+ * ========================================================================
+ */
+
+/**
  * Category name mappings for breadcrumbs
  * Maps URL slugs to display names
+ * @deprecated Usar useCategoryMetadata().getCategoryDisplayName() para lookups dinámicos
  */
 export const CATEGORY_NAMES: Record<string, string> = {
   "dispositivos-moviles": "Dispositivos móviles",
@@ -111,4 +120,76 @@ export const COLOR_NAMES: Record<string, string> = {
   rosa: "Rosa",
   dorado: "Dorado",
   plateado: "Plateado",
+};
+
+/**
+ * Reverse category mappings
+ * Maps display names and API values to URL slugs
+ * @deprecated Usar useCategoryMetadata().getCategorySlug() para lookups dinámicos
+ */
+export const CATEGORY_TO_SLUG: Record<string, string> = {
+  // Display names
+  "Dispositivos móviles": "dispositivos-moviles",
+  "Dispositivos moviles": "dispositivos-moviles",
+  "Computadores": "computadores",
+  "Tablets": "tablets",
+  "Accesorios": "accesorios",
+  "Audio": "audio",
+  "Wearables": "wearables",
+  "Electrodomésticos": "electrodomesticos",
+  "Electrodomesticos": "electrodomesticos",
+  "Televisores": "televisores",
+  "Televisores y AV": "televisores",
+  "Monitores": "monitores",
+  // API values / DB codes
+  "IM": "dispositivos-moviles",
+  "MOVILES": "dispositivos-moviles",
+  "MOVIL": "dispositivos-moviles",
+  "Móviles": "dispositivos-moviles",
+  "Moviles": "dispositivos-moviles",
+  "TV": "televisores",
+  "TVs": "televisores",
+  "HA": "electrodomesticos",
+  "IT": "computadores",
+  "CE": "electrodomesticos",
+  "VD": "televisores",
+};
+
+/**
+ * Subcategory mappings
+ * Maps API subcategory values to section slugs
+ * @deprecated Usar useCategoryMetadata().getMenuDisplayName() para lookups dinámicos
+ */
+export const SUBCATEGORY_TO_SECTION: Record<string, string> = {
+  "Smartphones": "smartphones",
+  "Smartphone": "smartphones",
+  "SMARTPHONE": "smartphones",
+  "Celulares": "smartphones",
+  "Tabletas": "tabletas",
+  "Tablet": "tabletas",
+  "TABLET": "tabletas",
+  "Relojes": "relojes",
+  "Watch": "relojes",
+  "WATCH": "relojes",
+  "Buds": "buds",
+  "BUDS": "buds",
+  "Auriculares": "buds",
+  // TVs
+  "QLED": "qled",
+  "Neo QLED": "neo-qled",
+  "OLED": "oled",
+  "Crystal UHD": "crystal-uhd",
+  "Smart TV": "smart-tv",
+  "The Frame": "the-frame",
+  "Proyectores": "proyectores",
+  // Electrodomésticos
+  "Refrigeradores": "refrigeradores",
+  "Neveras": "refrigeradores",
+  "Lavadoras": "lavadoras",
+  "Secadoras": "lavadoras",
+  "Lavavajillas": "lavavajillas",
+  "Aire Acondicionado": "aire-acondicionado",
+  "Microondas": "microondas",
+  "Aspiradoras": "aspiradoras",
+  "Hornos": "hornos",
 };

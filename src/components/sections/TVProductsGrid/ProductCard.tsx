@@ -30,7 +30,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   // Determinar la URL del producto
   const productSku = product.selectedColor?.sku || product.colors?.[0]?.sku || product.id;
-  const productUrl = `/productos/viewpremium/${productSku}`;
+  const productUrl = `/productos/multimedia/${productSku}`;
 
   // Usar la imagen (puede ser base64 o URL) o empty como fallback
   const imageUrl = product.image || emptyImg;

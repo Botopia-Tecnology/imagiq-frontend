@@ -25,8 +25,11 @@ import BenefitsSection from "../../dispositivos-moviles/detalles-producto/Benefi
 import AddToCartButton from "../components/AddToCartButton";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 
-// Lazy load Specifications para que no bloquee la carga inicial
-const Specifications = lazy(() => import("../../dispositivos-moviles/detalles-producto/Specifications"));
+// Lazy load FlixmediaPlayer para la sección de detalles multimedia (carga TODO el contenido de Flixmedia)
+const FlixmediaPlayer = lazy(() => import("@/components/FlixmediaPlayer"));
+
+// Componente de navegación rápida
+import QuickNavBar from "./components/QuickNavBar";
 
 // @ts-expect-error Next.js infiere el tipo de params automáticamente
 export default function ProductViewPage({ params }) {
@@ -392,11 +395,18 @@ export default function ProductViewPage({ params }) {
         onNotifyStock={stockNotification.openModal}
       />
 
-      {/* Layout de dos columnas: Carrusel sin márgenes, Info con márgenes */}
-      <div className="bg-white pt-0 pb-0 mb-0 min-h-screen">
+      {/* Barra de navegación rápida entre secciones - siempre visible */}
+      <QuickNavBar isStickyBarVisible={showStickyBar} />
+
+      {/* SECCIÓN: Comprar - Layout de dos columnas: Carrusel sin márgenes, Info con márgenes */}
+      <section id="comprar-section" className="bg-white pt-12 pb-0 mb-0 min-h-screen scroll-mt-[180px]">
         {/* Breadcrumbs */}
-        <div className="px-4 md:px-6 lg:px-12 mb-4 pt-4">
-          <Breadcrumbs productName="Detalles del producto" />
+        <div className="px-4 lg:px-8 mb-4 pt-24 md:pt-20 xl:pt-20">
+          <Breadcrumbs
+            productId={id || ""}
+            categoryCode={productToUse.apiProduct?.categoria}
+            subcategoria={productToUse.apiProduct?.subcategoria}
+          />
         </div>
 
         {/* Grid principal */}
@@ -439,7 +449,7 @@ export default function ProductViewPage({ params }) {
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Sección de Estreno y Entrego - SIEMPRE fuera del grid, centrada */}
       <div className="bg-white pb-2 md:pb-4 mt-[clamp(1rem,4vw,2rem)] relative z-10 clear-both">
@@ -461,17 +471,26 @@ export default function ProductViewPage({ params }) {
       {/* Beneficios imagiq - Banner que ocupa el ancho */}
       <BenefitsSection />
 
-      {/* Especificaciones - Lazy loaded para no bloquear la carga inicial */}
-      <Suspense fallback={null}>
-        <div className="relative flex items-center justify-center w-full py-0 -mt-4">
-          <Specifications
-            key={`specs-viewpremium-${productToUse.id}`}
-            product={productToUse}
-            flix={productToUse}
-            selectedSku={productSelection.selectedSku || undefined}
+      {/* SECCIÓN: Detalles - Contenido multimedia de Flixmedia (sin márgenes para mejor presentación) */}
+      <section id="detalles-section" className="bg-white scroll-mt-[180px]">
+        <Suspense fallback={
+          <div className="w-full min-h-[400px] flex items-center justify-center">
+            <div className="w-12 h-12 border-4 border-gray-200 border-t-[#0066CC] rounded-full animate-spin" />
+          </div>
+        }>
+          <FlixmediaPlayer
+            mpn={productSelection.selectedSkuflixmedia || productToUse.skuflixmedia || productToUse.apiProduct?.skuflixmedia?.[0]}
+            ean={productSelection.selectedVariant?.ean}
+            productName={productToUse.name}
+            productId={productToUse.id}
+            segmento={productToUse.apiProduct?.segmento}
+            apiProduct={productToUse.apiProduct}
+            productColors={productToUse.colors}
+            preventRedirect={true}
+            className="w-full"
           />
-        </div>
-      </Suspense>
+        </Suspense>
+      </section>
 
       {/* Botón de añadir al carrito al final de la página */}
       <AddToCartButton

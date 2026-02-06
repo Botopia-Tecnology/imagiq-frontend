@@ -4,8 +4,10 @@ import {
   SERIES_NAMES,
   STORAGE_NAMES,
   COLOR_NAMES,
+  CATEGORY_TO_SLUG,
+  SUBCATEGORY_TO_SECTION,
 } from "./constants";
-import { BreadcrumbFilters } from "./types";
+import { BreadcrumbFilters, BreadcrumbItem } from "./types";
 
 /**
  * Formats a URL slug into a human-readable name
@@ -116,4 +118,65 @@ export function getFilterDisplayName(
     default:
       return formatSlugToName(value);
   }
+}
+
+/**
+ * Converts a category display name to URL slug
+ */
+export function getCategorySlug(category: string): string {
+  return CATEGORY_TO_SLUG[category] || category.toLowerCase().replace(/\s+/g, "-").replace(/[áàäâ]/g, "a").replace(/[éèëê]/g, "e").replace(/[íìïî]/g, "i").replace(/[óòöô]/g, "o").replace(/[úùüû]/g, "u");
+}
+
+/**
+ * Converts a subcategory display name to section slug
+ */
+export function getSubcategorySection(subcategory: string): string | undefined {
+  return SUBCATEGORY_TO_SECTION[subcategory];
+}
+
+/**
+ * Builds breadcrumb items from product data
+ */
+export function buildProductBreadcrumbs(
+  productId: string,
+  categoria?: string,
+  subcategoria?: string
+): BreadcrumbItem[] {
+  const items: BreadcrumbItem[] = [];
+
+  // Add category if available
+  if (categoria) {
+    const categorySlug = getCategorySlug(categoria);
+    const categoryPath = `/productos/${categorySlug}`;
+    items.push({
+      label: CATEGORY_NAMES[categorySlug] || categoria,
+      href: categoryPath,
+    });
+
+    // Add subcategory if available
+    if (subcategoria) {
+      const sectionSlug = getSubcategorySection(subcategoria);
+      if (sectionSlug) {
+        const sectionPath = `${categoryPath}?seccion=${sectionSlug}`;
+        items.push({
+          label: SECTION_NAMES[sectionSlug] || subcategoria,
+          href: sectionPath,
+        });
+      } else {
+        // If no mapping, use subcategory as-is
+        items.push({
+          label: subcategoria,
+          href: undefined,
+        });
+      }
+    }
+  }
+
+  // Add product ID as last item (no link)
+  items.push({
+    label: productId,
+    href: undefined,
+  });
+
+  return items;
 }

@@ -99,15 +99,12 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
       const textoCompletoFinal = textoInteresCompleto || `Desde ${cuotaFormateada} al mes en ${plazoMeses} cuotas sin interés`;
 
       return (
-        <div className="text-center w-full">
-          <div className="flex flex-col items-center gap-1">
-            <div className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-[#222] leading-tight">
-              {textoCompletoFinal}
-            </div>
-            <div className="text-[13px] sm:text-sm md:text-base font-semibold text-[#222]">
-              ó {formatPrice(basePrice)}
-            </div>
-          </div>
+        <div className="flex items-center justify-center w-full">
+          <p className="text-xs sm:text-sm md:text-base text-[#222] leading-tight text-center">
+            <span className="font-bold">{textoCompletoFinal}</span>
+            {" "}
+            <span className="font-semibold">ó {formatPrice(basePrice)}</span>
+          </p>
         </div>
       );
     }
@@ -195,8 +192,8 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
           </div>
 
           {/* DESKTOP: Layout original (Nombre izquierda, Precio centro) */}
-          <div className="hidden md:flex flex-shrink-0 max-w-[240px]">
-            <h3 className="text-xs md:text-sm font-semibold text-[#222] leading-snug line-clamp-2">
+          <div className="hidden md:flex items-center flex-shrink-0 md:max-w-[180px] xl:max-w-none">
+            <h3 className="text-xs md:text-sm font-semibold text-[#222] leading-tight md:line-clamp-2 xl:whitespace-nowrap xl:line-clamp-none">
               {fullDeviceName}
             </h3>
           </div>
@@ -259,7 +256,7 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
       {/* Versión inicial: siempre visible debajo del navbar principal */}
       {!isVisible && (
         <div
-          className="fixed top-[60px] md:top-[78px] xl:top-[100px] left-0 right-0 z-[1500] bg-white"
+          className="fixed top-[60px] md:top-[78px] xl:top-[100px] left-0 right-0 z-[1500] bg-white/95 backdrop-blur-xl"
           style={{ fontFamily: "SamsungSharpSans" }}
         >
           <BarContent />
@@ -291,7 +288,7 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
                 duration: 0.3,
               },
             }}
-            className="fixed top-0 left-0 right-0 z-[9999] bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-md"
+            className="fixed top-0 left-0 right-0 z-[9999] bg-white/95 backdrop-blur-xl"
             style={{
               fontFamily: "SamsungSharpSans",
             }}

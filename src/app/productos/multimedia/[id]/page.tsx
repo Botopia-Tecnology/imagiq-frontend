@@ -91,7 +91,7 @@ export default function MultimediaPage({
   const { product, loading, error } = useProduct(id);
 
   // Estado para almacenar la selección del usuario desde localStorage
-  // Inicializar directamente desde localStorage para evitar el "flash" del skeleton (Optimistic UI)
+  // Inicializar como null para evitar hydration mismatch (servidor no tiene acceso a localStorage)
   const [selectedProductData, setSelectedProductData] = useState<{
     productName?: string;
     price?: number;
@@ -107,33 +107,15 @@ export default function MultimediaPage({
     allPrices?: number[];
     skuflixmedia?: string;
     segmento?: string | string[];
-  } | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem(`product_selection_${id}`);
-        if (saved) {
-          return JSON.parse(saved);
-        }
-      } catch (e) {
-        console.error("Error parsing saved product selection:", e);
-      }
-    }
-    return null;
-  });
+  } | null>(null);
 
-  // Mantener useEffect para actualizar si el ID cambia (navegación entre productos)
+  // Leer localStorage después del mount para evitar hydration mismatch
   useEffect(() => {
     const savedSelection = localStorage.getItem(`product_selection_${id}`);
     if (savedSelection) {
       try {
         const parsedData = JSON.parse(savedSelection);
-        // Solo actualizar si es diferente para evitar re-renders
-        setSelectedProductData(prev => {
-          if (JSON.stringify(prev) !== JSON.stringify(parsedData)) {
-            return parsedData;
-          }
-          return prev;
-        });
+        setSelectedProductData(parsedData);
       } catch (e) {
         console.error("Error parsing saved product selection:", e);
       }

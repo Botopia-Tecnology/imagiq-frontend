@@ -259,8 +259,7 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
       {/* Versión inicial: siempre visible debajo del navbar principal */}
       {!isVisible && (
         <div
-          className="fixed top-[60px] md:top-[78px] xl:top-[100px] left-0 right-0 z-[1500] bg-white"
-          style={{ fontFamily: "SamsungSharpSans" }}
+          className="fixed top-[60px] md:top-[78px] xl:top-[100px] left-0 right-0 z-[1500] bg-white font-['SamsungSharpSans']"
         >
           <BarContent />
         </div>
@@ -291,10 +290,7 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
                 duration: 0.3,
               },
             }}
-            className="fixed top-0 left-0 right-0 z-[9999] bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-md"
-            style={{
-              fontFamily: "SamsungSharpSans",
-            }}
+            className="fixed top-0 left-0 right-0 z-[9999] bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-md font-['SamsungSharpSans']"
           >
             <BarContent />
           </motion.div>

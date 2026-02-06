@@ -277,7 +277,7 @@ export default function Navbar() {
   const headerStyles: CSSProperties = {
     fontFamily:
       '"SamsungOne","Samsung Sharp Sans","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial',
-    boxShadow: navbar.isScrolled ? "0 2px 8px rgba(0,0,0,0.1)" : "none",
+    boxShadow: navbar.isScrolled && !navbar.isMultimedia ? "0 2px 8px rgba(0,0,0,0.1)" : "none",
     background: showTransparentBg ? "transparent" : "white",
     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
   };

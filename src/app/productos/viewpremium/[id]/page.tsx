@@ -398,11 +398,11 @@ export default function ProductViewPage({ params }) {
         onNotifyStock={stockNotification.openModal}
       />
 
-      {/* Barra de navegación rápida entre secciones */}
-      <QuickNavBar />
+      {/* Barra de navegación rápida entre secciones - siempre visible */}
+      <QuickNavBar isStickyBarVisible={showStickyBar} />
 
       {/* SECCIÓN: Comprar - Layout de dos columnas: Carrusel sin márgenes, Info con márgenes */}
-      <section id="comprar-section" className="bg-white pt-0 pb-0 mb-0 min-h-screen scroll-mt-40">
+      <section id="comprar-section" className="bg-white pt-12 pb-0 mb-0 min-h-screen scroll-mt-[180px]">
         {/* Breadcrumbs */}
         <div className="px-4 md:px-6 lg:px-12 mb-4 pt-4">
           <Breadcrumbs productName="Detalles del producto" />
@@ -451,7 +451,7 @@ export default function ProductViewPage({ params }) {
       </section>
 
       {/* SECCIÓN: Detalles - Contenido multimedia de Flixmedia */}
-      <section id="detalles-section" className="bg-gray-50 py-8 scroll-mt-40">
+      <section id="detalles-section" className="bg-gray-50 py-8 scroll-mt-[180px]">
         <div className="container mx-auto px-4 md:px-6 lg:px-12">
           <h2 className="text-2xl font-bold text-[#222] mb-6" style={{ fontFamily: "SamsungSharpSans" }}>
             Detalles del producto
@@ -497,7 +497,7 @@ export default function ProductViewPage({ params }) {
       <BenefitsSection />
 
       {/* SECCIÓN: Características - Lazy loaded para no bloquear la carga inicial */}
-      <section id="caracteristicas-section" className="scroll-mt-40">
+      <section id="caracteristicas-section" className="scroll-mt-[180px]">
         <Suspense fallback={null}>
           <div className="relative flex items-center justify-center w-full py-0 -mt-4">
             <Specifications

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 
 interface QuickNavBarProps {
   productName?: string;
+  isStickyBarVisible?: boolean; // Indica si el StickyPriceBar está en modo scroll (top-0)
 }
 
 type SectionId = "comprar" | "detalles" | "caracteristicas";
@@ -17,7 +18,7 @@ const SECTIONS: { id: SectionId; label: string; elementId: string }[] = [
 // Offset para compensar la altura de las barras fijas (StickyPriceBar + QuickNavBar)
 const SCROLL_OFFSET = 160;
 
-export default function QuickNavBar({ productName }: QuickNavBarProps) {
+export default function QuickNavBar({ productName, isStickyBarVisible = false }: QuickNavBarProps) {
   const [activeSection, setActiveSection] = useState<SectionId>("comprar");
 
   const scrollToSection = useCallback((elementId: string) => {
@@ -50,10 +51,18 @@ export default function QuickNavBar({ productName }: QuickNavBarProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Posición dinámica:
+  // - Cuando StickyPriceBar NO está visible: debajo del navbar + sticky bar inicial (~110px/128px/150px)
+  // - Cuando StickyPriceBar está visible (scroll): debajo del sticky bar en top-0 (~55px)
+  const topClass = isStickyBarVisible
+    ? "top-[55px] md:top-[55px] xl:top-[60px]"
+    : "top-[110px] md:top-[128px] xl:top-[150px]";
+
   return (
     <div
-      className="fixed top-[60px] md:top-[78px] xl:top-[100px] left-0 right-0 z-[1400]
-                 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm"
+      className={`fixed ${topClass} left-0 right-0 z-[1600]
+                 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm
+                 transition-[top] duration-300 ease-out`}
       style={{ fontFamily: "SamsungSharpSans" }}
     >
       <div className="max-w-7xl mx-auto px-4 py-2">

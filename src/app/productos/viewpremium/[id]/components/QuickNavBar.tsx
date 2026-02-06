@@ -54,7 +54,7 @@ export default function QuickNavBar({ productName, isStickyBarVisible = false }:
   // - Cuando StickyPriceBar NO está visible: debajo del navbar + sticky bar inicial
   // - Cuando StickyPriceBar está visible (scroll): debajo del sticky bar en top-0
   const topClass = isStickyBarVisible
-    ? "top-[58px] md:top-[52px] xl:top-[52px]"
+    ? "top-[46px] md:top-[52px] xl:top-[52px]"
     : "top-[122px] md:top-[112px] xl:top-[152px]";
 
   return (

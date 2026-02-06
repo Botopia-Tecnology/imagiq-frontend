@@ -545,6 +545,14 @@ export function useCart(): UseCartReturn {
         return newProducts;
       });
 
+      // Disparar evento de storage para sincronizar otras instancias del hook
+      // (Step1 usa useCart() directo, SuggestionCard usa useCartContext/CartProvider)
+      setTimeout(() => {
+        try {
+          window.dispatchEvent(new Event("storage"));
+        } catch { /* ignore */ }
+      }, 0);
+
       // Obtener ubicación de envío en segundo plano si tenemos userId
       if (effectiveUserId) {
         // Marcar este SKU específico como cargando
@@ -614,6 +622,11 @@ export function useCart(): UseCartReturn {
 
                 return updatedProducts;
               });
+
+              // Sincronizar shipping info con otras instancias
+              try {
+                window.dispatchEvent(new Event("storage"));
+              } catch { /* ignore */ }
             }
           } catch (error) {
             console.error('Error al obtener tienda candidata:', error);

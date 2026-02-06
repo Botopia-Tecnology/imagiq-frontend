@@ -28,7 +28,7 @@ function ProductCard({ product }: { product: BundleProduct }) {
   // Extraer solo la parte antes del slash del codigoMarket
   // Ejemplo: "BSM-L320/3R2" -> "BSM-L320"
   const baseCodigoMarket = product.codigoMarket.split('/')[0];
-  const productUrl = `/productos/viewpremium/${baseCodigoMarket}`;
+  const productUrl = `/productos/multimedia/${baseCodigoMarket}`;
   
   // BundleProduct.imagePreviewUrl es un string, no un array
   const getValidImageUrl = () => {

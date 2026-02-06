@@ -465,7 +465,7 @@ function FlixmediaPlayerComponent({
   // Mientras verifica, mostrar div vacío (sin skeleton para cargar más rápido)
   if (hasContent === null) {
     return (
-      <div className={`${className} w-full min-h-[200px] relative px-4 md:px-6 lg:px-8`} />
+      <div className={`${className} w-full min-h-[200px] relative`} />
     );
   }
 
@@ -484,9 +484,9 @@ function FlixmediaPlayerComponent({
   }
 
   return (
-    <div className={`${className} w-full min-h-[200px] relative px-4 md:px-6 lg:px-8`}>
-      <div 
-        id={containerId} 
+    <div className={`${className} w-full min-h-[200px] relative`}>
+      <div
+        id={containerId}
         className="w-full"
       />
     </div>

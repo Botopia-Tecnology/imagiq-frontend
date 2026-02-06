@@ -105,7 +105,7 @@ export function DesktopView({ onItemClick }: Props) {
                 {/* Productos de esta categoría en columna */}
                 <div className="flex flex-col gap-y-4 items-start">
                   {ofertasPorCategoria[categoria].map((oferta) => {
-                    const href = `/productos/viewpremium/${oferta.codigo_market}`;
+                    const href = `/productos/multimedia/${oferta.codigo_market}`;
 
                     return (
                       <Link

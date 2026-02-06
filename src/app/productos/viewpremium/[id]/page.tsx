@@ -401,8 +401,12 @@ export default function ProductViewPage({ params }) {
       {/* SECCIÓN: Comprar - Layout de dos columnas: Carrusel sin márgenes, Info con márgenes */}
       <section id="comprar-section" className="bg-white pt-12 pb-0 mb-0 min-h-screen scroll-mt-[180px]">
         {/* Breadcrumbs */}
-        <div className="px-4 md:px-6 lg:px-12 mb-4 pt-4">
-          <Breadcrumbs productName="Detalles del producto" />
+        <div className="px-4 lg:px-8 mb-4 pt-24 md:pt-20 xl:pt-20">
+          <Breadcrumbs
+            productId={id || ""}
+            categoryCode={productToUse.apiProduct?.categoria}
+            subcategoria={productToUse.apiProduct?.subcategoria}
+          />
         </div>
 
         {/* Grid principal */}
@@ -447,32 +451,6 @@ export default function ProductViewPage({ params }) {
         </div>
       </section>
 
-      {/* SECCIÓN: Detalles - Contenido multimedia de Flixmedia */}
-      <section id="detalles-section" className="bg-gray-50 py-8 scroll-mt-[180px]">
-        <div className="container mx-auto px-4 md:px-6 lg:px-12">
-          <h2 className="text-2xl font-bold text-[#222] mb-6" style={{ fontFamily: "SamsungSharpSans" }}>
-            Detalles del producto
-          </h2>
-          <Suspense fallback={
-            <div className="w-full min-h-[400px] flex items-center justify-center">
-              <div className="w-12 h-12 border-4 border-gray-200 border-t-[#0066CC] rounded-full animate-spin" />
-            </div>
-          }>
-            <FlixmediaPlayer
-              mpn={productSelection.selectedSkuflixmedia || productToUse.skuflixmedia || productToUse.apiProduct?.skuflixmedia?.[0]}
-              ean={productSelection.selectedVariant?.ean}
-              productName={productToUse.name}
-              productId={productToUse.id}
-              segmento={productToUse.apiProduct?.segmento}
-              apiProduct={productToUse.apiProduct}
-              productColors={productToUse.colors}
-              preventRedirect={true}
-              className="min-h-[400px]"
-            />
-          </Suspense>
-        </div>
-      </section>
-
       {/* Sección de Estreno y Entrego - SIEMPRE fuera del grid, centrada */}
       <div className="bg-white pb-2 md:pb-4 mt-[clamp(1rem,4vw,2rem)] relative z-10 clear-both">
         <div className="container mx-auto px-4 md:px-6 lg:px-12">
@@ -492,6 +470,27 @@ export default function ProductViewPage({ params }) {
 
       {/* Beneficios imagiq - Banner que ocupa el ancho */}
       <BenefitsSection />
+
+      {/* SECCIÓN: Detalles - Contenido multimedia de Flixmedia (sin márgenes para mejor presentación) */}
+      <section id="detalles-section" className="bg-white scroll-mt-[180px]">
+        <Suspense fallback={
+          <div className="w-full min-h-[400px] flex items-center justify-center">
+            <div className="w-12 h-12 border-4 border-gray-200 border-t-[#0066CC] rounded-full animate-spin" />
+          </div>
+        }>
+          <FlixmediaPlayer
+            mpn={productSelection.selectedSkuflixmedia || productToUse.skuflixmedia || productToUse.apiProduct?.skuflixmedia?.[0]}
+            ean={productSelection.selectedVariant?.ean}
+            productName={productToUse.name}
+            productId={productToUse.id}
+            segmento={productToUse.apiProduct?.segmento}
+            apiProduct={productToUse.apiProduct}
+            productColors={productToUse.colors}
+            preventRedirect={true}
+            className="w-full"
+          />
+        </Suspense>
+      </section>
 
       {/* Botón de añadir al carrito al final de la página */}
       <AddToCartButton

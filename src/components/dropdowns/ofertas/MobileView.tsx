@@ -65,7 +65,7 @@ export function MobileView({ onItemClick }: Props) {
           {/* Grid de productos de esta categoría */}
           <div className="grid grid-cols-3 gap-4">
             {ofertasPorCategoria[categoria].map((oferta) => {
-              const href = `/productos/viewpremium/${oferta.codigo_market}`;
+              const href = `/productos/multimedia/${oferta.codigo_market}`;
 
               return (
                 <Link

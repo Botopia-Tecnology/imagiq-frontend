@@ -51,29 +51,29 @@ export default function QuickNavBar({ productName, isStickyBarVisible = false }:
   }, []);
 
   // Posición dinámica:
-  // - Cuando StickyPriceBar NO está visible: debajo del navbar + sticky bar inicial (~110px/128px/150px)
-  // - Cuando StickyPriceBar está visible (scroll): debajo del sticky bar en top-0 (~55px)
+  // - Cuando StickyPriceBar NO está visible: debajo del navbar + sticky bar inicial
+  // - Cuando StickyPriceBar está visible (scroll): debajo del sticky bar en top-0
   const topClass = isStickyBarVisible
-    ? "top-[55px] md:top-[55px] xl:top-[60px]"
-    : "top-[110px] md:top-[128px] xl:top-[150px]";
+    ? "top-[66px] md:top-[52px] xl:top-[52px]"
+    : "top-[130px] md:top-[112px] xl:top-[152px]";
 
   return (
     <div
       className={`fixed ${topClass} left-0 right-0 z-[1600]
-                 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm
+                 bg-white/95 backdrop-blur-xl
                  transition-[top] duration-300 ease-out`}
       style={{ fontFamily: "SamsungSharpSans" }}
     >
-      <div className="max-w-7xl mx-auto px-4 py-2">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+      <div className="px-4 lg:px-8">
+        <div className="flex gap-8 overflow-x-auto scrollbar-hide">
           {SECTIONS.map((section) => (
-            <NavButton
+            <NavItem
               key={section.id}
               active={activeSection === section.id}
               onClick={() => scrollToSection(section.elementId)}
             >
               {section.label}
-            </NavButton>
+            </NavItem>
           ))}
         </div>
       </div>
@@ -81,27 +81,27 @@ export default function QuickNavBar({ productName, isStickyBarVisible = false }:
   );
 }
 
-interface NavButtonProps {
+interface NavItemProps {
   active: boolean;
   onClick: () => void;
   children: React.ReactNode;
 }
 
-function NavButton({ active, onClick, children }: NavButtonProps) {
+function NavItem({ active, onClick, children }: NavItemProps) {
   return (
     <button
       onClick={onClick}
-      className={`
-        px-4 py-1.5 text-sm rounded-full whitespace-nowrap
-        transition-all duration-200 font-medium
-        ${
-          active
-            ? "bg-[#0066CC] text-white shadow-sm"
-            : "border border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400"
-        }
-      `}
+      className="relative py-3 text-lg md:text-xl whitespace-nowrap transition-colors duration-200 font-bold text-gray-900 hover:text-black"
     >
       {children}
+      {/* Línea indicadora - más pegada al texto */}
+      <span
+        className={`
+          absolute bottom-2 left-0 right-0 h-[2px] bg-black
+          transition-transform duration-200 origin-left
+          ${active ? "scale-x-100" : "scale-x-0"}
+        `}
+      />
     </button>
   );
 }

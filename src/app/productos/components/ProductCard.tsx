@@ -541,8 +541,8 @@ export default function ProductCard({
       closeChat();
     }
 
-    // Navega a la página de multimedia con contenido Flixmedia
-    router.push(`/productos/multimedia/${id}`);
+    // Navega a la página de detalle unificada con contenido Flixmedia
+    router.push(`/productos/viewpremium/${id}`);
     posthogUtils.capture("product_more_info_click", {
       product_id: id,
       product_name: name,

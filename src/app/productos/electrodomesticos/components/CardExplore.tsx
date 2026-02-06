@@ -48,8 +48,8 @@ export default function CardExplore({
   const handleMoreInfo = () => {
     console.log(`🔗 Navegando a producto con ID: ${id}`);
     console.log(`📝 Nombre del producto: ${name}`);
-    // Navega a la página de multimedia
-    router.push(`/productos/multimedia/${id}`);
+    // Navega a la página de detalle unificada
+    router.push(`/productos/viewpremium/${id}`);
     posthogUtils.capture("product_more_info_click", {
       product_id: id,
       product_name: name,

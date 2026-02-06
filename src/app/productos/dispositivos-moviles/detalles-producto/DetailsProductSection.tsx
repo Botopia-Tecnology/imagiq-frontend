@@ -43,7 +43,8 @@ const DetailsProductSection: React.FC<{
     };
     getSelectedColorOption: () => ColorOption | null;
   }) => void;
-}> = ({ product, onVariantsReady, onProductSelectionChange }) => {
+  hideBreadcrumbs?: boolean;
+}> = ({ product, onVariantsReady, onProductSelectionChange, hideBreadcrumbs = false }) => {
   // Hooks - Usar el mismo sistema que ProductCard
   const productSelection = useProductSelection(
     product.apiProduct || {
@@ -389,17 +390,19 @@ const DetailsProductSection: React.FC<{
       />
 
       <main
-        className="w-full bg-white min-h-screen pt-[75px] xl:pt-[75px]"
+        className={`w-full bg-white min-h-screen ${hideBreadcrumbs ? 'pt-0' : 'pt-[75px] xl:pt-[75px]'}`}
         style={{ fontFamily: "SamsungSharpSans" }}
       >
         <div
           className="hidden lg:block"
         >
-          <div className="max-w-[1400px] mx-auto px-8 py-12">
-            {/* Breadcrumb */}
-            <div className="mb-8">
-              <Breadcrumbs productName="Detalles del producto" />
-            </div>
+          <div className={`max-w-[1400px] mx-auto px-8 ${hideBreadcrumbs ? 'pt-4 pb-12' : 'py-12'}`}>
+            {/* Breadcrumb - Solo si no está oculto por el padre */}
+            {!hideBreadcrumbs && (
+              <div className="mb-8">
+                <Breadcrumbs productName="Detalles del producto" />
+              </div>
+            )}
 
             <div className="grid grid-cols-12 gap-16 items-start">
               {/* Imagen a la izquierda */}
@@ -502,11 +505,13 @@ const DetailsProductSection: React.FC<{
 
         {/* MOBILE: Stack vertical */}
         <div className="lg:hidden">
-          <div className="px-4 pt-8 pb-8 max-w-md mx-auto">
-            {/* Breadcrumb móvil */}
-            <div className="mb-4">
-              <Breadcrumbs productName="Detalles del producto" />
-            </div>
+          <div className={`px-4 ${hideBreadcrumbs ? 'pt-0' : 'pt-8'} pb-8 max-w-md mx-auto`}>
+            {/* Breadcrumb móvil - Solo si no está oculto por el padre */}
+            {!hideBreadcrumbs && (
+              <div className="mb-4">
+                <Breadcrumbs productName="Detalles del producto" />
+              </div>
+            )}
 
             <DeviceCarousel
               alt={product.name}

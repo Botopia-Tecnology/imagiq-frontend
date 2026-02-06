@@ -1,11 +1,11 @@
 /**
  * 🎬 MULTIMEDIA PAGE - IMAGIQ ECOMMERCE
- * 
+ *
  * Página dedicada para mostrar contenido multimedia enriquecido de Flixmedia
  * Se accede desde el botón "Más información" de las cards de producto
- * 
+ *
  * Ruta: /productos/multimedia/[id]
- * 
+ *
  * Características:
  * - Carga contenido 360°, videos y especificaciones de Samsung
  * - Obtiene MPN/EAN del producto desde el backend
@@ -161,7 +161,7 @@ export default function MultimediaPage({
   // Si no hay skuflixmedia, intentar usar el SKU normal del producto como fallback
   const productSku = selectedProductData?.skuflixmedia
     ? selectedProductData.skuflixmedia
-    : (product?.skuflixmedia || product?.apiProduct?.skuflixmedia?.[0] || 
+    : (product?.skuflixmedia || product?.apiProduct?.skuflixmedia?.[0] ||
        selectedProductData?.sku || allSkus[0] || null);
 
   // EAN solo como respaldo si hay skuflixmedia pero se necesita EAN
@@ -247,7 +247,7 @@ export default function MultimediaPage({
       });
     };
 
-    const hasApiPremiumContent = 
+    const hasApiPremiumContent =
       checkArrayOfArrays(product.apiProduct?.imagenPremium) ||
       checkArrayOfArrays(product.apiProduct?.videoPremium) ||
       checkArrayOfArrays(product.apiProduct?.imagen_premium) ||
@@ -256,11 +256,11 @@ export default function MultimediaPage({
     // Verificar en los colores del producto (imagen_premium/video_premium)
     // En los colores vienen como string[] (array simple)
     const hasColorPremiumContent = product.colors?.some(color => {
-      const hasColorImages = color.imagen_premium && Array.isArray(color.imagen_premium) && 
-        color.imagen_premium.length > 0 && 
+      const hasColorImages = color.imagen_premium && Array.isArray(color.imagen_premium) &&
+        color.imagen_premium.length > 0 &&
         color.imagen_premium.some(img => img && typeof img === 'string' && img.trim() !== '');
-      const hasColorVideos = color.video_premium && Array.isArray(color.video_premium) && 
-        color.video_premium.length > 0 && 
+      const hasColorVideos = color.video_premium && Array.isArray(color.video_premium) &&
+        color.video_premium.length > 0 &&
         color.video_premium.some(vid => vid && typeof vid === 'string' && vid.trim() !== '');
       return hasColorImages || hasColorVideos;
     }) || false;
@@ -288,11 +288,11 @@ export default function MultimediaPage({
     }
     return undefined;
   };
-  
+
   const segmento = getSegmento();
   const isPremium = isPremiumProduct(segmento);
   const hasPremium = hasPremiumContent();
-  
+
   // DEBUG: Log para verificar valores
   console.log('[MULTIMEDIA] 🔍 Verificando ruta:', {
     segmento,
@@ -303,12 +303,12 @@ export default function MultimediaPage({
     hasApiPremiumImages: !!product?.apiProduct?.imagenPremium?.length,
     hasApiPremiumVideos: !!product?.apiProduct?.videoPremium?.length,
   });
-  
+
   // Usar viewpremium si es premium O tiene contenido premium
   const viewRoute = (isPremium || hasPremium)
     ? `/productos/viewpremium/${id}`
     : `/productos/view/${id}`;
-    
+
   console.log('[MULTIMEDIA] ➡️ Ruta seleccionada:', viewRoute);
 
   return (

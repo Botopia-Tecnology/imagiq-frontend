@@ -528,6 +528,7 @@ export default function ProductCard({
       indcerointeres: apiProduct?.indcerointeres?.[0] ?? 0,
       allPrices: apiProduct?.precioeccommerce || [],
       skuflixmedia: productSelection.selectedSkuflixmedia,
+      segmento: segmento || apiProduct?.segmento?.[0],
     };
 
     // Guardar en localStorage con una clave única por producto
@@ -541,7 +542,7 @@ export default function ProductCard({
       closeChat();
     }
 
-    // Navega a la página de multimedia con contenido Flixmedia
+    // Navega primero a la página multimedia con contenido Flixmedia
     router.push(`/productos/multimedia/${id}`);
     posthogUtils.capture("product_more_info_click", {
       product_id: id,

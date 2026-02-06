@@ -1,19 +1,16 @@
 "use client";
 
-import React, { use } from "react";
+import React, { use, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
-import ViewProduct from "../../dispositivos-moviles/ViewProductMobile";
 import { useProduct } from "@/features/products/useProducts";
 import { notFound } from "next/navigation";
 import smartphonesImg from "@/img/dispositivosmoviles/cel1.png";
-import {
-  ProductCardProps,
-  ProductColor,
-} from "@/app/productos/components/ProductCard";
+import { ProductCardProps } from "@/app/productos/components/ProductCard";
 import type {
   ProductVariant,
   ColorOption,
 } from "@/hooks/useProductSelection";
+import { useProductSelection } from "@/hooks/useProductSelection";
 import DetailsProductSection from "@/app/productos/dispositivos-moviles/detalles-producto/DetailsProductSection";
 import ProductDetailSkeleton from "@/app/productos/dispositivos-moviles/detalles-producto/ProductDetailSkeleton";
 import AddToCartButton from "../../viewpremium/components/AddToCartButton";
@@ -21,6 +18,15 @@ import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
 import { useAnalytics } from "@/lib/analytics/hooks/useAnalytics";
 import { useTradeInPrefetch } from "@/hooks/useTradeInPrefetch";
+import { Breadcrumbs } from "@/components/breadcrumbs";
+import StickyPriceBar from "@/app/productos/dispositivos-moviles/detalles-producto/StickyPriceBar";
+import QuickNavBar from "../../viewpremium/[id]/components/QuickNavBar";
+import { useScrollNavbar } from "@/hooks/useScrollNavbar";
+import BenefitsSection from "../../dispositivos-moviles/detalles-producto/BenefitsSection";
+import TradeInSection from "../../viewpremium/components/sections/TradeInSection";
+
+// Lazy load FlixmediaPlayer
+const FlixmediaPlayer = lazy(() => import("@/components/FlixmediaPlayer"));
 
 // Type for the product selection data passed from DetailsProductSection
 // This is a subset of UseProductSelectionReturn with only the properties passed by the callback
@@ -38,69 +44,6 @@ type ProductSelectionData = {
   };
   getSelectedColorOption: () => ColorOption | null;
 };
-
-// Convierte ProductCardProps a formato esperado por ViewProduct
-function convertProductForView(product: ProductCardProps) {
-  const image =
-    typeof product.image === "string" ? smartphonesImg : product.image;
-  const safeValue = (
-    value: string | number | null | undefined,
-    fallback: string = "None"
-  ) => {
-    if (
-      value === null ||
-      value === undefined ||
-      value === "" ||
-      (Array.isArray(value) && value.length === 0)
-    ) {
-      return fallback;
-    }
-    return String(value);
-  };
-  return {
-    id: safeValue(product.id, "None"),
-    name: safeValue(product.name, "None"),
-    image: image,
-    price: safeValue(product.price, "None"),
-    originalPrice: product.originalPrice
-      ? safeValue(product.originalPrice)
-      : undefined,
-    discount: product.discount ? safeValue(product.discount) : undefined,
-    colors:
-      product.colors?.map((color: ProductColor) => ({
-        name: safeValue(color.name || color.label, "None"),
-        hex: safeValue(color.hex, "#808080"),
-      })) || [],
-    category: product.apiProduct?.categoria || "", // Use category from API
-    description: safeValue(product.apiProduct?.descGeneral?.[0], "None"),
-    specs: [
-      { label: "Marca", value: "Samsung" }, // ProductApiData no tiene campo marca, todos son Samsung
-      { label: "Modelo", value: safeValue(product.apiProduct?.modelo?.[0], "None") },
-      {
-        label: "Categoría",
-        value: safeValue(product.apiProduct?.categoria, "None"),
-      },
-      {
-        label: "Subcategoría",
-        value: safeValue(product.apiProduct?.subcategoria, "None"),
-      },
-      {
-        label: "Capacidad",
-        value: safeValue(
-          product.selectedCapacity?.value || product.capacities?.[0]?.value,
-          "None"
-        ),
-      },
-      {
-        label: "SKU",
-        value: safeValue(
-          product.selectedColor?.sku || product.colors?.[0]?.sku,
-          "None"
-        ),
-      },
-    ],
-  };
-}
 
 // Helper: Verificar si el producto tiene contenido premium (imágenes/videos)
 function hasPremiumContent(prod: ProductCardProps): boolean {
@@ -149,26 +92,22 @@ function ProductContentWithVariants({
   onProductSelectionChange,
   productSelection,
   onNotifyStock,
+  hideBreadcrumbs = false,
 }: {
   product: ProductCardProps;
   onVariantsReady: (ready: boolean) => void;
   onProductSelectionChange?: (selection: ProductSelectionData) => void;
   productSelection: ProductSelectionData | null;
   onNotifyStock?: () => void;
+  hideBreadcrumbs?: boolean;
 }) {
-  const convertedProduct = convertProductForView(product);
-
   return (
     <>
       <DetailsProductSection
         product={product}
         onVariantsReady={onVariantsReady}
         onProductSelectionChange={onProductSelectionChange}
-      />
-      <ViewProduct 
-        product={convertedProduct} 
-        flix={product}
-        productSelection={productSelection}
+        hideBreadcrumbs={hideBreadcrumbs}
       />
 
       <AddToCartButton
@@ -191,7 +130,7 @@ export default function ProductViewPage({ params }) {
       ? (resolvedParams as ParamsWithId).id
       : undefined;
   // Estado para almacenar el producto inicial desde localStorage (Optimistic UI)
-  const [initialProduct, setInitialProduct] = React.useState<ProductCardProps | null>(() => {
+  const [initialProduct] = React.useState<ProductCardProps | null>(() => {
     if (typeof window !== 'undefined' && id) {
       try {
         const saved = localStorage.getItem(`product_selection_${id}`);
@@ -216,13 +155,12 @@ export default function ProductViewPage({ params }) {
               label: parsed.capacity
             }] : [],
             segmento: parsed.segmento,
-            skuflixmedia: parsed.skuflixmedia, // Mapear skuflixmedia desde localStorage
-            // Datos mínimos para que funcione la UI
+            skuflixmedia: parsed.skuflixmedia,
             apiProduct: {
               codigoMarketBase: id,
               codigoMarket: [],
               nombreMarket: [parsed.productName || ""],
-              categoria: "Móviles", // Fallback seguro
+              categoria: "Móviles",
               subcategoria: "",
               modelo: [parsed.productName || ""],
               color: [],
@@ -246,7 +184,7 @@ export default function ProductViewPage({ params }) {
               indRetoma: [],
               indcerointeres: [],
               skuPostback: [],
-              skuflixmedia: parsed.skuflixmedia ? [parsed.skuflixmedia] : [], // También en apiProduct por si acaso
+              skuflixmedia: parsed.skuflixmedia ? [parsed.skuflixmedia] : [],
             }
           } as ProductCardProps;
         }
@@ -264,24 +202,74 @@ export default function ProductViewPage({ params }) {
   const product = apiProduct || initialProduct;
 
   const [variantsReady, setVariantsReady] = React.useState(false);
-  const [productSelection, setProductSelection] =
+  const [productSelectionState, setProductSelectionState] =
     React.useState<ProductSelectionData | null>(null);
   const [shouldRedirectToPremium, setShouldRedirectToPremium] = React.useState(false);
   const [premiumCheckDone, setPremiumCheckDone] = React.useState(false);
   const stockNotification = useStockNotification();
   const { trackViewItem } = useAnalytics();
 
+  // Hook para manejo inteligente de selección de productos - compartido entre componentes
+  const productSelection = useProductSelection(
+    product?.apiProduct || {
+      codigoMarketBase: product?.id || "",
+      codigoMarket: [],
+      nombreMarket: product?.name ? [product.name] : [],
+      categoria: "",
+      subcategoria: "",
+      modelo: product?.name ? [product.name] : [],
+      color: [],
+      capacidad: [],
+      memoriaram: [],
+      descGeneral: [],
+      sku: [],
+      ean: [],
+      desDetallada: [],
+      stockTotal: [],
+      cantidadTiendas: [],
+      cantidadTiendasReserva: [],
+      urlImagenes: [],
+      urlRender3D: [],
+      imagePreviewUrl: [],
+      imageDetailsUrls: [],
+      precioNormal: [],
+      precioeccommerce: [],
+      fechaInicioVigencia: [],
+      fechaFinalVigencia: [],
+      indRetoma: [],
+      indcerointeres: [],
+      skuPostback: [],
+    }
+  );
+
+  // Barra sticky superior
+  const showStickyBar = useScrollNavbar(150, 50, true);
+
   // 🚀 Prefetch automático de datos de Trade-In
   useTradeInPrefetch();
 
+  // Efecto para ocultar/mostrar el header principal
+  React.useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (showStickyBar) {
+      document.body.classList.add("hide-main-navbar");
+    } else {
+      const timer = setTimeout(() => {
+        document.body.classList.remove("hide-main-navbar");
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+    return () => {
+      document.body.classList.remove("hide-main-navbar");
+    };
+  }, [showStickyBar]);
+
   // 🔄 Verificar si el producto tiene contenido premium y debe redirigir a viewpremium
-  // IMPORTANTE: Solo redirigir si tiene AMBOS: segmento premium Y contenido premium
-  // Esto evita loops infinitos con viewpremium
   React.useEffect(() => {
     if (apiProduct && !loading && id) {
       const hasPremium = hasPremiumContent(apiProduct);
       const isPremium = isPremiumSegment(apiProduct);
-      
+
       console.log('[VIEW] 🔍 Verificando contenido premium:', {
         id,
         hasPremium,
@@ -290,15 +278,12 @@ export default function ProductViewPage({ params }) {
         hasImagenPremium: !!apiProduct.apiProduct?.imagenPremium?.length,
         hasVideoPremium: !!apiProduct.apiProduct?.videoPremium?.length,
       });
-      
-      // Solo redirigir si tiene segmento PREMIUM Y contenido premium
-      // Esto es consistente con viewpremium que requiere ambos
+
       if (hasPremium && isPremium) {
         console.log('[VIEW] ➡️ Redirigiendo a viewpremium (tiene segmento Y contenido premium)');
         setShouldRedirectToPremium(true);
         router.replace(`/productos/viewpremium/${id}`);
       } else {
-        // No es premium, marcar verificación como completa
         setPremiumCheckDone(true);
       }
     }
@@ -309,7 +294,7 @@ export default function ProductViewPage({ params }) {
     setVariantsReady(false);
   }, [id]);
 
-  // 🔥 Track View Item apenas el producto carga (solo una vez por producto)
+  // 🔥 Track View Item apenas el producto carga
   React.useEffect(() => {
     if (product && !loading) {
       const productPrice =
@@ -326,28 +311,25 @@ export default function ProductViewPage({ params }) {
         currency: "COP",
       });
     }
-    // Solo ejecutar cuando el producto carga, NO cuando cambia la selección de variante
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.id, loading]);
 
   // Callback para recibir productSelection desde DetailsProductSection
   const handleProductSelectionChange = React.useCallback(
     (selection: ProductSelectionData) => {
-      setProductSelection(selection);
+      setProductSelectionState(selection);
     },
     []
   );
 
   // Handler para notificación de stock
   const handleRequestStockNotification = async (email: string) => {
-    if (!product || !productSelection) return;
+    if (!product) return;
 
-    // Obtener el SKU del producto seleccionado
-    const selectedSku = productSelection.selectedSku;
-
-    // Obtener el codigoMarket correspondiente a la variante seleccionada
+    const selectedSku = productSelection.selectedSku || productSelectionState?.selectedSku;
     const codigoMarket =
-      productSelection.selectedVariant?.codigoMarket ||
+      productSelection.selectedCodigoMarket ||
+      productSelectionState?.selectedVariant?.codigoMarket ||
       product.apiProduct?.codigoMarketBase ||
       "";
 
@@ -359,62 +341,198 @@ export default function ProductViewPage({ params }) {
     });
   };
 
+  // Helper para verificar stock
+  const hasStock = () => {
+    return (
+      productSelection.selectedStockTotal !== null &&
+      productSelection.selectedStockTotal > 0
+    );
+  };
+
+  // Obtener indcerointeres del producto
+  const getIndcerointeres = (): number => {
+    if (product?.apiProduct?.indcerointeres) {
+      const indcerointeresArray = product.apiProduct.indcerointeres;
+      return indcerointeresArray[0] ?? 0;
+    }
+    return 0;
+  };
+
   if (!id) {
     return notFound();
   }
 
-  // SIEMPRE mostrar skeleton mientras:
-  // 1. Está cargando el producto desde el API
-  // 2. Ya determinamos que debe redirigir a viewpremium (evita flash)
-  // 3. El producto cargó pero aún no se verificó si es premium
   if (loading || shouldRedirectToPremium || (apiProduct && !premiumCheckDone)) {
     return <ProductDetailSkeleton />;
   }
 
-  // Si hubo error y no hay producto del API, mostrar not found
   if (error && !apiProduct) {
     return notFound();
   }
 
-  // Si no hay producto del API después de cargar, usar notFound()
   if (!apiProduct) {
     return notFound();
   }
 
-  // En este punto, apiProduct está garantizado que existe
   const productToUse = apiProduct;
+  const indcerointeres = getIndcerointeres();
 
   return (
     <>
-      {/* Modal de notificación de stock */}
-      <StockNotificationModal
-        isOpen={stockNotification.isModalOpen}
-        onClose={stockNotification.closeModal}
-        productName={productToUse.name}
-        productImage={
-          productSelection?.selectedVariant?.imagePreviewUrl ||
-          (typeof productToUse.image === "string"
-            ? productToUse.image
-            : smartphonesImg.src)
-        }
+      {/* StickyPriceBar - Barra sticky superior */}
+      <StickyPriceBar
+        deviceName={productToUse.name}
+        basePrice={productSelection.selectedPrice || (() => {
+          const priceStr = productToUse.price || "0";
+          return Number.parseInt(String(priceStr).replaceAll(/\D/g, ''), 10);
+        })()}
+        selectedStorage={productSelection.selection.selectedCapacity || undefined}
         selectedColor={
-          productSelection?.getSelectedColorOption?.()?.nombreColorDisplay ||
-          productSelection?.selection?.selectedColor ||
+          productSelection.getSelectedColorOption()?.nombreColorDisplay ||
+          productSelection.selection.selectedColor ||
           undefined
         }
-        selectedStorage={
-          productSelection?.selection?.selectedCapacity || undefined
-        }
-        onNotificationRequest={handleRequestStockNotification}
+        indcerointeres={indcerointeres}
+        allPrices={productToUse.apiProduct?.precioeccommerce || []}
+        isVisible={showStickyBar}
+        onBuyClick={() => {}}
+        hasStock={hasStock()}
+        onNotifyStock={stockNotification.openModal}
       />
 
-      {/* Renderizar contenido del producto */}
-      <ProductContentWithVariants
-        product={productToUse}
-        onVariantsReady={setVariantsReady}
-        onProductSelectionChange={handleProductSelectionChange}
-        productSelection={productSelection}
-        onNotifyStock={stockNotification.openModal}
+      {/* Barra de navegación rápida entre secciones */}
+      <QuickNavBar isStickyBarVisible={showStickyBar} />
+
+      {/* SECCIÓN: Comprar - Contenido principal del producto */}
+      <section id="comprar-section" className="bg-white pt-12 pb-0 mb-0 min-h-screen scroll-mt-[180px]">
+        {/* Breadcrumbs dinámicos desde base de datos */}
+        <div className="px-4 lg:px-8 mb-4 pt-24 md:pt-20 xl:pt-20">
+          <Breadcrumbs
+            productId={id || ""}
+            categoryCode={productToUse.apiProduct?.categoria}
+            subcategoria={productToUse.apiProduct?.subcategoria}
+          />
+        </div>
+
+        {/* Modal de notificación de stock */}
+        <StockNotificationModal
+          isOpen={stockNotification.isModalOpen}
+          onClose={stockNotification.closeModal}
+          productName={productToUse.name}
+          productImage={
+            productSelection.selectedVariant?.imagePreviewUrl ||
+            productSelectionState?.selectedVariant?.imagePreviewUrl ||
+            (typeof productToUse.image === "string"
+              ? productToUse.image
+              : smartphonesImg.src)
+          }
+          selectedColor={
+            productSelection.getSelectedColorOption()?.nombreColorDisplay ||
+            productSelectionState?.getSelectedColorOption?.()?.nombreColorDisplay ||
+            productSelectionState?.selection?.selectedColor ||
+            undefined
+          }
+          selectedStorage={
+            productSelection.selection.selectedCapacity ||
+            productSelectionState?.selection?.selectedCapacity ||
+            undefined
+          }
+          onNotificationRequest={handleRequestStockNotification}
+        />
+
+        {/* Renderizar contenido del producto */}
+        <ProductContentWithVariants
+          product={productToUse}
+          onVariantsReady={setVariantsReady}
+          onProductSelectionChange={handleProductSelectionChange}
+          productSelection={productSelectionState}
+          onNotifyStock={stockNotification.openModal}
+          hideBreadcrumbs={true}
+        />
+      </section>
+
+      {/* Sección de Estreno y Entrego */}
+      <div className="bg-white pb-2 md:pb-4 mt-[clamp(1rem,4vw,2rem)] relative z-10 clear-both">
+        <div className="container mx-auto px-4 md:px-6 lg:px-12">
+          <div className="max-w-7xl mx-auto">
+            <TradeInSection
+              onTradeInComplete={(deviceName, value) => {
+                console.log('Trade-in completado:', deviceName, value);
+              }}
+              productSku={productSelection.selectedSku || productSelectionState?.selectedSku || undefined}
+              productName={productToUse.name}
+              skuPostback={productSelection.selectedSkuPostback || productSelectionState?.selectedSkuPostback || undefined}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Beneficios imagiq */}
+      <BenefitsSection />
+
+      {/* SECCIÓN: Detalles - Contenido multimedia de Flixmedia */}
+      <section id="detalles-section" className="bg-white scroll-mt-[180px]">
+        <Suspense fallback={
+          <div className="w-full min-h-[400px] flex items-center justify-center">
+            <div className="w-12 h-12 border-4 border-gray-200 border-t-[#0066CC] rounded-full animate-spin" />
+          </div>
+        }>
+          <FlixmediaPlayer
+            mpn={productSelection.selectedSkuflixmedia || productToUse.skuflixmedia || productToUse.apiProduct?.skuflixmedia?.[0]}
+            ean={productSelection.selectedVariant?.ean || productSelectionState?.selectedVariant?.ean}
+            productName={productToUse.name}
+            productId={productToUse.id}
+            segmento={productToUse.apiProduct?.segmento}
+            apiProduct={productToUse.apiProduct}
+            productColors={productToUse.colors}
+            preventRedirect={true}
+            className="w-full"
+          />
+        </Suspense>
+      </section>
+
+      {/* Estilos globales para animación de ocultar header */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+          body.hide-main-navbar header[data-navbar="true"] {
+            transform: translateY(-100%) scale(0.97) !important;
+            opacity: 0 !important;
+            filter: blur(3px) !important;
+            transition:
+              transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              opacity 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              filter 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
+            pointer-events: none !important;
+          }
+
+          .fixed-navbar-container {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 9999 !important;
+            will-change: transform, opacity, filter !important;
+          }
+
+          .fixed-navbar-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border-radius: inherit;
+            pointer-events: none;
+          }
+
+          .fixed-navbar-container * {
+            backface-visibility: hidden;
+            transform-style: preserve-3d;
+          }
+        `,
+        }}
       />
     </>
   );

@@ -23,7 +23,7 @@ export function BannerButtons() {
     <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-center justify-center">
       {/* Galaxy Watch8 Button - Underlined Style */}
       <Link
-        href="/productos/multimedia/BSM-L500"
+        href="/productos/viewpremium/BSM-L500"
         className="group relative inline-block"
         onClick={() => handleButtonClick("Galaxy Watch8", "conoce_mas")}
       >
@@ -40,7 +40,7 @@ export function BannerButtons() {
 
       {/* Galaxy Z Flip7 Button - Border with Hover Effect */}
       <Link
-        href="/productos/multimedia/BSM-F766BE"
+        href="/productos/viewpremium/BSM-F766BE"
         className="group inline-block"
         onClick={() => handleButtonClick("Galaxy Z Flip7", "conoce_mas")}
         onMouseEnter={() => setIsHoveringFlip(true)}

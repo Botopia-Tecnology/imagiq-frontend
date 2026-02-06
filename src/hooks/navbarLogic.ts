@@ -46,6 +46,7 @@ export function useNavbarLogic() {
   const isHome = pathname === "/"; // ¿Está en home?
   const isLogin = pathname === "/login"; // ¿Está en login?
   const isOfertas = pathname === "/ofertas"; // ¿Está en ofertas?
+  const isMultimedia = pathname?.startsWith("/productos/multimedia") ?? false; // ¿Está en multimedia?
   const debouncedSearch = useDebounce(searchQuery, 300); // Query de búsqueda con debounce
   const { cart: cartItems, itemCount } = useCartContext();
   const { trackSearch, trackCategoryClick } = useAnalytics();
@@ -332,6 +333,7 @@ export function useNavbarLogic() {
     isHome,
     isLogin,
     isOfertas,
+    isMultimedia,
     debouncedSearch,
     itemCount,
     cartCount,

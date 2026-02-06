@@ -462,7 +462,7 @@ export default function ProductViewPage({ params }) {
             </div>
           }>
             <FlixmediaPlayer
-              mpn={productToUse.skuflixmedia || productSelection.selectedSku || productToUse.apiProduct?.skuflixmedia?.[0]}
+              mpn={productSelection.selectedSkuflixmedia || productToUse.skuflixmedia || productToUse.apiProduct?.skuflixmedia?.[0]}
               ean={productSelection.selectedVariant?.ean}
               productName={productToUse.name}
               productId={productToUse.id}

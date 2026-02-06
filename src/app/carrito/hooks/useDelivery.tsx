@@ -121,12 +121,9 @@ function getInitialStoresFromCache(): CacheStoresData | null {
       const timeSinceLastFetch = Date.now() - (globalState.__imagiqLastFetchTime || 0);
       // Si el lock tiene más de 2 segundos, limpiarlo
       if (timeSinceLastFetch > 2000) {
-        console.log('🔓 [getInitialStoresFromCache] Limpiando lock global obsoleto');
         globalState.__imagiqIsFetching = false;
       }
     }
-
-    console.log('🏪 [getInitialStoresFromCache] INICIO - Intentando leer caché sincronamente');
 
     // Obtener userId
     const storedUser = localStorage.getItem("imagiq_user");
@@ -137,7 +134,6 @@ function getInitialStoresFromCache(): CacheStoresData | null {
     }
 
     if (!userId) {
-      console.log('🏪 [getInitialStoresFromCache] No hay userId, retornando null');
       return null;
     }
 
@@ -157,14 +153,12 @@ function getInitialStoresFromCache(): CacheStoresData | null {
     // Obtener productos del carrito
     const cartData = localStorage.getItem("imagiq_cart");
     if (!cartData) {
-      console.log('🏪 [getInitialStoresFromCache] No hay cartData en localStorage');
       return null;
     }
 
     const cart = JSON.parse(cartData);
     const products = cart.products || [];
     if (products.length === 0) {
-      console.log('🏪 [getInitialStoresFromCache] Carrito vacío');
       return null;
     }
 
@@ -180,16 +174,8 @@ function getInitialStoresFromCache(): CacheStoresData | null {
       addressId,
     });
 
-    console.log('🏪 [getInitialStoresFromCache] Buscando caché con key:', {
-      userId: userId?.substring(0, 8) + '...',
-      addressId: addressId?.substring(0, 8) + '...',
-      productsCount: productsToCheck.length,
-      productsSummary: productsToCheck.map((p: { sku: string; quantity: number }) => `${p.sku}:${p.quantity}`).join(', ')
-    });
-
     const cachedResponse = getFullCandidateStoresResponseFromCache(cacheKey);
     if (!cachedResponse) {
-      console.log('🏪 [getInitialStoresFromCache] No hay caché disponible');
       return null;
     }
 
@@ -231,12 +217,6 @@ function getInitialStoresFromCache(): CacheStoresData | null {
     const storesToShow = globalCanPickUp
       ? (firstCity ? physicalStores.filter(store => store.ciudad === firstCity) : physicalStores)
       : [];
-
-    console.log('🏪 [getInitialStoresFromCache] Datos iniciales desde caché:', {
-      canPickUp: globalCanPickUp,
-      storesCount: storesToShow.length,
-      citiesCount: cities.length
-    });
 
     return {
       stores: storesToShow,
@@ -416,21 +396,9 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     // Incrementar el requestId para esta llamada
     const thisRequestId = ++lastFetchRequestIdRef.current;
 
-    // DEBUG: Log de inicio de fetch con requestId
-    console.log(`🚀🚀🚀 [fetchCandidateStores] INICIANDO fetch #${thisRequestId}`, {
-      explicitAddressId,
-      productsCount: products.length,
-      productsSkus: products.map(p => p.sku).join(', '),
-      productsWithQuantity: products.map(p => `${p.sku}:${p.quantity}`).join(', '),
-      onlyReadCache,
-      canFetchFromEndpoint,
-      previousRequestId: thisRequestId - 1 // Para ver si hay muchos fetchs
-    });
-
     // CRÍTICO: Cancelar cualquier timeout de reintento pendiente INMEDIATAMENTE
     // Esto asegura que solo la llamada más reciente se ejecute
     if (retryTimeoutRef.current) {
-      console.log('🔄 [fetchCandidateStores] Cancelando retry timeout pendiente');
       clearTimeout(retryTimeoutRef.current);
       retryTimeoutRef.current = null;
     }
@@ -440,12 +408,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       __imagiqLastFetchTime?: number;
       __imagiqIsFetching?: boolean;
     };
-
-    console.log('🔒 [fetchCandidateStores] Estado global:', {
-      isFetching: globalState.__imagiqIsFetching,
-      lastFetchTime: globalState.__imagiqLastFetchTime,
-      timeSinceLastFetch: globalState.__imagiqLastFetchTime ? Date.now() - globalState.__imagiqLastFetchTime : 'N/A'
-    });
 
     // PROTECCIÓN: Si ya hay un fetch global en curso, verificar si está bloqueado
     if (globalState.__imagiqIsFetching) {
@@ -457,14 +419,9 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       } else {
         // Programar reintento para después de que termine el fetch actual
         // CRÍTICO: Usar fetchCandidateStoresRef.current para evitar stale closures
-        console.log('⏳ [fetchCandidateStores] Fetch global en curso, programando reintento en 500ms...', {
-          timeSinceLastFetch,
-          hasRetryTimeout: !!retryTimeoutRef.current
-        });
         if (!retryTimeoutRef.current) {
           retryTimeoutRef.current = setTimeout(() => {
             retryTimeoutRef.current = null;
-            console.log('🔄 [fetchCandidateStores] Ejecutando reintento programado');
             // Usar la referencia actualizada para tomar los productos más recientes
             fetchCandidateStoresRef.current?.(explicitAddressId);
           }, 500);
@@ -530,20 +487,9 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
     fetchCountRef.current++;
 
-    // Log de modo de operación
-    console.log('🔧 [useDelivery] fetchCandidateStores iniciado:', {
-      onlyReadCache,
-      canFetchFromEndpoint,
-      allowFetchOnAddressChange: allowFetchOnAddressChangeRef.current,
-      productsCount: products.length
-    });
-
     // OPTIMIZACIÓN: Si onlyReadCache es true, SOLO leer del caché y retornar inmediatamente
     // EXCEPCIÓN: Si allowFetchOnAddressChangeRef es true, permitir petición (cambio de dirección)
     if (onlyReadCache && !allowFetchOnAddressChangeRef.current) {
-      console.log('📦 [useDelivery] Modo SOLO LECTURA DE CACHÉ activado - requestId:', thisRequestId);
-
-
       // Intentar leer del caché
       const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
         "imagiq_user",
@@ -635,7 +581,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       // IMPORTANTE: Solo requerir dirección cuando es onlyReadCache
       // En Step1 (canFetchFromEndpoint=true), permitir cálculo básico sin dirección
       if (!hasAddress) {
-        console.log('⚠️ [useDelivery] Sin dirección guardada - solo leer caché retorna vacío');
         setStores([]);
         setFilteredStores([]);
         setCanPickUp(false);
@@ -652,13 +597,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       });
 
       const cachedResponse = getFullCandidateStoresResponseFromCache(cacheKey);
-
-      console.log('📦 [useDelivery onlyReadCache] Resultado lectura de caché:', {
-        hasCachedResponse: !!cachedResponse,
-        cachedCanPickUp: cachedResponse?.canPickUp,
-        cachedStoresKeys: cachedResponse?.stores ? Object.keys(cachedResponse.stores) : [],
-        requestId: thisRequestId
-      });
 
       if (cachedResponse) {
         // Procesar respuesta cacheada (código existente)
@@ -700,25 +638,11 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
         // Establecer estados inmediatamente desde caché (sin skeleton)
         // Solo actualizar si es la última petición
-        console.log('📦 [useDelivery onlyReadCache] Verificando requestId:', {
-          thisRequestId,
-          lastFetchRequestIdRef: lastFetchRequestIdRef.current,
-          shouldUpdate: thisRequestId === lastFetchRequestIdRef.current
-        });
-
         if (thisRequestId === lastFetchRequestIdRef.current) {
           const firstCity = cities.length > 0 ? cities[0] : null;
           const storesToShow = globalCanPickUp
             ? (firstCity ? physicalStores.filter(store => store.ciudad === firstCity) : physicalStores)
             : [];
-
-          console.log('📦 [useDelivery onlyReadCache] ESTABLECIENDO ESTADOS desde caché:', {
-            globalCanPickUp,
-            citiesCount: cities.length,
-            physicalStoresCount: physicalStores.length,
-            storesToShowCount: storesToShow.length,
-            firstCity
-          });
 
           setCanPickUp(globalCanPickUp);
           setAvailableCities(cities);
@@ -735,8 +659,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
           // CRÍTICO: Desactivar loading cuando se lee del caché
           setStoresLoading(false);
-        } else {
-          console.log('⚠️ [useDelivery onlyReadCache] requestId no coincide, NO actualizando estados');
         }
         return; // Salir sin hacer petición al endpoint
       } else {
@@ -750,11 +672,9 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         const shouldForceRecalculate = hasAddress && (userRol === 2 || userRol === 3 || userRol === 4);
 
         if (shouldForceRecalculate) {
-          console.log('🔄 [CACHÉ] No hay caché pero usuario rol', userRol, 'con dirección - FORZANDO recálculo');
           allowFetchOnAddressChangeRef.current = true;
           // No retornar aquí, continuar para hacer la petición
         } else {
-          console.log('📦 [CACHÉ] No hay datos en caché y onlyReadCache=true, desactivando loading');
           setStoresLoading(false);
           return;
         }
@@ -764,24 +684,19 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     // PROTECCIÓN: Si canFetchFromEndpoint es false, NO hacer petición
     // EXCEPCIÓN: Si allowFetchOnAddressChangeRef es true (cambio de dirección o forzado por rol)
     if (!canFetchFromEndpoint && !allowFetchOnAddressChangeRef.current) {
-      console.log('🚫 [fetchCandidateStores] SALIENDO: canFetchFromEndpoint=false y allowFetchOnAddressChangeRef=false');
       setStoresLoading(false); // Asegurar que loading se apague
       return;
     }
 
     // PROTECCIÓN CRÍTICA: NO hacer peticiones durante eliminación de trade-in
     if (isRemovingTradeInRef.current) {
-      console.log('🚫 [fetchCandidateStores] SALIENDO: isRemovingTradeIn=true');
       setStoresLoading(false); // Asegurar que loading se apague
       return;
     }
 
-    console.log('✅ [fetchCandidateStores] Pasando checkpoints de canFetchFromEndpoint y isRemovingTradeIn');
-
     // Prevenir llamadas locales simultáneas
     if (isFetchingRef.current) {
       const timeSinceLastLocal = Date.now() - lastFetchTimeRef.current;
-      console.log('🔒 [fetchCandidateStores] isFetchingRef=true', { timeSinceLastLocal });
       // Si han pasado más de 3 segundos, liberar el lock local (algo falló)
       if (timeSinceLastLocal > 3000) {
         console.warn('⚠️ [fetchCandidateStores] Lock local bloqueado por >3s, liberando...');
@@ -789,11 +704,9 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       } else {
         // Programar reintento para después de que termine el fetch actual
         // CRÍTICO: Usar fetchCandidateStoresRef.current para evitar stale closures
-        console.log('⏳ [fetchCandidateStores] Fetch local en curso, programando reintento en 500ms...');
         if (!retryTimeoutRef.current) {
           retryTimeoutRef.current = setTimeout(() => {
             retryTimeoutRef.current = null;
-            console.log('🔄 [fetchCandidateStores] Ejecutando reintento por lock local');
             // Usar la referencia actualizada para tomar los productos más recientes
             fetchCandidateStoresRef.current?.(explicitAddressId);
           }, 500);
@@ -809,22 +722,13 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     const now = Date.now();
     const lastGlobalFetch = globalState.__imagiqLastFetchTime || 0;
 
-    console.log('⏱️ [fetchCandidateStores] Verificando debounce global', {
-      now,
-      lastGlobalFetch,
-      diff: now - lastGlobalFetch,
-      debounceActive: now - lastGlobalFetch < 300
-    });
-
     if (now - lastGlobalFetch < 300) {
-      console.log('⏳ [fetchCandidateStores] Debounce activo, esperando 300ms...');
       setStoresLoading(false);
       // Solo programar reintento si no hay uno pendiente
       // CRÍTICO: Usar fetchCandidateStoresRef.current para evitar stale closures
       if (!retryTimeoutRef.current) {
         retryTimeoutRef.current = setTimeout(() => {
           retryTimeoutRef.current = null;
-          console.log('🔄 [fetchCandidateStores] Ejecutando reintento por debounce');
           // Usar la referencia actualizada para tomar los productos más recientes
           fetchCandidateStoresRef.current?.(explicitAddressId);
         }, 300);
@@ -832,14 +736,11 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       return;
     }
 
-    console.log('✅ [fetchCandidateStores] Pasando checkpoint de debounce, procediendo con fetch');
-
     // Actualizar timestamp global y local
     globalState.__imagiqLastFetchTime = now;
     lastFetchTimeRef.current = now;
 
     // Marcar inicio de fetch global
-    console.log('🔒 [fetchCandidateStores] BLOQUEANDO - Marcando fetch global en curso');
     globalState.__imagiqIsFetching = true;
     isFetchingRef.current = true;
 
@@ -848,12 +749,9 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     // Obtener user_id PRIMERO (antes de activar loading)
     // IMPORTANTE: Usar getUserId() para consistencia con el resto del código
     let userId: string | null = null;
-    console.log('🔄 [fetchCandidateStores] Iniciando obtención de userId...');
     try {
       const { getUserId } = await import('@/app/carrito/utils/getUserId');
-      console.log('✅ [fetchCandidateStores] getUserId importado correctamente');
       userId = getUserId();
-      console.log('🔍 [useDelivery] userId obtenido de getUserId():', userId);
     } catch (e) {
       console.error('❌ [fetchCandidateStores] Error obteniendo userId:', e);
     }
@@ -865,7 +763,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         {}
       );
       userId = user?.id || user?.user_id || null;
-      console.log('🔍 [useDelivery] userId obtenido de safeGetLocalStorage:', userId);
     }
 
     // Si no hay userId en imagiq_user, intentar obtenerlo de checkout-address o imagiq_default_address
@@ -876,7 +773,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
           const parsed = JSON.parse(savedAddress);
           if (parsed.usuario_id) {
             userId = parsed.usuario_id;
-            console.log('🔍 [useDelivery] userId obtenido de checkout-address:', userId);
           }
         }
 
@@ -886,7 +782,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
             const parsed = JSON.parse(defaultAddress);
             if (parsed.usuario_id) {
               userId = parsed.usuario_id;
-              console.log('🔍 [useDelivery] userId obtenido de imagiq_default_address:', userId);
             }
           }
         }
@@ -895,10 +790,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       }
     }
 
-    console.log('🔍 [useDelivery] FINAL userId:', userId, 'products.length:', products.length);
-
     if (!userId || products.length === 0) {
-      console.log('⚠️ [useDelivery] No hay userId o no hay productos, retornando sin calcular');
       setStores([]);
       setFilteredStores([]);
       setCanPickUp(false);
@@ -971,20 +863,8 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
     const cachedResponse = getFullCandidateStoresResponseFromCache(cacheKey);
 
-    console.log('🔍 [fetchCandidateStores] Resultado de búsqueda en caché:', {
-      cacheKey: cacheKey.substring(0, 80) + '...',
-      hasCachedResponse: !!cachedResponse,
-      cachedCanPickUp: cachedResponse?.canPickUp
-    });
-
     // Si hay datos en caché, usarlos INMEDIATAMENTE sin activar skeleton
     if (cachedResponse) {
-      console.log('✅ [useDelivery] 📦 USANDO CACHÉ - NO se hará petición al endpoint', {
-        onlyReadCache,
-        canPickUp: cachedResponse.canPickUp,
-        citiesCount: Object.keys(cachedResponse.stores || {}).length
-      });
-
       isFetchingRef.current = true;
       lastFetchTimeRef.current = now;
       // NO activar setStoresLoading(true) aquí - los datos ya están listos
@@ -1031,13 +911,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       // Establecer estados inmediatamente desde caché (sin skeleton)
       // Solo actualizar si es la última petición
       if (thisRequestId === lastFetchRequestIdRef.current) {
-        console.log('📦 [useDelivery] Procesando tiendas del caché:', {
-          globalCanPickUp,
-          citiesCount: cities.length,
-          totalPhysicalStores: physicalStores.length,
-          cities: cities.slice(0, 3), // Primeras 3 ciudades
-        });
-
         setCanPickUp(globalCanPickUp);
         setAvailableCities(cities);
 
@@ -1047,17 +920,10 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
             ? physicalStores.filter(store => store.ciudad === firstCity)
             : physicalStores;
           
-          console.log('✅ [useDelivery] canPickUp=true, mostrando tiendas:', {
-            firstCity,
-            storesToShowCount: storesToShow.length,
-            storesPreview: storesToShow.slice(0, 2).map(s => ({ nombre: s.descripcion, ciudad: s.ciudad })),
-          });
-
           setStores(storesToShow);
           setFilteredStores([...storesToShow]);
           setAvailableStoresWhenCanPickUpFalse(storesToShow);
         } else {
-          console.log('⚠️ [useDelivery] canPickUp=false, NO mostrando tiendas en selector principal');
           setAvailableStoresWhenCanPickUpFalse(physicalStores);
           setStores([]);
           setFilteredStores([]);
@@ -1088,7 +954,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     // EXCEPCIÓN: Si allowFetchOnAddressChangeRef es true (cambio de dirección), SÍ hacer petición
     // Esto es importante para Step3 que viene desde Step1 donde ya se calculó
     if (onlyReadCache && !allowFetchOnAddressChangeRef.current) {
-      console.log('⚠️ [useDelivery] onlyReadCache=true y no hay caché disponible. NO haciendo petición al endpoint.');
       setStoresLoading(false);
       isFetchingRef.current = false;
       
@@ -1100,15 +965,8 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       return; // Salir SIN hacer petición cuando onlyReadCache=true
     }
     
-    // Si llegamos aquí con onlyReadCache=true, es porque allowFetchOnAddressChangeRef=true
-    // (cambio de dirección), así que SÍ debemos hacer la petición
-    if (onlyReadCache && allowFetchOnAddressChangeRef.current) {
-      console.log('🔄 [useDelivery] onlyReadCache=true PERO allowFetchOnAddressChange=true (cambio de dirección). SÍ haciendo petición al endpoint.');
-    }
-
     // Si NO hay datos en caché, entonces SÍ hacer la petición al endpoint
     // Ahora SÍ activar storesLoading porque vamos a hacer una petición real
-    console.log('🌐 [fetchCandidateStores] NO HAY CACHÉ - Iniciando petición al endpoint');
     try {
       isFetchingRef.current = true;
       lastFetchTimeRef.current = now;
@@ -1121,26 +979,17 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         addressId: currentAddressId,
       });
 
-      console.log('🔐 [fetchCandidateStores] Hash de petición:', {
-        requestHash: requestHash.substring(0, 100) + '...',
-        lastSuccessfulHash: lastSuccessfulHashRef.current?.substring(0, 50) + '...',
-        hashesMatch: lastSuccessfulHashRef.current === requestHash
-      });
-
       // Si el hash es el mismo que la última petición exitosa, no hacer nada
       // PERO solo si la dirección no cambió recientemente
       if (lastSuccessfulHashRef.current === requestHash) {
         // Verificar si la dirección cambió desde la última petición exitosa
         const addressChanged = lastAddressIdRef.current !== lastAddressIdProcessedRef.current;
-        console.log('🔐 [fetchCandidateStores] Hash coincide, verificando cambio de dirección:', { addressChanged });
         if (!addressChanged) {
-          console.log('🚫 [fetchCandidateStores] Hash coincide y dirección no cambió - saltando petición');
           setStoresLoading(false);
           isFetchingRef.current = false;
           return;
         }
         // Si la dirección cambió, limpiar el hash exitoso para forzar nueva petición
-        console.log('🔄 [fetchCandidateStores] Dirección cambió - limpiando hash para forzar petición');
         lastSuccessfulHashRef.current = null;
       }
 
@@ -1253,7 +1102,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         // IMPORTANTE: Establecer canPickUp y tiendas AL MISMO TIEMPO (sin delays)
         // CRÍTICO: Solo actualizar si es la última petición (evita race conditions)
         if (thisRequestId !== lastFetchRequestIdRef.current) {
-          console.log(`⏭️ [fetchCandidateStores] Ignorando respuesta obsoleta (requestId=${thisRequestId}, current=${lastFetchRequestIdRef.current})`);
           return;
         }
 
@@ -1287,11 +1135,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         }
 
         // IMPORTANTE: Guardar respuesta completa en caché para evitar skeleton al cambiar a "tienda"
-        console.log(`💾 [fetchCandidateStores #${thisRequestId}] GUARDANDO EN CACHÉ`, {
-          cacheKey: cacheKey.substring(0, 80) + '...',
-          globalCanPickUp,
-          currentAddressId
-        });
         setGlobalCanPickUpCache(cacheKey, globalCanPickUp, responseData, currentAddressId);
 
         // Si la petición fue exitosa, marcar el hash como exitoso DESPUÉS de procesar
@@ -1306,14 +1149,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
         // IMPORTANTE: NO agregar delays - React procesará los estados de inmediato
         // Las tiendas ya están establecidas en el estado arriba
-        
-        console.log(`✅ [fetchCandidateStores #${thisRequestId}] Estados actualizados correctamente:`, {
-          globalCanPickUp,
-          storesCount: globalCanPickUp ? physicalStores.filter(s => cities[0] ? s.ciudad === cities[0] : true).length : 0,
-          currentRequestId: lastFetchRequestIdRef.current,
-          citiesCount: cities.length,
-          willSetLoadingFalse: true
-        });
       } else {
         // Si falla la petición, verificar si es 429 (Too Many Requests)
         const is429Error = response.message?.includes('429') || response.message?.includes('Too Many Requests') || response.message?.includes('ThrottleException');
@@ -1466,7 +1301,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   useEffect(() => {
     // Si no hay productos, no hacer nada
     if (products.length === 0) {
-      console.log('⏭️ [useDelivery Products Effect] No hay productos, saltando fetchCandidateStores');
       return;
     }
 
@@ -1480,18 +1314,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       quantity: p.quantity
     })).sort((a, b) => a.sku.localeCompare(b.sku))); // Ordenar para consistencia
 
-    console.log('🔄 [useDelivery Products Effect] Ejecutando useEffect de productos', {
-      productsCount: products.length,
-      productsHash,
-      previousHash: productsHashRef.current,
-      hashesMatch: productsHashRef.current === productsHash,
-      isFirstTime: productsHashRef.current === '',
-      isRemovingTradeIn: isRemovingTradeInRef.current,
-      canFetchFromEndpoint,
-      onlyReadCache,
-      hadInitialCacheData: hadInitialCacheDataRef.current
-    });
-
     // Solo ejecutar si realmente cambiaron los productos O es la primera vez
     if (productsHashRef.current === '' || productsHashRef.current !== productsHash) {
       // OPTIMIZACIÓN CRÍTICA: Si es la primera vez Y ya teníamos datos del caché,
@@ -1499,14 +1321,12 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       // Esto evita el "flash" donde los estados se resetean y después se vuelven a llenar.
       const isFirstTime = productsHashRef.current === '';
       if (isFirstTime && hadInitialCacheDataRef.current) {
-        console.log('⏭️ [useDelivery Products Effect] Primera vez PERO ya teníamos datos del caché - saltando fetch para evitar flash');
         productsHashRef.current = productsHash;
         // Marcar que ya procesamos el primer render
         hadInitialCacheDataRef.current = false;
         return;
       }
 
-      console.log('✅ [useDelivery Products Effect] Hash cambió o es primera vez, programando fetch');
       // IMPORTANTE: NO limpiar el caché aquí porque causa race conditions
       // cuando se cambian múltiples cantidades rápidamente.
       // fetchCandidateStores sobrescribirá el caché con el nuevo valor automáticamente.
@@ -1515,8 +1335,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
       // Verificar que NO estemos eliminando trade-in
       if (!isRemovingTradeInRef.current) {
-        console.log('✅ [useDelivery Products Effect] NO está eliminando trade-in, ejecutando fetch INMEDIATAMENTE');
-
         // CAMBIO CRÍTICO: Ejecutar inmediatamente en lugar de debounce
         // El debounce de 400ms causaba problemas con React StrictMode porque:
         // 1. StrictMode desmonta y remonta componentes
@@ -1528,11 +1346,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         // - __imagiqIsFetching (lock global)
         // - debounce global de 300ms
         fetchCandidateStoresRef.current?.();
-      } else {
-        console.log('⚠️ [useDelivery Products Effect] isRemovingTradeIn=true, NO se ejecuta fetch');
       }
-    } else {
-      console.log('⏭️ [useDelivery Products Effect] Hash igual, saltando fetch');
     }
     // No necesitamos cleanup porque ya no usamos debounce aquí
     // La protección está en fetchCandidateStores
@@ -1618,13 +1432,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       const customEvent = event as CustomEvent;
       const isFromHeader = customEvent.detail?.fromHeader === true;
       
-      console.log('📣 [handleAddressChange] Evento recibido:', {
-        eventType: event.type,
-        canFetchFromEndpoint,
-        onlyReadCache,
-        isFromHeader
-      });
-      
       // PROTECCIÓN CRÍTICA: Solo procesar eventos de dirección en la instancia PRIMARIA del hook
       // PERO: SIEMPRE procesar si viene fromHeader (cambio explícito del usuario en el header)
       if (!canFetchFromEndpoint && !isFromHeader) {
@@ -1643,8 +1450,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         return;
       }
 
-      console.log('✅ [handleAddressChange] Procesando evento - tomando semáforo');
-      
       // Tomar el semáforo inmediatamente
       globalState.__imagiqProcessingAddressChange = true;
 
@@ -1669,8 +1474,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     };
 
     const handleAddressChangeInternal = async (event: Event) => {
-      console.log('🎯 [handleAddressChangeInternal] FUNCIÓN LLAMADA - event.type:', event.type);
-      
       // Prevenir llamadas durante eliminación de trade-in
       if (isRemovingTradeInRef.current) {
         console.warn('⚠️ [handleAddressChangeInternal] Bloqueado - isRemovingTradeIn');
@@ -1708,12 +1511,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         try {
           const parsed = JSON.parse(currentAddress) as Address;
           newAddressId = parsed.id || null;
-          
-          console.log('🔍 [handleAddressChange] Comparando direcciones:', {
-            newAddressId,
-            lastAddressId: lastAddressIdRef.current,
-            areEqual: newAddressId === lastAddressIdRef.current
-          });
           
           // Si la dirección no cambió realmente, no hacer nada
           if (newAddressId === lastAddressIdRef.current) {
@@ -1832,15 +1629,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
           // IMPORTANTE: Usar productsRef.current para obtener la lista más reciente
           const currentProducts = productsRef.current || [];
 
-          console.log('🔍 [handleAddressChange] Verificando condiciones:', {
-            hasUserId: !!userId,
-            productsCount: currentProducts.length,
-            newAddressId
-          });
-
           if (userId && currentProducts.length > 0) {
-            console.log('✅ [handleAddressChange] Condiciones cumplidas, procesando...');
-
             const productsToCheck = currentProducts.map((p) => ({
               sku: p.sku,
               quantity: p.quantity,
@@ -1918,24 +1707,19 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
               setStoresLoading(false);
               // NO limpiar caché ni llamar al endpoint
-              console.log('✅ [handleAddressChange] Usando cache - RETORNANDO EARLY');
               return; // Salir aquí - datos ya aplicados desde caché
             } else {
               // ❌ NO hay datos en caché - Limpiar caché viejo y llamar al endpoint
-              console.log('🗑️ [handleAddressChange] NO hay cache - Limpiando caché global y preparando para fetch');
               clearGlobalCanPickUpCache();
               invalidateCacheOnAddressChange(newAddressId);
             }
 
 
             // IMPORTANTE: Permitir petición aunque onlyReadCache=true cuando cambia la dirección
-            console.log('🚀 [handleAddressChange] Configurando allowFetchOnAddressChange = true');
             allowFetchOnAddressChangeRef.current = true;
 
             // Extraer ID explícito del evento nuevamente si es necesario, o usar newAddressId
             const explicitId = newAddressId;
-
-            console.log('📞 [handleAddressChange] A PUNTO DE LLAMAR fetchCandidateStores con addressId:', explicitId);
 
             // Recalcular canPickUp global y tiendas cuando cambia la dirección
             // IMPORTANTE: Usar fetchCandidateStoresRef.current para siempre llamar a la versión más reciente
@@ -1997,10 +1781,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     // globalThis.window.addEventListener('storage', handleStorageChange);
 
     // Escuchar eventos personalizados desde header - ÚNICO LISTENER ACTIVO
-    console.log('🔧 [useDelivery useEffect] Registrando listener para address-changed', {
-      canFetchFromEndpoint,
-      onlyReadCache
-    });
     globalThis.window.addEventListener('address-changed', handleAddressChange as EventListener);
 
     // Escuchar eventos personalizados desde checkout - DESHABILITADO
@@ -2078,37 +1858,17 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   useEffect(() => {
     if (deliveryMethod === "domicilio" && globalThis.window !== undefined) {
       const savedAddress = globalThis.window.localStorage.getItem("checkout-address");
-      console.log('🔍 [useDelivery] Verificando checkout-address:', savedAddress?.substring(0, 200));
       if (savedAddress && savedAddress !== "undefined") {
         try {
           const saved = JSON.parse(savedAddress) as Address;
-          console.log('🔍 [useDelivery] Dirección parseada:', {
-            id: saved.id,
-            latitud: saved.latitud,
-            longitud: saved.longitud,
-            googleUrl: saved.googleUrl,
-            localidad: saved.localidad,
-            barrio: saved.barrio,
-            complemento: saved.complemento
-          });
           if (saved.id) {
             // Verificar si la dirección tiene campos completos
             // Si no tiene localidad/barrio/complemento, buscar en addresses la versión completa
             const needsEnrichment = !saved.localidad && !saved.barrio && !saved.complemento;
-            console.log('🔍 [useDelivery] needsEnrichment:', needsEnrichment, 'addresses.length:', addresses.length);
 
             if (needsEnrichment && addresses.length > 0) {
               // Buscar la dirección completa en la lista de direcciones
               const completeAddress = addresses.find(a => a.id === saved.id);
-              console.log('🔍 [useDelivery] completeAddress found:', completeAddress ? {
-                id: completeAddress.id,
-                latitud: completeAddress.latitud,
-                longitud: completeAddress.longitud,
-                googleUrl: completeAddress.googleUrl,
-                localidad: completeAddress.localidad,
-                barrio: completeAddress.barrio,
-                complemento: completeAddress.complemento
-              } : 'NOT FOUND');
               if (completeAddress) {
                 // Usar la dirección completa del backend
                 setAddress(completeAddress);
@@ -2130,11 +1890,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
                   googleUrl: completeAddress.googleUrl || '',
                   googlePlaceId: completeAddress.googlePlaceId || '',
                 };
-                console.log('✅ [useDelivery] Enriched address guardado:', {
-                  latitud: enrichedAddress.latitud,
-                  longitud: enrichedAddress.longitud,
-                  googleUrl: enrichedAddress.googleUrl
-                });
                 globalThis.window.localStorage.setItem('checkout-address', JSON.stringify(enrichedAddress));
                 globalThis.window.localStorage.setItem('imagiq_default_address', JSON.stringify(enrichedAddress));
               } else {
@@ -2142,7 +1897,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
                 lastAddressIdRef.current = saved.id;
               }
             } else {
-              console.log('🔍 [useDelivery] No enrichment needed or no addresses, using saved as-is');
               setAddress(saved);
               lastAddressIdRef.current = saved.id;
             }
@@ -2209,7 +1963,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         const isCurrentStoreValid = selectedStore && stores.some(s => s.codigo === selectedStore.codigo);
 
         if (!restored && !isCurrentStoreValid) {
-          console.log('🏪 Auto-seleccionando primera tienda disponible por defecto');
           const firstStore = stores[0];
           setSelectedStore(firstStore);
 
@@ -2245,7 +1998,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       if (newAddress && newAddress.id) {
         const found = addresses.find(a => a.id === newAddress.id);
         if (!found) {
-          console.log('⚠️ [addAddress] Nueva dirección no retornada por backend aún, agregando manualmente:', newAddress);
           // Agregar al principio ya que es la más reciente
           addresses = [newAddress, ...addresses];
         }
@@ -2263,8 +2015,6 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
       // Si se proporcionó la nueva dirección, disparar consulta de candidate stores
       if (newAddress) {
-        console.log('🔄 Nueva dirección agregada, consultando candidate stores...');
-
         // Actualizar estado
         setAddress(newAddress);
 
@@ -2303,14 +2053,9 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   // IMPORTANTE: Aún respeta el debounce para evitar 429
   // CRÍTICO: Respeta onlyReadCache - si está en modo cache-only, NO hace peticiones al endpoint
   const forceRefreshStores = useCallback(() => {
-    console.log('🔄 forceRefreshStores llamado');
-    console.log(`   onlyReadCache: ${onlyReadCache}, canFetchFromEndpoint: ${canFetchFromEndpoint}`);
-
     // CRÍTICO: Si estamos en modo onlyReadCache, NO permitir fetch al endpoint
     // Esto previene que Step3 haga peticiones cuando solo debe leer del caché
     if (onlyReadCache) {
-      console.log('⏸️ No forzar recarga: modo onlyReadCache=true activo (Step3 u otro componente en modo cache-only)');
-      console.log('   forceRefreshStores solo reintenta leer del caché, NO llama al endpoint');
       // Intentar leer del caché de nuevo sin hacer fetch
       fetchCandidateStores(); // Esto solo leerá del caché debido a onlyReadCache=true
       return;
@@ -2323,19 +2068,15 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
     // Si hay un cambio de dirección en proceso, NO forzar recarga (useDelivery ya lo está manejando)
     if (globalProcessing) {
-      console.log('⏸️ No forzar recarga: hay un cambio de dirección en proceso');
       return;
     }
 
     // Verificar debounce de 2 segundos
     const now = Date.now();
     if (now - lastFetchTimeRef.current < 2000) {
-      console.log('⏸️ Debounce activo en forceRefreshStores: esperando antes de forzar recarga');
-      console.log(`   Tiempo desde última petición: ${now - lastFetchTimeRef.current}ms (necesita >= 2000ms)`);
       return;
     }
 
-    console.log('✅ Forzando recarga de tiendas - limpiando protecciones');
     // IMPORTANTE: Permitir petición solo si canFetchFromEndpoint=true
     allowFetchOnAddressChangeRef.current = true;
 

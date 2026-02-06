@@ -92,7 +92,6 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
         const direccion = JSON.parse(savedAddress);
         const address = direccionToAddress(direccion) as Address;
         setGuestAddress(address);
-        console.log('✅ [AddressDropdown] Dirección de invitado cargada al montar:', address);
       }
     } catch (error) {
       console.error('Error reading guest address from localStorage on mount:', error);
@@ -166,20 +165,12 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   // Escuchar cambios de dirección desde otros componentes (ej: carrito)
   useEffect(() => {
     const handleExternalAddressChange = async () => {
-      console.log('🔄 Evento de cambio de dirección recibido en navbar desde otro componente');
-
-      // Invalidar cache de useDefaultAddress
       invalidate();
-
-      // Refrescar la dirección predeterminada
       await refetch();
 
-      // Refrescar lista de direcciones
       if (user?.id) {
         await fetchAddresses();
       }
-
-      console.log('✅ Navbar actualizado con la nueva dirección');
     };
 
     window.addEventListener('address-changed', handleExternalAddressChange);
@@ -253,9 +244,6 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   };
 
   const handleAddressAdded = async (newAddress: Address) => {
-    console.log('🆕 Nueva dirección agregada:', newAddress);
-
-    // Cerrar el modal primero para mejor UX
     setShowModal(false);
 
     try {

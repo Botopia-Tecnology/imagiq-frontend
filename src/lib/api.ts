@@ -154,13 +154,15 @@ export const productEndpoints = {
 
       // Solo incluir parámetros críticos que afectan qué productos se obtienen
       if (params.categoria) critical.categoria = String(params.categoria);
+      if (params.subcategoria) critical.subcategoria = String(params.subcategoria);
       if (params.menuUuid) critical.menuUuid = String(params.menuUuid);
       if (params.submenuUuid) critical.submenuUuid = String(params.submenuUuid);
       if (params.precioMin !== undefined) critical.precioMin = String(params.precioMin);
+      if (params.limit !== undefined) critical.limit = String(params.limit);
       if (params.lazyLimit !== undefined) critical.lazyLimit = String(params.lazyLimit);
       if (params.lazyOffset !== undefined) critical.lazyOffset = String(params.lazyOffset);
 
-      // Ignorar: sortBy, sortOrder, page, limit (no afectan qué productos se obtienen)
+      // Ignorar: sortBy, sortOrder, page (no afectan qué productos se obtienen)
 
       return Object.keys(critical).sort().map(k => `${k}:${critical[k]}`).join('|');
     };
@@ -242,10 +244,12 @@ export const productEndpoints = {
 
       // Solo incluir parámetros críticos que afectan qué productos se obtienen
       if (params.categoria) critical.categoria = String(params.categoria);
+      if (params.subcategoria) critical.subcategoria = String(params.subcategoria);
       if (params.menuUuid) critical.menuUuid = String(params.menuUuid);
       if (params.submenuUuid) critical.submenuUuid = String(params.submenuUuid);
       if (params.precioMin !== undefined) critical.precioMin = String(params.precioMin);
       if (params.precioMax !== undefined) critical.precioMax = String(params.precioMax);
+      if (params.limit !== undefined) critical.limit = String(params.limit);
       if (params.lazyLimit !== undefined) critical.lazyLimit = String(params.lazyLimit);
       if (params.lazyOffset !== undefined) critical.lazyOffset = String(params.lazyOffset);
 
@@ -253,10 +257,10 @@ export const productEndpoints = {
       // Los filtros dinámicos tienen sintaxis extendida: column_operator o column_range_min/max
       Object.keys(params).forEach((key) => {
         if (
-          !['categoria', 'menuUuid', 'submenuUuid', 'precioMin', 'precioMax', 
+          !['categoria', 'subcategoria', 'menuUuid', 'submenuUuid', 'precioMin', 'precioMax',
             'lazyLimit', 'lazyOffset', 'sortBy', 'sortOrder', 'page', 'limit',
-            'category', 'subcategory', 'color', 'nombreColor', 'capacity', 
-            'memoriaram', 'name', 'withDiscount', 'minStock', 'descriptionKeyword', 
+            'category', 'subcategory', 'color', 'nombreColor', 'capacity',
+            'memoriaram', 'name', 'withDiscount', 'minStock', 'descriptionKeyword',
             'model', 'filterMode'].includes(key)
         ) {
           // Es un filtro dinámico o campo adicional
@@ -267,7 +271,7 @@ export const productEndpoints = {
         }
       });
 
-      // Ignorar: sortBy, sortOrder, page, limit (no afectan qué productos se obtienen)
+      // Ignorar: sortBy, sortOrder, page (no afectan qué productos se obtienen)
 
       return Object.keys(critical).sort().map(k => `${k}:${critical[k]}`).join('|');
     };

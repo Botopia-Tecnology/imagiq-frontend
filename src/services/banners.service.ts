@@ -100,11 +100,6 @@ class BannersService {
     // Parsear estilos de texto (puede ser null)
     const textStyles = parseTextStyles(banner['text_styles']);
 
-    // Debug: verificar si content_blocks existe
-    if (banner.content_blocks) {
-      console.log('[mapBannerToHeroConfig] Banner has content_blocks:', typeof banner.content_blocks === 'string' ? 'JSON string' : 'Array');
-    }
-
     // NOTA: position_desktop y position_mobile están deprecated
     // Ahora cada elemento en content_blocks tiene su propia posición
     // Solo incluimos posiciones legacy si no hay content_blocks (compatibilidad)

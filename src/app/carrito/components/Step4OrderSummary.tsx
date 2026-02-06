@@ -506,8 +506,6 @@ export default function Step4OrderSummary({
   // Se ejecuta cuando el componente se monta Y cuando el caché se actualiza desde useDelivery
   // IMPORTANTE: Esta función SOLO lee del caché, NO hace llamadas al endpoint
   const fetchGlobalCanPickUp = React.useCallback(async () => {
-    console.log('🔍🔍🔍 [fetchGlobalCanPickUp] INICIANDO - products.length:', products.length);
-
     // Generar ID único para esta ejecución y actualizar ref para evitar race conditions
     const requestId = Date.now();
     lastRequestIdRef.current = requestId;
@@ -520,10 +518,8 @@ export default function Step4OrderSummary({
     try {
       const { getUserId } = await import('@/app/carrito/utils/getUserId');
       userId = getUserId();
-      console.log('🔍 [fetchGlobalCanPickUp] userId:', userId);
 
       if (!userId) {
-        console.log('⚠️ [fetchGlobalCanPickUp] No userId found, retornando');
         setIsLoadingCanPickUp(false);
         setGlobalCanPickUp(null);
         return;
@@ -534,24 +530,17 @@ export default function Step4OrderSummary({
         if (userDataStr && userDataStr !== "null" && userDataStr !== "undefined") {
           const userData = JSON.parse(userDataStr);
           const userRole = userData?.role ?? userData?.rol;
-          console.log('🔍 [fetchGlobalCanPickUp] userRole:', userRole);
 
           // Permitir cálculo para:
           // - rol 2 (registrado), rol 3 (invitado), rol 4
           // - O si el rol es undefined pero hay userId (usuario en proceso de registro/checkout)
           if (userRole === 2 || userRole === 3 || userRole === 4 || (userRole === undefined && userId)) {
             shouldCalculateForUser = true;
-            console.log(`👤 [fetchGlobalCanPickUp] User with rol ${userRole}, will calculate (userId: ${userId})`);
-          } else {
-            console.log(`⚠️ [fetchGlobalCanPickUp] User with rol ${userRole}, skipping calculation`);
           }
         } else {
           // Si no hay userData pero hay userId (usuario invitado sin datos completos), permitir
           if (userId) {
             shouldCalculateForUser = true;
-            console.log(`👤 [fetchGlobalCanPickUp] No userData but has userId: ${userId}, will calculate`);
-          } else {
-            console.log('⚠️ [fetchGlobalCanPickUp] No userData in localStorage');
           }
         }
       }
@@ -560,7 +549,6 @@ export default function Step4OrderSummary({
     }
 
     if (!shouldCalculateForUser) {
-      console.log('⏭️ [fetchGlobalCanPickUp] shouldCalculateForUser=false, retornando');
       setIsLoadingCanPickUp(false);
       setGlobalCanPickUp(null);
       return;
@@ -568,13 +556,10 @@ export default function Step4OrderSummary({
 
     // Si no hay productos, no hacer nada
     if (products.length === 0) {
-      console.log('⚠️ [fetchGlobalCanPickUp] products.length === 0, retornando');
       setGlobalCanPickUp(null);
       setIsLoadingCanPickUp(false);
       return;
     }
-
-    console.log('✅ [fetchGlobalCanPickUp] Pasando validaciones iniciales, procediendo...');
 
     // CORRECCIÓN CRÍTICA: Si estamos en Step1, NUNCA hacer fetch desde aquí
     // useDelivery.tsx se encarga de todo el ciclo de vida en Step1
@@ -624,14 +609,6 @@ export default function Step4OrderSummary({
           // Verificar que la dirección tenga al menos los campos mínimos (ciudad y línea_uno)
           // Soportar tanto camelCase (lineaUno) como snake_case (linea_uno) o direccionFormateada
           const lineaUnoValue = parsed.lineaUno || parsed.linea_uno || parsed.direccionFormateada;
-          console.log('🔍 [fetchGlobalCanPickUp] Validando dirección:', {
-            ciudad: parsed.ciudad,
-            lineaUno: parsed.lineaUno,
-            linea_uno: parsed.linea_uno,
-            direccionFormateada: parsed.direccionFormateada,
-            lineaUnoValue,
-            id: parsed.id
-          });
           if (parsed.ciudad && lineaUnoValue) {
             hasValidAddress = true;
             if (parsed?.id) {
@@ -651,7 +628,6 @@ export default function Step4OrderSummary({
     // Simplemente establecer canPickUp como false y permitir que el usuario continúe
     // Esto es crítico para usuarios recién registrados que aún no tienen direcciones
     if (!hasValidAddress) {
-      console.log('⚠️ [fetchGlobalCanPickUp] NO hay dirección válida, seteando canPickUp=false (no bloquear)');
       setGlobalCanPickUp(false); // Permitir continuar - no hay dirección = no puede recoger en tienda
       setIsLoadingCanPickUp(false);
       return;
@@ -663,13 +639,10 @@ export default function Step4OrderSummary({
       products: productsToCheck,
       addressId,
     });
-    console.log('🔑 [fetchGlobalCanPickUp] cacheKey construida:', cacheKey.substring(0, 100) + '...');
 
     const cachedValue = getGlobalCanPickUpFromCache(cacheKey);
-    console.log('📦 [fetchGlobalCanPickUp] cachedValue:', cachedValue);
 
     if (cachedValue !== null) {
-      console.log(`✅ [fetchGlobalCanPickUp] Usando respuesta CACHEADA. canPickUp=${cachedValue}`);
       setGlobalCanPickUp(cachedValue);
       setIsLoadingCanPickUp(false);
       return;
@@ -678,9 +651,7 @@ export default function Step4OrderSummary({
     // NUEVO: Si no hay valor simple en caché, intentar obtener de fullResponse
     // Esto es crítico para Steps 4-7 donde el caché ya fue poblado por useDelivery
     const fullResponse = getFullCandidateStoresResponseFromCache(cacheKey);
-    console.log('📦 [fetchGlobalCanPickUp] fullResponse:', fullResponse ? { canPickUp: fullResponse.canPickUp, hasStores: !!fullResponse.stores } : null);
     if (fullResponse && typeof fullResponse.canPickUp === 'boolean') {
-      console.log(`✅ [fetchGlobalCanPickUp] Usando fullResponse CACHEADA. canPickUp=${fullResponse.canPickUp}`);
       setGlobalCanPickUp(fullResponse.canPickUp);
       setIsLoadingCanPickUp(false);
       return;
@@ -691,7 +662,6 @@ export default function Step4OrderSummary({
 
     // Si shouldCalculateCanPickUp es true (Steps 1-6): establecer loading=true
     // Si es false (Step 7): hacer fetch OBLIGATORIO y establecer loading=true
-    console.log('⏳ [fetchGlobalCanPickUp] NO hay caché válido, seteando isLoadingCanPickUp=true. isStep1:', isStep1, 'shouldCalculateCanPickUp:', shouldCalculateCanPickUp);
     setIsLoadingCanPickUp(true);
 
     // CORRECCIÓN: En Step1-6, NO hacer fetch propio - solo leer del caché
@@ -700,7 +670,6 @@ export default function Step4OrderSummary({
     if (typeof window !== 'undefined') {
       // Si es Step1, NO hacer fetch de respaldo (ya lo hace useDelivery)
       if (isStep1) {
-        console.log('🛑 [fetchGlobalCanPickUp] Es Step1, retornando sin fetch (useDelivery lo maneja)');
         setGlobalCanPickUp(null);
         setIsLoadingCanPickUp(false);
         return;
@@ -709,7 +678,6 @@ export default function Step4OrderSummary({
       // NUEVO: Si shouldCalculateCanPickUp es true (Steps 2-6), NO hacer fetch
       // Solo mostrar loading y esperar a que useDelivery actualice el caché
       if (shouldCalculateCanPickUp) {
-        console.log('⏳ [fetchGlobalCanPickUp] Steps 2-6: Esperando caché de useDelivery (no hacer fetch propio)');
         // Mantener loading en true para indicar que estamos esperando
         // El evento 'canPickUpCache-updated' disparará fetchGlobalCanPickUp cuando el caché esté listo
         setIsLoadingCanPickUp(true);
@@ -789,17 +757,10 @@ export default function Step4OrderSummary({
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const handleCacheUpdate = async (event: Event) => {
-      const customEvent = event as CustomEvent;
-      console.log('🔔 [Step4] canPickUpCache-updated RECIBIDO!', {
-        detail: customEvent.detail,
-        hasFetchRef: !!fetchGlobalCanPickUpRef.current
-      });
+    const handleCacheUpdate = async () => {
       // Usar la ref para evitar stale closures
       if (fetchGlobalCanPickUpRef.current) {
-        console.log('🔔 [Step4] Llamando fetchGlobalCanPickUpRef.current()...');
         await fetchGlobalCanPickUpRef.current();
-        console.log('🔔 [Step4] fetchGlobalCanPickUpRef.current() completado');
       }
     };
 

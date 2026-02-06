@@ -1,19 +1,16 @@
 "use client";
 
-import { Plus } from "lucide-react";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
-import Image from "next/image";
 import { productEndpoints, type ProductApiData, type ApiResponse, type ProductApiResponse } from "@/lib/api";
-import { getCloudinaryUrl } from "@/lib/cloudinary";
 import type { CartProduct } from "@/hooks/useCart";
 import { isBundle } from "@/lib/productMapper";
 import SugerenciasSkeleton from "./components/SugerenciasSkeleton";
+import SuggestionCard from "./components/SuggestionCard";
 
 // Cache keys para sessionStorage
 const CACHE_KEY = "sugerencias_accesorios_cache";
 const CACHE_KEY_UNIVERSAL = "sugerencias_universales_cache";
-// Cambiar la duración del cache de 5 minutos a 15 minutos
-const CACHE_DURATION = 15 * 60 * 1000; // 15 minutos en lugar de 5
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutos
 
 interface CacheData {
   modelos: string[];
@@ -32,7 +29,7 @@ interface UniversalCacheData {
  */
 const CATEGORY_TO_UNIVERSAL_MAP: Record<string, string[]> = {
   "IM": ["universal_im"],
-  "IT": ["universal_im"], // Dispositivos móviles también pueden ser IT
+  "IT": ["universal_im"],
   "HA": ["universal_ha"],
   "AV": ["universal_av"],
   "TV": ["universal_tv", "universal_av"],
@@ -41,7 +38,6 @@ const CATEGORY_TO_UNIVERSAL_MAP: Record<string, string[]> = {
 /**
  * Verifica si un accesorio es universal (device = "Universal" o "Universal_CATEGORIA")
  * y si corresponde a las categorías de productos en el carrito
- * Ejemplos: "Universal", "Universal_IM", "Universal_TV", "Universal_Audio"
  */
 function isUniversalAccessory(
   product: ProductApiData,
@@ -54,17 +50,13 @@ function isUniversalAccessory(
 
     const normalizedDevice = device.toLowerCase().trim();
 
-    // Si es exactamente "universal" sin sufijo, es compatible con todas las categorías
     if (normalizedDevice === "universal") {
       return true;
     }
 
-    // Si empieza con "universal_", verificar que el sufijo coincida con alguna categoría del carrito
     if (normalizedDevice.startsWith("universal_")) {
-      // Si no hay categorías en el carrito, no mostrar accesorios con sufijo específico
       if (cartCategories.size === 0) continue;
 
-      // Verificar si alguna categoría del carrito coincide con el sufijo del universal
       for (const category of cartCategories) {
         const validSuffixes = CATEGORY_TO_UNIVERSAL_MAP[category.toUpperCase()] || [];
         if (validSuffixes.some(suffix => normalizedDevice === suffix)) {
@@ -77,9 +69,6 @@ function isUniversalAccessory(
   return false;
 }
 
-/**
- * Obtiene accesorios universales del caché
- */
 function getCachedUniversalData(): ProductApiData[] | null {
   if (typeof window === "undefined") return null;
 
@@ -88,9 +77,7 @@ function getCachedUniversalData(): ProductApiData[] | null {
     if (!cached) return null;
 
     const data: UniversalCacheData = JSON.parse(cached);
-    const now = Date.now();
-
-    if (now - data.timestamp > CACHE_DURATION) {
+    if (Date.now() - data.timestamp > CACHE_DURATION) {
       sessionStorage.removeItem(CACHE_KEY_UNIVERSAL);
       return null;
     }
@@ -101,9 +88,6 @@ function getCachedUniversalData(): ProductApiData[] | null {
   }
 }
 
-/**
- * Guarda accesorios universales en caché
- */
 function setCacheUniversalData(productos: ProductApiData[]): void {
   if (typeof window === "undefined") return;
 
@@ -118,9 +102,6 @@ function setCacheUniversalData(productos: ProductApiData[]): void {
   }
 }
 
-/**
- * Extrae las categorías únicas de los productos del carrito
- */
 function extractUniqueCategories(cartProducts: CartProduct[]): Set<string> {
   const categories = new Set<string>();
 
@@ -136,20 +117,17 @@ function extractUniqueCategories(cartProducts: CartProduct[]): Set<string> {
 /**
  * Extrae los modelos únicos de los productos del carrito
  * SOLO usa el campo modelo directo, sin intentar extraerlo del nombre
- * Retorna objetos con el modelo original (para display) y normalizado (para comparación)
  */
 function extractUniqueModelos(cartProducts: CartProduct[]): { original: string; normalized: string }[] {
-  const modelosMap = new Map<string, string>(); // normalized -> original
+  const modelosMap = new Map<string, string>();
 
   for (const product of cartProducts) {
     const modelo = product.modelo;
 
-    // Solo agregar si hay un modelo válido
     if (modelo && modelo.trim()) {
       const original = modelo.trim();
       const normalized = original.toLowerCase();
 
-      // Guardar el primer modelo original encontrado para cada normalizado
       if (!modelosMap.has(normalized)) {
         modelosMap.set(normalized, original);
       }
@@ -162,12 +140,6 @@ function extractUniqueModelos(cartProducts: CartProduct[]): { original: string; 
   }));
 }
 
-/**
- * Normaliza un string para comparación exacta
- * - Convierte a minúsculas
- * - Elimina espacios extra
- * - Trim
- */
 function normalizeForExactMatch(str: string): string {
   if (!str) return "";
   return str.toLowerCase().replace(/\s+/g, " ").trim();
@@ -187,10 +159,8 @@ function isAccessoryCompatible(
     return false;
   }
 
-  // Set de modelos normalizados del carrito
   const normalizedModelos = new Set(modelos.map(m => m.normalized));
 
-  // Buscar match exacto entre device del accesorio y modelo del carrito
   for (const device of deviceValues) {
     const normalizedDevice = normalizeForExactMatch(device);
 
@@ -202,9 +172,6 @@ function isAccessoryCompatible(
   return false;
 }
 
-/**
- * Verifica si un producto tiene stock disponible
- */
 function hasStock(product: ProductApiData): boolean {
   if (!product.stockTotal || product.stockTotal.length === 0) return false;
 
@@ -212,9 +179,6 @@ function hasStock(product: ProductApiData): boolean {
   return totalStock > 0;
 }
 
-/**
- * Verifica si el caché es válido
- */
 function getCachedData(modelos: { original: string; normalized: string }[]): ProductApiData[] | null {
   if (typeof window === "undefined") return null;
 
@@ -223,9 +187,7 @@ function getCachedData(modelos: { original: string; normalized: string }[]): Pro
     if (!cached) return null;
 
     const data: CacheData = JSON.parse(cached);
-    const now = Date.now();
-
-    if (now - data.timestamp > CACHE_DURATION) {
+    if (Date.now() - data.timestamp > CACHE_DURATION) {
       sessionStorage.removeItem(CACHE_KEY);
       return null;
     }
@@ -244,9 +206,6 @@ function getCachedData(modelos: { original: string; normalized: string }[]): Pro
   }
 }
 
-/**
- * Guarda datos en caché
- */
 function setCacheData(modelos: { original: string; normalized: string }[], productos: ProductApiData[]): void {
   if (typeof window === "undefined") return;
 
@@ -263,64 +222,69 @@ function setCacheData(modelos: { original: string; normalized: string }[], produ
 }
 
 export default function Sugerencias({
-  onAdd,
   cartProducts = [],
 }: {
-  onAdd?: (producto: ProductApiData) => void;
   cartProducts?: CartProduct[];
 }) {
   const [sugerenciasCompatibles, setSugerenciasCompatibles] = useState<ProductApiData[]>([]);
   const [sugerenciasUniversales, setSugerenciasUniversales] = useState<ProductApiData[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Use refs to prevent infinite loops
   const isFetchingRef = useRef(false);
   const hasFetchedRef = useRef(false);
   const lastFetchKeyRef = useRef<string>("");
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Refs sincronizados con state para evitar stale closures en useCallback
+  const sugerenciasCompatiblesRef = useRef<ProductApiData[]>([]);
+  const sugerenciasUniversalesRef = useRef<ProductApiData[]>([]);
 
   // Extraer modelos únicos de los productos del carrito
-  const modelos = useMemo(() => extractUniqueModelos(cartProducts), [cartProducts]);
-
-  // Extraer categorías únicas de los productos del carrito
-  const cartCategories = useMemo(() => extractUniqueCategories(cartProducts), [cartProducts]);
-
-  // SKUs de productos ya en el carrito (para no sugerirlos)
-  const cartSkus = useMemo(() => new Set(cartProducts.map(p => p.sku)), [cartProducts]);
+  const modelosRaw = useMemo(() => extractUniqueModelos(cartProducts), [cartProducts]);
+  const cartCategoriesRaw = useMemo(() => extractUniqueCategories(cartProducts), [cartProducts]);
+  const cartSkusRaw = useMemo(() => new Set(cartProducts.map(p => p.sku)), [cartProducts]);
 
   // Create stable string keys for comparison
-  const modelosKey = useMemo(() => 
-    modelos.map(m => m.normalized).sort().join(","), 
-    [modelos]
-  );
-  
-  const categoriesKey = useMemo(() => 
-    Array.from(cartCategories).sort().join(","), 
-    [cartCategories]
-  );
-  
-  const cartSkusKey = useMemo(() => 
-    Array.from(cartSkus).sort().join(","), 
-    [cartSkus]
+  const modelosKey = useMemo(() =>
+    modelosRaw.map(m => m.normalized).sort().join(","),
+    [modelosRaw]
   );
 
+  const categoriesKey = useMemo(() =>
+    Array.from(cartCategoriesRaw).sort().join(","),
+    [cartCategoriesRaw]
+  );
+
+  const cartSkusKey = useMemo(() =>
+    Array.from(cartSkusRaw).sort().join(","),
+    [cartSkusRaw]
+  );
+
+  // Stable references: only change when actual content changes (not on every cartProducts reference change)
+  // This prevents the fetch from being aborted when shipping info loads for each product
+  const modelos = useMemo(() => modelosRaw, [modelosKey]);
+  const cartCategories = useMemo(() => cartCategoriesRaw, [categoriesKey]);
+  const cartSkus = useMemo(() => cartSkusRaw, [cartSkusKey]);
+
   // Create a stable fetch key that changes only when relevant data changes
-  const fetchKey = useMemo(() => 
-    `${modelosKey}|${categoriesKey}|${cartSkusKey}`, 
+  const fetchKey = useMemo(() =>
+    `${modelosKey}|${categoriesKey}|${cartSkusKey}`,
     [modelosKey, categoriesKey, cartSkusKey]
   );
 
+  // Mantener refs sincronizados con state (evita stale closures en useCallback)
+  useEffect(() => { sugerenciasCompatiblesRef.current = sugerenciasCompatibles; }, [sugerenciasCompatibles]);
+  useEffect(() => { sugerenciasUniversalesRef.current = sugerenciasUniversales; }, [sugerenciasUniversales]);
+
   const fetchAccessoriosRelacionados = useCallback(async () => {
     // Prevent multiple simultaneous fetches
-    if (isFetchingRef.current) {
-      return;
-    }
+    if (isFetchingRef.current) return;
 
     // Check if we already fetched for this exact combination
-    // Pero permitir re-fetch si no tenemos productos mostrados
+    // Pero permitir re-fetch si no tenemos productos mostrados (usando refs para evitar stale closure)
     if (lastFetchKeyRef.current === fetchKey && hasFetchedRef.current) {
-      // Si no hay productos mostrados, intentar de nuevo
-      if (sugerenciasCompatibles.length === 0 && sugerenciasUniversales.length === 0) {
-        // Resetear el flag para permitir un nuevo intento
+      if (sugerenciasCompatiblesRef.current.length === 0 && sugerenciasUniversalesRef.current.length === 0) {
         hasFetchedRef.current = false;
       } else {
         return;
@@ -330,12 +294,15 @@ export default function Sugerencias({
     isFetchingRef.current = true;
     setLoading(true);
 
+    // Crear AbortController para cancelar si el componente se desmonta o fetchKey cambia
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     // Obtener cache para usar como fallback, pero SIEMPRE intentar fetch fresco
     const cachedCompatibles = getCachedData(modelos);
     const cachedUniversal = getCachedUniversalData();
 
-    // Si hay cache válido (aunque sea solo uno), mostrarlo inmediatamente mientras se hace el fetch fresco
-    // Esto asegura que siempre se muestren productos cuando están disponibles
+    // Si hay cache válido, mostrarlo inmediatamente mientras se hace el fetch fresco
     if (!hasFetchedRef.current) {
       if (cachedCompatibles) {
         setSugerenciasCompatibles(cachedCompatibles.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
@@ -343,17 +310,14 @@ export default function Sugerencias({
       if (cachedUniversal) {
         setSugerenciasUniversales(cachedUniversal.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
       }
-      // Si tenemos al menos un tipo de cache, mostrar y continuar con fetch en background
       if (cachedCompatibles || cachedUniversal) {
         setLoading(false);
       }
     }
 
-    // SIEMPRE intentar hacer el fetch fresco, incluso si hay cache
     // Retry logic: intentar hasta 3 veces
-    let lastError: Error | null = null;
     const maxRetries = 3;
-    const retryDelay = 1000; // 1 segundo entre reintentos
+    const retryDelay = 1000;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -364,19 +328,19 @@ export default function Sugerencias({
             sortBy: "precio",
             sortOrder: "desc",
           }),
-          8000 // Reducir timeout a 8 segundos
+          8000
         );
 
+        // Si fue abortado, no actualizar state
+        if (controller.signal.aborted) return;
+
         if (!response.success || !response.data?.products) {
-          // Si no hay productos pero la respuesta fue exitosa, usar cache si existe
-          // Asegurar que siempre mostramos cache si está disponible
           if (cachedCompatibles) {
             setSugerenciasCompatibles(cachedCompatibles.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
           }
           if (cachedUniversal) {
             setSugerenciasUniversales(cachedUniversal.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
           }
-          // Si tenemos cache, mostrarlo y terminar
           if (cachedCompatibles || cachedUniversal) {
             setLoading(false);
             isFetchingRef.current = false;
@@ -384,12 +348,11 @@ export default function Sugerencias({
             lastFetchKeyRef.current = fetchKey;
             return;
           }
-          // Si no hay cache y no hay productos, intentar de nuevo
           if (attempt < maxRetries) {
             await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+            if (controller.signal.aborted) return;
             continue;
           }
-          // Último intento fallido: usar cache si existe, sino arrays vacíos
           const filteredCompatibles: ProductApiData[] = cachedCompatibles !== null
             ? (cachedCompatibles as ProductApiData[]).filter((p: ProductApiData) => !cartSkus.has(p.sku[0]))
             : [];
@@ -411,7 +374,6 @@ export default function Sugerencias({
         const universalAccessories: ProductApiData[] = [];
 
         for (const item of allProducts) {
-          // Filtrar bundles - solo procesar productos regulares
           if (isBundle(item)) continue;
 
           const product = item;
@@ -442,26 +404,34 @@ export default function Sugerencias({
           return priceB - priceA;
         });
 
-        setSugerenciasCompatibles(compatibleAccessories);
-        setCacheData(modelos, compatibleAccessories);
+        const hasNewResults = compatibleAccessories.length > 0 || universalAccessories.length > 0;
+        const hasExistingResults = sugerenciasCompatiblesRef.current.length > 0 || sugerenciasUniversalesRef.current.length > 0;
 
-        setSugerenciasUniversales(universalAccessories);
-        setCacheUniversalData(universalAccessories);
+        // Solo actualizar state si hay resultados nuevos O si no teníamos nada antes
+        if (hasNewResults || !hasExistingResults) {
+          setSugerenciasCompatibles(compatibleAccessories);
+          setSugerenciasUniversales(universalAccessories);
+        }
+
+        // Solo actualizar cache si hay resultados — no sobreescribir cache bueno con vacío
+        if (compatibleAccessories.length > 0) {
+          setCacheData(modelos, compatibleAccessories);
+        }
+        if (universalAccessories.length > 0) {
+          setCacheUniversalData(universalAccessories);
+        }
 
         setLoading(false);
         isFetchingRef.current = false;
         hasFetchedRef.current = true;
         lastFetchKeyRef.current = fetchKey;
-        return; // Éxito, salir del loop
+        return;
 
       } catch (error) {
-        lastError = error as Error;
-        console.warn(`Intento ${attempt}/${maxRetries} falló:`, error);
-        
-        // Si es el último intento, usar cache si existe
+        console.warn(`Sugerencias: intento ${attempt}/${maxRetries} falló:`, error);
+
         if (attempt === maxRetries) {
           if (cachedCompatibles || cachedUniversal) {
-            console.log("Usando cache después de fallos en API");
             if (cachedCompatibles) {
               setSugerenciasCompatibles(cachedCompatibles.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
             } else {
@@ -472,15 +442,6 @@ export default function Sugerencias({
             } else {
               setSugerenciasUniversales([]);
             }
-          } else {
-            // Si no hay cache, intentar usar lo que ya está mostrado
-            // Si no hay nada mostrado, dejar arrays vacíos pero no ocultar el componente
-            // para que pueda intentar de nuevo en el siguiente render
-            if (sugerenciasCompatibles.length === 0 && sugerenciasUniversales.length === 0) {
-              // No establecer arrays vacíos aquí, permitir que el componente intente de nuevo
-              // Solo marcar como no cargando para que no quede en loading infinito
-              setLoading(false);
-            }
           }
           setLoading(false);
           isFetchingRef.current = false;
@@ -488,65 +449,48 @@ export default function Sugerencias({
           lastFetchKeyRef.current = fetchKey;
           return;
         }
-        
+
         // Esperar antes del siguiente intento (backoff exponencial)
         await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+        if (controller.signal.aborted) return;
       }
     }
   }, [modelos, cartSkus, cartCategories, fetchKey]);
 
-  // Always attempt to fetch when component mounts or fetchKey changes
+  // Ref para la función fetch: permite que el useEffect siempre llame la versión más reciente
+  // sin depender de la referencia del callback
+  const fetchRef = useRef(fetchAccessoriosRelacionados);
+  fetchRef.current = fetchAccessoriosRelacionados;
+
+  // Solo depende de fetchKey (string estable) — NO del callback reference
   useEffect(() => {
-    // Reset fetch state when key changes
-    if (lastFetchKeyRef.current !== fetchKey) {
+    const keyChanged = lastFetchKeyRef.current !== fetchKey;
+
+    // Marcar el fetchKey INMEDIATAMENTE para evitar que StrictMode re-ejecute con keyChanged=true
+    // En StrictMode React hace: mount → cleanup → mount. Si no marcamos aquí,
+    // el segundo mount ve keyChanged=true y aborta el fetch del primero.
+    lastFetchKeyRef.current = fetchKey;
+
+    if (keyChanged) {
+      abortControllerRef.current?.abort();
       hasFetchedRef.current = false;
       isFetchingRef.current = false;
     }
-    
-    // Always try to fetch if not currently fetching
-    // This ensures products are always loaded when possible
-    if (!isFetchingRef.current) {
-      fetchAccessoriosRelacionados();
-    }
-  }, [fetchKey, fetchAccessoriosRelacionados]);
 
-  // Componente reutilizable para renderizar una fila de productos
+    if (!isFetchingRef.current) {
+      fetchRef.current();
+    }
+
+    // NO cleanup abort — React StrictMode re-monta el componente (mount → cleanup → mount).
+    // Si abortamos en cleanup, el primer fetch se pierde. React ignora silenciosamente
+    // setState en componentes desmontados, así que no hay memory leak.
+  }, [fetchKey]);
+
   const renderProductRow = (productos: ProductApiData[]) => (
     <div className="mb-6 last:mb-0">
-      {/* Mobile: scroll horizontal | Desktop/Tablet: flex-wrap justify-start */}
-      <div className="flex gap-12 overflow-x-auto pt-3 pb-2 snap-x snap-mandatory pl-6 md:pl-0 md:pt-0 md:overflow-x-visible md:flex-wrap md:justify-start md:gap-28 lg:gap-32 scrollbar-hide">
+      <div className="flex gap-4 overflow-x-auto pt-3 pb-2 snap-x snap-mandatory pl-6 md:pl-0 md:pt-0 md:overflow-x-visible md:flex-wrap md:justify-start md:gap-4 scrollbar-hide">
         {productos.map((producto, idx) => (
-          <div
-            key={producto.sku[0] || idx}
-            className="flex-shrink-0 flex flex-col items-center w-[calc(50vw-24px)] sm:w-32 snap-start last:pr-6 md:last:pr-0 md:w-28 md:flex-shrink-0 md:snap-align-none"
-          >
-            <div className="relative w-28 h-28 mb-2 flex items-center justify-center">
-              <div className="w-full h-full rounded-xl bg-[#F4F4F4] flex items-center justify-center overflow-hidden">
-                <Image
-                  src={getCloudinaryUrl(producto.imagePreviewUrl[0], "catalog")}
-                  alt={producto.desDetallada[0] || producto.nombreMarket?.[0] || ''}
-                  width={112}
-                  height={112}
-                  className="object-contain"
-                />
-              </div>
-              <button
-                className="absolute -top-2 -right-2 bg-black text-white rounded-full w-7 h-7 flex items-center justify-center shadow-md hover:bg-gray-800 transition cursor-pointer"
-                aria-label={`Agregar ${producto.desDetallada[0] || producto.nombreMarket?.[0] || ''}`}
-                onClick={() => onAdd?.(producto)}
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="text-center mt-2">
-              <div className="font-semibold text-gray-900 text-sm md:text-xs lg:text-sm mb-1 line-clamp-2">
-                {producto.desDetallada[0] || producto.nombreMarket?.[0] || ''}
-              </div>
-              <div className="text-base font-bold text-gray-900">
-                $ {(producto.precioeccommerce[0] || producto.precioNormal[0]).toLocaleString()}
-              </div>
-            </div>
-          </div>
+          <SuggestionCard key={producto.sku[0] || idx} product={producto} />
         ))}
       </div>
     </div>
@@ -556,7 +500,6 @@ export default function Sugerencias({
     return <SugerenciasSkeleton />;
   }
 
-  // No mostrar la sección si no hay sugerencias
   const hasCompatibles = sugerenciasCompatibles.length > 0;
   const hasUniversales = sugerenciasUniversales.length > 0;
 
@@ -564,31 +507,26 @@ export default function Sugerencias({
     return null;
   }
 
-  // Construir el título dinámico (usar el modelo original para display)
   const titulo = modelos.length > 0
     ? `Agrega a tu compra para tu ${modelos[0].original}`
     : "Agrega a tu compra";
 
   return (
     <section className="rounded-2xl py-3 md:p-6">
-      {/* Título con padding horizontal en móvil */}
       <h2 className="font-bold text-lg mb-2 md:mb-4 px-6 md:px-0">{titulo}</h2>
 
-      {/* Fila 1: Accesorios compatibles con el modelo */}
       {hasCompatibles && renderProductRow(sugerenciasCompatibles)}
 
-      {/* Fila 2: Accesorios universales */}
       {hasUniversales && renderProductRow(sugerenciasUniversales)}
     </section>
   );
 }
 
-// En fetchAccessoriosRelacionados, agregar timeout
 const fetchWithTimeout = async (
-  promise: Promise<ApiResponse<ProductApiResponse>>, 
+  promise: Promise<ApiResponse<ProductApiResponse>>,
   timeoutMs: number
 ): Promise<ApiResponse<ProductApiResponse>> => {
-  const timeout = new Promise<never>((_, reject) => 
+  const timeout = new Promise<never>((_, reject) =>
     setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
   );
   return Promise.race([promise, timeout]);

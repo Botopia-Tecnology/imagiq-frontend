@@ -105,14 +105,9 @@ export function useInWebCampaign(
   }, [pathname]);
 
   useEffect(() => {
-    console.log("🔌 Conectando socket para campañas InWeb...");
     const socket = connectSocket(channelName);
 
-    console.log("👂 Escuchando evento 'campaign_start'");
-
     socket.on("campaign_start", (msg: CampaignData) => {
-      console.log("📨 Evento 'campaign_start' recibido:", msg);
-
       // Generar ID único para la campaña
       const campaignWithId: CampaignWithId = {
         ...msg,
@@ -144,15 +139,8 @@ export function useInWebCampaign(
       }
     });
 
-    // Listener para debug (opcional)
-    socket.onAny((eventName, ...args) => {
-      console.log("📡 Evento socket recibido:", eventName, args);
-    });
-
     return () => {
-      console.log("🧹 Limpiando listeners de socket InWeb");
       socket.off("campaign_start");
-      socket.offAny();
     };
   }, [pathname, channelName]);
 

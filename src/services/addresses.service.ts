@@ -183,15 +183,6 @@ export class AddressesService {
       }
 
       const data = await apiGet<Address[]>(endpoint);
-      console.log("📍 [AddressesService] Direcciones obtenidas del backend:", data.map(d => ({
-        id: d.id,
-        latitud: d.latitud,
-        longitud: d.longitud,
-        googleUrl: d.googleUrl,
-        localidad: d.localidad,
-        barrio: d.barrio,
-        complemento: d.complemento
-      })));
       return data;
     } catch (error: unknown) {
       const errorMessage =

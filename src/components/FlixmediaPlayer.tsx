@@ -27,6 +27,8 @@ interface FlixmediaPlayerProps {
   className?: string;
   productId?: string;
   segmento?: string | string[];
+  // Cuando es true, no redirige si no hay contenido (para uso embebido)
+  preventRedirect?: boolean;
   // Información del producto para verificar contenido premium
   apiProduct?: {
     imagenPremium?: string[][];
@@ -85,6 +87,7 @@ function FlixmediaPlayerComponent({
   className = "",
   productId,
   segmento,
+  preventRedirect = false,
   apiProduct,
   productColors
 }: FlixmediaPlayerProps) {
@@ -102,6 +105,7 @@ function FlixmediaPlayerComponent({
   const productIdRef = useRef(productId);
   const apiProductRef = useRef(apiProduct);
   const productColorsRef = useRef(productColors);
+  const preventRedirectRef = useRef(preventRedirect);
 
   // Actualizar refs cuando cambien las props
   useEffect(() => {
@@ -109,7 +113,8 @@ function FlixmediaPlayerComponent({
     productIdRef.current = productId;
     apiProductRef.current = apiProduct;
     productColorsRef.current = productColors;
-  }, [segmento, productId, apiProduct, productColors]);
+    preventRedirectRef.current = preventRedirect;
+  }, [segmento, productId, apiProduct, productColors, preventRedirect]);
 
   const applyStyles = useCallback(() => {
     if (document.getElementById("flixmedia-player-styles")) return;
@@ -174,6 +179,11 @@ function FlixmediaPlayerComponent({
   }, []); // Sin dependencias porque usa refs
 
   const redirectToView = useCallback(() => {
+    // Si preventRedirect está activo, no redirigir
+    if (preventRedirectRef.current) {
+      return;
+    }
+
     // Verificar segmento premium (usando ref para valor actual)
     const currentSegmento = segmentoRef.current;
     const currentProductId = productIdRef.current;
@@ -422,7 +432,16 @@ function FlixmediaPlayerComponent({
     };
   }, [mpn, ean, containerId, applyStyles, redirectToView, router, hasPremiumContent]);
 
-  if (!mpn && !ean) return null;
+  if (!mpn && !ean) {
+    if (preventRedirect) {
+      return (
+        <div className={`${className} w-full min-h-[200px] flex items-center justify-center bg-gray-50 rounded-lg`}>
+          <p className="text-gray-400 text-sm">Contenido multimedia no disponible para este producto</p>
+        </div>
+      );
+    }
+    return null;
+  }
 
   // Mientras verifica, mostrar div vacío (sin skeleton para cargar más rápido)
   if (hasContent === null) {
@@ -431,8 +450,17 @@ function FlixmediaPlayerComponent({
     );
   }
 
-  // Si no hay contenido o hay error de Flixmedia, no renderizar nada (ya está redirigiendo)
+  // Si no hay contenido o hay error de Flixmedia
   if (hasContent === false || hasFlixError) {
+    // Si preventRedirect está activo, mostrar placeholder
+    if (preventRedirect) {
+      return (
+        <div className={`${className} w-full min-h-[200px] flex items-center justify-center bg-gray-50 rounded-lg`}>
+          <p className="text-gray-400 text-sm">Contenido multimedia no disponible para este producto</p>
+        </div>
+      );
+    }
+    // Si no, no renderizar nada (ya está redirigiendo)
     return null;
   }
 
@@ -447,7 +475,9 @@ function FlixmediaPlayerComponent({
 }
 
 const FlixmediaPlayer = memo(FlixmediaPlayerComponent, (prevProps, nextProps) => {
-  return prevProps.mpn === nextProps.mpn && prevProps.ean === nextProps.ean;
+  return prevProps.mpn === nextProps.mpn &&
+         prevProps.ean === nextProps.ean &&
+         prevProps.preventRedirect === nextProps.preventRedirect;
 });
 
 FlixmediaPlayer.displayName = "FlixmediaPlayer";

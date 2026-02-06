@@ -28,6 +28,12 @@ import { ProductCardProps } from "@/app/productos/components/ProductCard";
 // Lazy load Specifications para que no bloquee la carga inicial
 const Specifications = lazy(() => import("../../dispositivos-moviles/detalles-producto/Specifications"));
 
+// Lazy load FlixmediaPlayer para la sección de detalles multimedia
+const FlixmediaPlayer = lazy(() => import("@/components/FlixmediaPlayer"));
+
+// Componente de navegación rápida
+import QuickNavBar from "./components/QuickNavBar";
+
 // @ts-expect-error Next.js infiere el tipo de params automáticamente
 export default function ProductViewPage({ params }) {
   const resolvedParams = use(params);
@@ -392,8 +398,11 @@ export default function ProductViewPage({ params }) {
         onNotifyStock={stockNotification.openModal}
       />
 
-      {/* Layout de dos columnas: Carrusel sin márgenes, Info con márgenes */}
-      <div className="bg-white pt-0 pb-0 mb-0 min-h-screen">
+      {/* Barra de navegación rápida entre secciones */}
+      <QuickNavBar />
+
+      {/* SECCIÓN: Comprar - Layout de dos columnas: Carrusel sin márgenes, Info con márgenes */}
+      <section id="comprar-section" className="bg-white pt-0 pb-0 mb-0 min-h-screen scroll-mt-40">
         {/* Breadcrumbs */}
         <div className="px-4 md:px-6 lg:px-12 mb-4 pt-4">
           <Breadcrumbs productName="Detalles del producto" />
@@ -439,7 +448,33 @@ export default function ProductViewPage({ params }) {
             </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* SECCIÓN: Detalles - Contenido multimedia de Flixmedia */}
+      <section id="detalles-section" className="bg-gray-50 py-8 scroll-mt-40">
+        <div className="container mx-auto px-4 md:px-6 lg:px-12">
+          <h2 className="text-2xl font-bold text-[#222] mb-6" style={{ fontFamily: "SamsungSharpSans" }}>
+            Detalles del producto
+          </h2>
+          <Suspense fallback={
+            <div className="w-full min-h-[400px] flex items-center justify-center">
+              <div className="w-12 h-12 border-4 border-gray-200 border-t-[#0066CC] rounded-full animate-spin" />
+            </div>
+          }>
+            <FlixmediaPlayer
+              mpn={productToUse.skuflixmedia || productSelection.selectedSku || productToUse.apiProduct?.skuflixmedia?.[0]}
+              ean={productSelection.selectedVariant?.ean}
+              productName={productToUse.name}
+              productId={productToUse.id}
+              segmento={productToUse.apiProduct?.segmento}
+              apiProduct={productToUse.apiProduct}
+              productColors={productToUse.colors}
+              preventRedirect={true}
+              className="min-h-[400px]"
+            />
+          </Suspense>
+        </div>
+      </section>
 
       {/* Sección de Estreno y Entrego - SIEMPRE fuera del grid, centrada */}
       <div className="bg-white pb-2 md:pb-4 mt-[clamp(1rem,4vw,2rem)] relative z-10 clear-both">
@@ -461,17 +496,19 @@ export default function ProductViewPage({ params }) {
       {/* Beneficios imagiq - Banner que ocupa el ancho */}
       <BenefitsSection />
 
-      {/* Especificaciones - Lazy loaded para no bloquear la carga inicial */}
-      <Suspense fallback={null}>
-        <div className="relative flex items-center justify-center w-full py-0 -mt-4">
-          <Specifications
-            key={`specs-viewpremium-${productToUse.id}`}
-            product={productToUse}
-            flix={productToUse}
-            selectedSku={productSelection.selectedSku || undefined}
-          />
-        </div>
-      </Suspense>
+      {/* SECCIÓN: Características - Lazy loaded para no bloquear la carga inicial */}
+      <section id="caracteristicas-section" className="scroll-mt-40">
+        <Suspense fallback={null}>
+          <div className="relative flex items-center justify-center w-full py-0 -mt-4">
+            <Specifications
+              key={`specs-viewpremium-${productToUse.id}`}
+              product={productToUse}
+              flix={productToUse}
+              selectedSku={productSelection.selectedSku || undefined}
+            />
+          </div>
+        </Suspense>
+      </section>
 
       {/* Botón de añadir al carrito al final de la página */}
       <AddToCartButton

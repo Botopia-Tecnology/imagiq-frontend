@@ -198,10 +198,7 @@ export default function MultimediaBottomBar({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="fixed left-0 right-0 z-40 bg-white top-[55px] xl:top-[100px]"
-          style={{
-            fontFamily: "SamsungSharpSans"
-          }}
+          className="fixed left-0 right-0 z-40 bg-white top-[55px] xl:top-[100px] font-['SamsungSharpSans']"
         >
           <div className=" mx-auto px-6 md:px-8">
             <div className="flex items-center justify-between gap-3 md:gap-4 py-2 md:py-2.5">

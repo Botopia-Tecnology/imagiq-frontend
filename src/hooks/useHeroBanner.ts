@@ -84,7 +84,6 @@ export function useHeroBanner(): UseHeroBannerReturn {
           bannersService.mapBannerToHeroConfig(banner)
         );
         setConfigs(mappedConfigs);
-        console.log(`[useHeroBanner] Found ${banners.length} banner(s) for placement "hero"`);
       } else {
         console.warn('[useHeroBanner] No banners found for placement "hero" - Using default config');
         setConfigs([DEFAULT_HERO_CONFIG]);

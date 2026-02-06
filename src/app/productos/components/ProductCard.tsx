@@ -26,6 +26,7 @@ import { useChatbot } from "@/contexts/ChatbotContext";
 import {
   calculateDynamicPrices,
   calculateSavings,
+  formatCapacityLabel,
 } from "./utils/productCardHelpers";
 import { ColorSelector, CapacitySelector } from "./ProductCardComponents";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
@@ -40,40 +41,6 @@ import { shouldRenderValue, shouldRenderColor } from "./utils/shouldRenderValue"
 import { prefetchFlixmediaScript } from "@/lib/flixmedia";
 import CeroInteresSection from "@/components/CeroInteresSection";
 import { ZeroInterestSkuResult } from "@/services/cero-interes-sku.service";
-
-/**
- * Formatea la capacidad para mostrar correctamente GB, TB, litros o pulgadas
- * - Para almacenamiento: mantiene el formato original (128GB, 256GB, etc.)
- * - Para litros: normaliza el formato (859LT -> 859 LT, 809 LT -> 809 LT)
- * - Para pulgadas: agrega comillas si es solo un número (75 -> 75")
- */
-function formatCapacityLabel(capacity: string): string {
-  if (!capacity) return capacity;
-
-  // Si ya tiene GB, TB, o comillas, retornar tal cual
-  if (
-    capacity.includes("GB") ||
-    capacity.includes("TB") ||
-    capacity.includes('"') ||
-    capacity.includes("pulgada")
-  ) {
-    return capacity;
-  }
-
-  // Normalizar litros: asegurar espacio entre número y LT (859LT -> 859 LT)
-  if (capacity.toUpperCase().includes("LT")) {
-    return capacity.replace(/(\d+)(LT)/gi, "$1 $2").trim();
-  }
-
-  // Si es solo un número (probablemente pulgadas de TV), agregar comillas
-  const numericValue = capacity.trim();
-  if (/^\d+$/.test(numericValue)) {
-    return `${numericValue}"`;
-  }
-
-  // En cualquier otro caso, retornar tal cual
-  return capacity;
-}
 
 export interface ProductColor {
   name: string; // Nombre técnico del color (ej: "black", "white")
@@ -199,20 +166,6 @@ export default function ProductCard({
     apiProduct?.categoria,
     apiProduct?.subcategoria
   );
-
-  // DEBUG: Log para verificar capacidades en TV
-  if (
-    apiProduct?.categoria === "AV" &&
-    process.env.NODE_ENV === "development"
-  ) {
-    console.log("🔍 TV Product Debug:", {
-      modelo: apiProduct?.modelo?.[0],
-      categoria: apiProduct?.categoria,
-      showCapacitySelector,
-      availableCapacities: productSelection.availableCapacities,
-      capacidadFromAPI: apiProduct?.capacidad,
-    });
-  }
 
   // Integración con el contexto del carrito
   const { addProduct, getQuantityBySku } = useCartContext();

@@ -55,7 +55,6 @@ export function usePreloadCategoryMenus() {
           if (response.success && response.data) {
             // Poblar el caché de submenús directamente desde la respuesta
             populateSubmenusCache(response.data);
-            console.debug('[PreloadSubmenus] Todos los submenús precargados desde endpoint completo');
           } else if (attempt < maxAttempts) {
             // Reintentar si falló pero no fue un error de red
             const backoffDelay = attempt * 2000; // 2s, 4s, 6s
@@ -67,13 +66,9 @@ export function usePreloadCategoryMenus() {
           // Reintentar en caso de error
           if (attempt < maxAttempts) {
             const backoffDelay = attempt * 2000; // 2s, 4s, 6s
-            console.debug(`[PreloadSubmenus] Intento ${attempt} falló, reintentando en ${backoffDelay}ms...`);
             setTimeout(() => {
               loadSubmenusWithRetry(attempt + 1, maxAttempts);
             }, backoffDelay);
-          } else {
-            // Silenciar errores después de todos los intentos - no afectar la UX
-            console.debug('[PreloadSubmenus] Error después de todos los intentos:', error);
           }
         }
       };

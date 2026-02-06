@@ -62,10 +62,7 @@ export function useTradeInPrefetch() {
     };
 
     if (shouldFetch()) {
-      console.log('🚀 [Trade-In Prefetch] Iniciando prefetch automático...');
       prefetchTradeInData();
-    } else {
-      console.log('✅ [Trade-In Prefetch] Datos ya en cache o cargando');
     }
   }, []);
 
@@ -120,14 +117,7 @@ export function useTradeInDataFromCache() {
   useEffect(() => {
     const cachedData = getCachedData();
     if (!cachedData && !isLoading()) {
-      console.log('🔄 [Trade-In Cache] No hay datos, iniciando carga...');
       prefetchTradeInData();
-    } else {
-      console.log('📦 [Trade-In Cache] Datos disponibles:', {
-        hasData: !!cachedData,
-        isLoading: isLoading(),
-        dataAge: cacheState.timestamp ? Date.now() - cacheState.timestamp : 0
-      });
     }
   }, [cacheState.data, cacheState.timestamp, cacheState.loading]); // Dependencias actualizadas
 
@@ -151,8 +141,6 @@ async function prefetchTradeInData(): Promise<TradeInData | null> {
     tradeInCache.loading = true;
     notifyListeners(); // Notificar inicio de carga
 
-    console.log('🔄 [Trade-In Prefetch] Cargando datos de trade-in...');
-
     const response = await tradeInEndpoints.getHierarchy();
 
     if (response.success && response.data) {
@@ -165,7 +153,6 @@ async function prefetchTradeInData(): Promise<TradeInData | null> {
       };
       notifyListeners(); // Notificar éxito
 
-      console.log('✅ [Trade-In Prefetch] Datos cargados y almacenados en cache');
       return transformedData;
     } else {
       console.error('❌ [Trade-In Prefetch] Error en respuesta:', response.message);

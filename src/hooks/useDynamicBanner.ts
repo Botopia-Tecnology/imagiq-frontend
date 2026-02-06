@@ -56,8 +56,6 @@ export function useDynamicBanner(placement: string): UseDynamicBannerReturn {
 
       if (fetchedBanners.length === 0) {
         console.warn(`[useDynamicBanner] No banners found for placement "${placement}"`);
-      } else {
-        console.log(`[useDynamicBanner] Found ${fetchedBanners.length} banner(s) for placement "${placement}"`);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';

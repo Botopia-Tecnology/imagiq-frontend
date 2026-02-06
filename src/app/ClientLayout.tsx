@@ -68,11 +68,6 @@ export default function ClientLayout({
     pathname === "/success-checkout" ||
     pathname === "/carrito/error-checkout";
 
-  // Debug: verificar si el footer debe mostrarse
-  if (typeof window !== "undefined" && pathname?.includes("/carrito/step2")) {
-    console.log("🔍 Footer debug - pathname:", pathname, "hideFooter:", hideFooter, "isCarritoStep:", isCarritoStep);
-  }
-
   // Identificación automática de usuarios en Clarity
   useClarityIdentity();
 

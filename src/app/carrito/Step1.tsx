@@ -3,9 +3,8 @@ import { TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/de
 import TradeInModal from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInModal";
 import { useCart, type CartProduct, type BundleInfo } from "@/hooks/useCart";
 import { useAnalyticsWithUser } from "@/lib/analytics";
-import { tradeInEndpoints, type ProductApiData } from "@/lib/api";
+import { tradeInEndpoints } from "@/lib/api";
 import { apiDelete, apiPut } from "@/lib/api-client";
-import { getCloudinaryUrl } from "@/lib/cloudinary";
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import Step4OrderSummary from "./components/Step4OrderSummary";
@@ -620,31 +619,6 @@ export default function Step1({
     onContinue();
   };
 
-  // UX: feedback visual al agregar sugerencia usando el hook centralizado
-  const handleAddSugerencia = async (producto: ProductApiData) => {
-    try {
-      // Mapear ProductApiData a CartProduct
-      const cartProduct = {
-        id: producto.codigoMarketBase,
-        name: producto.desDetallada[0] || producto.nombreMarket?.[0] || "",
-        image: getCloudinaryUrl(producto.imagePreviewUrl[0], "catalog"),
-        price: producto.precioeccommerce[0] || producto.precioNormal[0],
-        sku: producto.sku[0] || "",
-        ean: producto.ean[0] || "",
-        desDetallada:
-          producto.desDetallada[0] || producto.nombreMarket?.[0] || "",
-        modelo: producto.modelo?.[0] || "",
-        categoria: producto.categoria || "",
-      };
-
-      // Agregar al carrito
-      await addProduct(cartProduct, 1);
-    } catch (error) {
-      console.error("Error al agregar producto sugerido:", error);
-    }
-  };
-
-  // Handler para remover plan de Trade-In (usado en el banner mobile)
   // Handler para remover plan de Trade-In (usado en el banner mobile)
   const handleRemoveTradeIn = (skuToRemove: string) => {
     setTradeInData(prev => {
@@ -958,18 +932,12 @@ export default function Step1({
                 </div>
               )}
 
-
+              {/* Sugerencias: dentro del gate isClient + cartProducts > 0 para evitar fetch con data vacía */}
+              <div className="mt-4 mb-4 md:mb-0">
+                <Sugerencias cartProducts={cartProducts} />
+              </div>
             </div>
           )}
-
-          {/* Sugerencias: dentro del grid para que el aside sticky funcione correctamente */}
-          <div className="mt-4 mb-4 md:mb-0">
-            <Sugerencias
-              key={`sugerencias-${cartProducts.map(p => p.sku).join('-')}`}
-              onAdd={handleAddSugerencia}
-              cartProducts={cartProducts}
-            />
-          </div>
         </section>
         {/* Resumen de compra - Solo Desktop */}
         <aside className="hidden md:block space-y-4 self-start sticky top-40">

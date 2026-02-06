@@ -25,10 +25,7 @@ import BenefitsSection from "../../dispositivos-moviles/detalles-producto/Benefi
 import AddToCartButton from "../components/AddToCartButton";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 
-// Lazy load Specifications para que no bloquee la carga inicial
-const Specifications = lazy(() => import("../../dispositivos-moviles/detalles-producto/Specifications"));
-
-// Lazy load FlixmediaPlayer para la sección de detalles multimedia
+// Lazy load FlixmediaPlayer para la sección de detalles multimedia (carga TODO el contenido de Flixmedia)
 const FlixmediaPlayer = lazy(() => import("@/components/FlixmediaPlayer"));
 
 // Componente de navegación rápida
@@ -495,20 +492,6 @@ export default function ProductViewPage({ params }) {
 
       {/* Beneficios imagiq - Banner que ocupa el ancho */}
       <BenefitsSection />
-
-      {/* SECCIÓN: Características - Lazy loaded para no bloquear la carga inicial */}
-      <section id="caracteristicas-section" className="scroll-mt-[180px]">
-        <Suspense fallback={null}>
-          <div className="relative flex items-center justify-center w-full py-0 -mt-4">
-            <Specifications
-              key={`specs-viewpremium-${productToUse.id}`}
-              product={productToUse}
-              flix={productToUse}
-              selectedSku={productSelection.selectedSku || undefined}
-            />
-          </div>
-        </Suspense>
-      </section>
 
       {/* Botón de añadir al carrito al final de la página */}
       <AddToCartButton

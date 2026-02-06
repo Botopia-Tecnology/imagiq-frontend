@@ -7,12 +7,11 @@ interface QuickNavBarProps {
   isStickyBarVisible?: boolean; // Indica si el StickyPriceBar está en modo scroll (top-0)
 }
 
-type SectionId = "comprar" | "detalles" | "caracteristicas";
+type SectionId = "comprar" | "detalles";
 
 const SECTIONS: { id: SectionId; label: string; elementId: string }[] = [
   { id: "comprar", label: "Comprar", elementId: "comprar-section" },
   { id: "detalles", label: "Detalles", elementId: "detalles-section" },
-  { id: "caracteristicas", label: "Características", elementId: "caracteristicas-section" },
 ];
 
 // Offset para compensar la altura de las barras fijas (StickyPriceBar + QuickNavBar)

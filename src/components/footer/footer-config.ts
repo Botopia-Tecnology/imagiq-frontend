@@ -26,10 +26,12 @@ export interface FooterSection {
 
 /**
  * Función para obtener las secciones del footer
- * Si se pasa navbarRoutes, la sección "Tienda" se generará dinámicamente
+ * @param navbarRoutes - Rutas del navbar para la sección "Tienda" (opcional)
+ * @param legalLinks - Links legales dinámicos para la sección "Soporte" (opcional)
  */
 export const getFooterSections = (
-  navbarRoutes?: Array<{ name: string; href: string }>
+  navbarRoutes?: Array<{ name: string; href: string }>,
+  legalLinks?: Array<{ name: string; href: string; external?: boolean }>
 ): FooterSection[] => {
   // Si tenemos rutas del navbar, generar sección Tienda dinámicamente
   const tiendaSection: FooterSection = navbarRoutes
@@ -107,46 +109,52 @@ export const getFooterSections = (
     },
     {
       title: "Soporte",
-      links: [
-        { name: "Inicio de soporte", href: "/soporte/inicio_de_soporte" },
-        {
-          name: "T&C 0% de interés Bancolombia",
-          href: "/soporte/tyc-bancolombia",
-        },
-        {
-          name: "T&C 0% de interés Davivienda",
-          href: "/soporte/tyc-davivienda",
-        },
-        {
-          name: "T&C 0% de interés Addi",
-          href: "https://co.addi.com/tyc-0-interes",
-          external: true,
-        },
-        {
-          name: "T&C Entrego y Estreno",
-          href: "/soporte/tyc-entrego-estreno",
-        },
-        {
-          name: "Políticas generales",
-          href: "/soporte/politicas-generales",
-        },
-        {
-          name: "Políticas de uso de cookies",
-          href: "/soporte/politica-cookies",
-        },
-        {
-          name: "Tratamiento de datos personales",
-          href: "/soporte/tratamiento-datos-personales",
-        },
-        {
-          name: "Política anticorrupción y soborno",
-          href: "/soporte/politica-anticorrupcion",
-        },
-        {
-          name: "Aviso legal",
-          href: "/soporte/aviso-legal",
-        },
-      ],
+      dynamic: !!legalLinks,
+      links: legalLinks && legalLinks.length > 0
+        ? [
+            { name: "Inicio de soporte", href: "/soporte/inicio_de_soporte" },
+            ...legalLinks,
+          ]
+        : [
+            { name: "Inicio de soporte", href: "/soporte/inicio_de_soporte" },
+            {
+              name: "T&C 0% de interés Bancolombia",
+              href: "/soporte/tyc-bancolombia",
+            },
+            {
+              name: "T&C 0% de interés Davivienda",
+              href: "/soporte/tyc-davivienda",
+            },
+            {
+              name: "T&C 0% de interés Addi",
+              href: "https://co.addi.com/tyc-0-interes",
+              external: true,
+            },
+            {
+              name: "T&C Entrego y Estreno",
+              href: "/soporte/tyc-entrego-estreno",
+            },
+            {
+              name: "Políticas generales",
+              href: "/soporte/politicas-generales",
+            },
+            {
+              name: "Políticas de uso de cookies",
+              href: "/soporte/politica-cookies",
+            },
+            {
+              name: "Tratamiento de datos personales",
+              href: "/soporte/tratamiento-datos-personales",
+            },
+            {
+              name: "Política anticorrupción y soborno",
+              href: "/soporte/politica-anticorrupcion",
+            },
+            {
+              name: "Aviso legal",
+              href: "/soporte/aviso-legal",
+            },
+          ],
     },
     {
       title: "Cuenta",

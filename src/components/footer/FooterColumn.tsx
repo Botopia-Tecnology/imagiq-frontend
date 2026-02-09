@@ -50,18 +50,25 @@ export function FooterColumn({ section, index, isVisible }: FooterColumnProps) {
           }`}
           style={{ transitionDelay: `${index * 100 + linkIndex * 30}ms` }}
         >
-          <Link
-            href={link.href}
-            className="text-base text-gray-600 hover:text-blue-600 hover:underline transition-colors inline-block"
-            onClick={() => handleLinkClick(link.name, link.href)}
-            {...(link.external && {
-              target: "_blank",
-              rel: "noopener noreferrer",
-            })}
-          >
-            {link.name}
-            {link.external && " ↗"}
-          </Link>
+          {link.external ? (
+            <a
+              href={link.href}
+              className="text-base text-gray-600 hover:text-blue-600 hover:underline transition-colors inline-block"
+              onClick={() => handleLinkClick(link.name, link.href)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {link.name} ↗
+            </a>
+          ) : (
+            <Link
+              href={link.href}
+              className="text-base text-gray-600 hover:text-blue-600 hover:underline transition-colors inline-block"
+              onClick={() => handleLinkClick(link.name, link.href)}
+            >
+              {link.name}
+            </Link>
+          )}
         </li>
       ))}
     </ul>
@@ -75,18 +82,25 @@ export function FooterColumn({ section, index, isVisible }: FooterColumnProps) {
           key={link.name}
           className="border-b border-gray-100 last:border-b-0"
         >
-          <Link
-            href={link.href}
-            className="block text-base text-gray-600 hover:text-blue-600 py-3 px-4 transition-colors"
-            onClick={() => handleLinkClick(link.name, link.href)}
-            {...(link.external && {
-              target: "_blank",
-              rel: "noopener noreferrer",
-            })}
-          >
-            {link.name}
-            {link.external && " ↗"}
-          </Link>
+          {link.external ? (
+            <a
+              href={link.href}
+              className="block text-base text-gray-600 hover:text-blue-600 py-3 px-4 transition-colors"
+              onClick={() => handleLinkClick(link.name, link.href)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {link.name} ↗
+            </a>
+          ) : (
+            <Link
+              href={link.href}
+              className="block text-base text-gray-600 hover:text-blue-600 py-3 px-4 transition-colors"
+              onClick={() => handleLinkClick(link.name, link.href)}
+            >
+              {link.name}
+            </Link>
+          )}
         </li>
       ))}
     </>

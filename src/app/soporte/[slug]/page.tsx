@@ -2,7 +2,8 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getActivePageBySlug, type MultimediaPage, type LegalSection } from '@/services/multimedia-pages.service';
 import { LegalDocumentLayout } from '@/components/legal/LegalDocumentLayout';
-import { TiptapRenderer, extractSectionsFromContent } from '@/components/legal/TiptapRenderer';
+import TiptapRenderer from '@/components/legal/TiptapRenderer';
+import { extractSectionsFromContent } from '@/lib/tiptap-utils';
 
 interface PageProps {
   params: Promise<{ slug: string }>;

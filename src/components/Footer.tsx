@@ -5,7 +5,7 @@
  * - Código modular y escalable
  * - Redes sociales y enlaces legales
  * - Animaciones elegantes
- * - Sincronización dinámica con el navbar
+ * - Sincronización dinámica con el navbar y páginas legales del dashboard
  */
 
 "use client";
@@ -15,10 +15,12 @@ import { getFooterSections } from "./footer/footer-config";
 import { FooterColumn } from "./footer/FooterColumn";
 import { FooterBottom } from "./footer/FooterBottom";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
+import { useLegalPages } from "@/hooks/useLegalPages";
 
 function Footer() {
   const [isVisible, setIsVisible] = useState(false);
-  const { getNavbarRoutes, loading } = useVisibleCategories();
+  const { getNavbarRoutes, loading: categoriesLoading } = useVisibleCategories();
+  const { getFooterLinks, loading: legalLoading } = useLegalPages();
 
   // Obtener rutas del navbar para sincronizar con footer
   const navbarRoutes = useMemo(() => {
@@ -30,15 +32,20 @@ function Footer() {
     }));
   }, [getNavbarRoutes]);
 
-  // Generar secciones del footer dinámicamente basadas en las rutas del navbar
+  // Obtener links legales dinámicos
+  const legalLinks = useMemo(() => {
+    return getFooterLinks();
+  }, [getFooterLinks]);
+
+  // Generar secciones del footer dinámicamente basadas en las rutas del navbar y páginas legales
   const footerSections = useMemo(() => {
-    // Si aún está cargando, usar la versión estática como fallback
-    if (loading) {
+    // Si aún está cargando cualquiera, usar la versión estática como fallback
+    if (categoriesLoading || legalLoading) {
       return getFooterSections();
     }
-    // Generar secciones dinámicamente con las rutas del navbar
-    return getFooterSections(navbarRoutes);
-  }, [navbarRoutes, loading]);
+    // Generar secciones dinámicamente con las rutas del navbar y links legales
+    return getFooterSections(navbarRoutes, legalLinks);
+  }, [navbarRoutes, legalLinks, categoriesLoading, legalLoading]);
 
   // Animación de entrada al montar
   useEffect(() => {

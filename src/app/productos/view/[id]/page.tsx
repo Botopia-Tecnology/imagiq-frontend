@@ -451,21 +451,24 @@ export default function ProductViewPage({ params }) {
         />
       </section>
 
-      {/* Sección de Estreno y Entrego */}
-      <div className="bg-white pb-2 md:pb-4 mt-[clamp(1rem,4vw,2rem)] relative z-10 clear-both">
-        <div className="container mx-auto px-4 md:px-6 lg:px-12">
-          <div className="max-w-7xl mx-auto">
-            <TradeInSection
-              onTradeInComplete={(deviceName, value) => {
-                console.log('Trade-in completado:', deviceName, value);
-              }}
-              productSku={productSelection.selectedSku || productSelectionState?.selectedSku || undefined}
-              productName={productToUse.name}
-              skuPostback={productSelection.selectedSkuPostback || productSelectionState?.selectedSkuPostback || undefined}
-            />
+      {/* Sección de Estreno y Entrego - solo si el producto acepta retoma */}
+      {(productSelection.selectedVariant?.indRetoma === 1 ||
+        (!productSelection.selectedVariant && productToUse.acceptsTradeIn)) && (
+        <div className="bg-white pb-2 md:pb-4 mt-[clamp(1rem,4vw,2rem)] relative z-10 clear-both">
+          <div className="container mx-auto px-4 md:px-6 lg:px-12">
+            <div className="max-w-7xl mx-auto">
+              <TradeInSection
+                onTradeInComplete={(deviceName, value) => {
+                  console.log('Trade-in completado:', deviceName, value);
+                }}
+                productSku={productSelection.selectedSku || productSelectionState?.selectedSku || undefined}
+                productName={productToUse.name}
+                skuPostback={productSelection.selectedSkuPostback || productSelectionState?.selectedSkuPostback || undefined}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Beneficios imagiq */}
       <BenefitsSection />

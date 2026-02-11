@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import MultimediaBannerCarousel from './MultimediaBannerCarousel';
 import ProductSection from './ProductSection';
 import FAQAccordion from './FAQAccordion';
+import FormPageRenderer from './FormPageRenderer';
 import type { MultimediaPageData } from '@/services/multimedia-pages.service';
 
 interface MultimediaPageClientProps {
@@ -37,6 +38,11 @@ export default function MultimediaPageClient({ pageData }: MultimediaPageClientP
   }, []);
 
   const { page, banners, faqs, product_cards } = data;
+
+  // Render form page if page_type is 'form'
+  if (page.page_type === 'form') {
+    return <FormPageRenderer pageData={page} banners={banners} faqs={faqs} />;
+  }
 
   return (
     <div className="min-h-screen bg-white -mt-12">

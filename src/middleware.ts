@@ -133,6 +133,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Preview mode: dejar pasar sin validar slug (usado por el dashboard para vista previa)
+  if (request.nextUrl.searchParams.get("mode") === "preview") {
+    return NextResponse.next();
+  }
+
   // Validar que el slug esté en la lista de activos
   const validSlugSet = await getValidSlugs();
 

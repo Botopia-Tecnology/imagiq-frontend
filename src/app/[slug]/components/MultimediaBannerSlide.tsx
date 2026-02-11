@@ -12,10 +12,13 @@ import type { MultimediaPageBanner } from '@/services/multimedia-pages.service';
 import type { ContentBlock } from '@/types/banner';
 import { getCloudinaryUrl } from '@/lib/cloudinary';
 
+export type BannerSlideVariant = 'hero' | 'side' | 'fullscreen';
+
 interface MultimediaBannerSlideProps {
   banner: MultimediaPageBanner;
   isActive: boolean;
   isMobile: boolean;
+  variant?: BannerSlideVariant;
   onVideoStart?: () => void;
   onVideoEnd?: () => void;
 }
@@ -24,6 +27,7 @@ export default function MultimediaBannerSlide({
   banner,
   isActive,
   isMobile,
+  variant = 'hero',
   onVideoStart,
   onVideoEnd,
 }: MultimediaBannerSlideProps) {
@@ -87,25 +91,33 @@ export default function MultimediaBannerSlide({
       </video>
     );
   } else if (imageUrl) {
-    // Aplicar optimizaciones de Cloudinary para landing pages
-    const optimizedImageUrl = getCloudinaryUrl(
-      imageUrl,
-      isMobile ? 'mobile-banner' : 'landing-banner'
-    );
+    // Para side variant, usar 'original' para no distorsionar con transforms panorámicos
+    let transformType: Parameters<typeof getCloudinaryUrl>[1] = 'landing-banner';
+    if (variant === 'side') {
+      transformType = 'original';
+    } else if (isMobile) {
+      transformType = 'mobile-banner';
+    }
+    const optimizedImageUrl = getCloudinaryUrl(imageUrl, transformType);
 
     mediaContent = (
       <Image
         src={optimizedImageUrl}
         alt={banner.title || banner.name}
         fill
-        className="object-cover"
+        className={variant === 'side' ? "object-cover object-left" : "object-cover"}
         priority={isActive}
       />
     );
   }
 
+  // Clases del contenedor según variante
+  const containerClass = variant === 'hero'
+    ? "relative w-full aspect-[828/620] md:aspect-[2520/620] overflow-hidden"
+    : "relative w-full h-full overflow-hidden";
+
   return (
-    <div className="relative w-full aspect-[828/620] md:aspect-[2520/620] overflow-hidden">
+    <div className={containerClass}>
       {/* Fondo - Imagen o Video */}
       {mediaContent}
 

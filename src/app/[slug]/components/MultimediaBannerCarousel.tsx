@@ -7,13 +7,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import MultimediaBannerSlide from './MultimediaBannerSlide';
+import type { BannerSlideVariant } from './MultimediaBannerSlide';
 import type { MultimediaPageBanner } from '@/services/multimedia-pages.service';
 
 interface MultimediaBannerCarouselProps {
   banners: MultimediaPageBanner[];
+  variant?: BannerSlideVariant;
 }
 
-export default function MultimediaBannerCarousel({ banners }: MultimediaBannerCarouselProps) {
+export default function MultimediaBannerCarousel({ banners, variant = 'hero' }: MultimediaBannerCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -52,24 +54,27 @@ export default function MultimediaBannerCarousel({ banners }: MultimediaBannerCa
     return null;
   }
 
+  const isHero = variant === 'hero';
+
   return (
-    <section className="relative w-full px-4 md:px-6 lg:px-8 pt-15 md:pt-8 lg:pt-15">
+    <section className={isHero ? "relative w-full px-4 md:px-6 lg:px-8 pt-15 md:pt-8 lg:pt-15" : "relative w-full h-full"}>
       {/* Container que ocupa todo el ancho respetando los márgenes */}
-      <div className="relative w-full mx-auto overflow-hidden rounded-3xl">
-        <div className="relative w-full">
+      <div className={isHero ? "relative w-full mx-auto overflow-hidden rounded-3xl" : "relative w-full h-full overflow-hidden rounded-2xl"}>
+        <div className={isHero ? "relative w-full" : "relative w-full h-full"}>
           {banners.map((banner, index) => (
             <div
               key={banner.id}
               className={`transition-opacity duration-500 ${
-                index === currentIndex 
-                  ? 'opacity-100 relative z-10' 
+                index === currentIndex
+                  ? 'opacity-100 relative z-10'
                   : 'opacity-0 absolute inset-0 pointer-events-none z-0'
-              }`}
+              }${isHero ? '' : ' h-full'}`}
             >
               <MultimediaBannerSlide
                 banner={banner}
                 isActive={index === currentIndex}
                 isMobile={isMobile}
+                variant={variant}
                 onVideoStart={handleVideoStart}
                 onVideoEnd={handleVideoEnd}
               />

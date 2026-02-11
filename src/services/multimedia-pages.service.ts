@@ -63,7 +63,7 @@ export interface LegalSection {
 // Configuración de campos del formulario
 export interface FormField {
   id: string;
-  type: 'text' | 'email' | 'phone' | 'number' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'address';
+  type: 'text' | 'email' | 'phone' | 'number' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'address' | 'paragraph';
   label: string;
   placeholder?: string;
   required: boolean;
@@ -76,6 +76,7 @@ export interface FormField {
     message?: string;
   };
   width: 'full' | 'half';
+  content?: string;
 }
 
 export interface FormConfig {

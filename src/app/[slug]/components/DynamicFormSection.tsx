@@ -10,6 +10,7 @@ import { submitFormResponse } from "@/services/form-submissions.service";
 import type { MultimediaPage, FormField } from "@/services/multimedia-pages.service";
 import { usePlacesAutocomplete } from "@/hooks/usePlacesAutocomplete";
 import type { PlacePrediction } from "@/types/places.types";
+import { renderLinkedText } from "@/utils/render-linked-text";
 
 const PHONE_COUNTRIES = [
   { code: "CO", name: "Colombia", dialCode: "+57", flag: "🇨🇴" },
@@ -107,6 +108,7 @@ export default function DynamicFormSection({ pageData }: DynamicFormSectionProps
     // Validate all fields
     const newErrors: Record<string, string> = {};
     fields.forEach((field) => {
+      if (field.type === "paragraph") return; // Skip static text
       const error = validateField(field, formData[field.id]);
       if (error) newErrors[field.id] = error;
     });
@@ -118,7 +120,12 @@ export default function DynamicFormSection({ pageData }: DynamicFormSectionProps
 
     setIsSubmitting(true);
     try {
-      await submitFormResponse(pageData.id, formData);
+      // Exclude paragraph fields from submission data
+      const paragraphIds = new Set(fields.filter(f => f.type === "paragraph").map(f => f.id));
+      const submitData = Object.fromEntries(
+        Object.entries(formData).filter(([key]) => !paragraphIds.has(key))
+      );
+      await submitFormResponse(pageData.id, submitData);
 
       if (successConfig?.type === "redirect" && successConfig.redirect_url) {
         window.location.href = successConfig.redirect_url;
@@ -156,7 +163,7 @@ export default function DynamicFormSection({ pageData }: DynamicFormSectionProps
             />
           </svg>
           <p className="text-lg font-medium text-green-800">
-            {successConfig?.message || "¡Gracias! Tu respuesta ha sido enviada exitosamente."}
+            {renderLinkedText(successConfig?.message || "¡Gracias! Tu respuesta ha sido enviada exitosamente.")}
           </p>
         </div>
         <a
@@ -193,13 +200,21 @@ export default function DynamicFormSection({ pageData }: DynamicFormSectionProps
               key={field.id}
               className={field.width === "half" ? "md:col-span-1 col-span-1" : "col-span-1 md:col-span-2"}
             >
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {field.label}
-                {field.required && <span className="text-red-500 ml-1">*</span>}
-              </label>
-              {renderField(field, formData[field.id], (v: unknown) => handleChange(field.id, v))}
-              {errors[field.id] && (
-                <p className="text-sm text-red-500 mt-1">{errors[field.id]}</p>
+              {field.type === "paragraph" ? (
+                <div className="text-sm text-gray-600 py-1">
+                  {renderLinkedText(field.content || "")}
+                </div>
+              ) : (
+                <>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {renderLinkedText(field.label)}
+                    {field.required && <span className="text-red-500 ml-1">*</span>}
+                  </label>
+                  {renderField(field, formData[field.id], (v: unknown) => handleChange(field.id, v))}
+                  {errors[field.id] && (
+                    <p className="text-sm text-red-500 mt-1">{errors[field.id]}</p>
+                  )}
+                </>
               )}
             </div>
           ))}

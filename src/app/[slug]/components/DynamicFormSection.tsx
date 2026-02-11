@@ -317,7 +317,7 @@ function renderField(field: FormField, value: unknown, onChange: (v: unknown) =>
                 onChange={() => onChange(opt)}
                 className="h-4 w-4 text-blue-600"
               />
-              <span className="text-sm">{opt}</span>
+              <span className="text-sm">{renderLinkedText(opt)}</span>
             </label>
           ))}
         </div>
@@ -342,7 +342,7 @@ function renderField(field: FormField, value: unknown, onChange: (v: unknown) =>
                   }}
                   className="h-4 w-4 text-blue-600 rounded"
                 />
-                <span className="text-sm">{opt}</span>
+                <span className="text-sm">{renderLinkedText(opt)}</span>
               </label>
             ))}
           </div>
@@ -356,7 +356,7 @@ function renderField(field: FormField, value: unknown, onChange: (v: unknown) =>
             onChange={(e) => onChange(e.target.checked)}
             className="h-4 w-4 text-blue-600 rounded"
           />
-          <span className="text-sm">{field.placeholder || field.label}</span>
+          <span className="text-sm">{renderLinkedText(field.placeholder || field.label)}</span>
         </label>
       );
 

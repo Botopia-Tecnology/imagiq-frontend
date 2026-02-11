@@ -159,6 +159,12 @@ export default function DynamicFormSection({ pageData }: DynamicFormSectionProps
             {successConfig?.message || "¡Gracias! Tu respuesta ha sido enviada exitosamente."}
           </p>
         </div>
+        <a
+          href="/"
+          className="inline-block mt-6 px-6 py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
+        >
+          Volver a la página principal
+        </a>
       </div>
     );
   }

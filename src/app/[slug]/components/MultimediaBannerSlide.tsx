@@ -105,7 +105,7 @@ export default function MultimediaBannerSlide({
         src={optimizedImageUrl}
         alt={banner.title || banner.name}
         fill
-        className={variant === 'side' ? "object-cover object-left" : "object-cover"}
+        className={variant === 'side' ? "object-contain object-top" : "object-cover"}
         priority={isActive}
       />
     );

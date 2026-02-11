@@ -60,6 +60,50 @@ export interface LegalSection {
   level: number;
 }
 
+// Configuración de campos del formulario
+export interface FormField {
+  id: string;
+  type: 'text' | 'email' | 'phone' | 'number' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'address';
+  label: string;
+  placeholder?: string;
+  required: boolean;
+  order: number;
+  options?: string[];
+  validation?: {
+    min_length?: number;
+    max_length?: number;
+    pattern?: string;
+    message?: string;
+  };
+  width: 'full' | 'half';
+}
+
+export interface FormConfig {
+  fields: FormField[];
+  submit_button_text: string;
+  submit_button_style?: {
+    background_color?: string;
+    text_color?: string;
+    border_radius?: string;
+  };
+}
+
+export interface FormLayout {
+  type: 'banner_top' | 'banner_left' | 'banner_right' | 'banner_behind' | 'form_only';
+  banner_width?: number;
+  form_width?: number;
+  form_max_width?: string;
+  background_color?: string;
+  form_background_color?: string;
+  banner_overlay_opacity?: number;
+}
+
+export interface FormSuccessConfig {
+  type: 'message' | 'redirect';
+  message?: string;
+  redirect_url?: string;
+}
+
 export interface MultimediaPage {
   id: string;
   slug: string;
@@ -87,10 +131,14 @@ export interface MultimediaPage {
   updated_at: string;
   created_by: string;
   // Campos para documentos legales
-  page_type?: 'landing' | 'legal' | 'promo';
+  page_type?: 'landing' | 'legal' | 'promo' | 'form';
   legal_content?: TiptapContent | null;
   legal_sections?: LegalSection[];
   last_updated_legal?: string | null;
+  // Campos para formularios dinámicos
+  form_config?: FormConfig;
+  form_layout?: FormLayout;
+  form_success_config?: FormSuccessConfig;
 }
 
 export interface MultimediaPageBanner {

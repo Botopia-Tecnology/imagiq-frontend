@@ -50,7 +50,7 @@ export default function FormPageRenderer({
     case "banner_left":
       return (
         <div
-          className="min-h-screen -mt-12 lg:mt-0 lg:min-h-[80vh]"
+          className="-mt-12 lg:mt-0"
           style={{ backgroundColor: layout.background_color }}
         >
           {/* Mobile: hero banner on top */}
@@ -59,14 +59,14 @@ export default function FormPageRenderer({
               <MultimediaBannerCarousel banners={banners} />
             </div>
           )}
-          <div className="lg:flex lg:min-h-[80vh] lg:px-8 lg:pt-4 lg:gap-6">
+          <div className="lg:flex lg:px-8 lg:pt-4 lg:gap-6">
             {/* Desktop: side banner on left */}
             {hasBanners && (
               <div
                 className="hidden lg:block flex-shrink-0"
-                style={{ width: `${layout.banner_width || 30}%` }}
+                style={{ width: `${layout.banner_width || 35}%` }}
               >
-                <div className="sticky top-16 h-[80vh]">
+                <div className="sticky top-16 h-[800px]">
                   <MultimediaBannerCarousel banners={banners} variant="side" />
                 </div>
               </div>
@@ -88,7 +88,7 @@ export default function FormPageRenderer({
     case "banner_right":
       return (
         <div
-          className="min-h-screen -mt-12 lg:mt-0 lg:min-h-[80vh]"
+          className="-mt-12 lg:mt-0"
           style={{ backgroundColor: layout.background_color }}
         >
           {/* Mobile: hero banner on top */}
@@ -97,7 +97,7 @@ export default function FormPageRenderer({
               <MultimediaBannerCarousel banners={banners} />
             </div>
           )}
-          <div className="lg:flex lg:min-h-[80vh] lg:px-8 lg:pt-4 lg:gap-6">
+          <div className="lg:flex lg:px-8 lg:pt-4 lg:gap-6">
             <div className="flex-1 px-4 py-8 lg:flex lg:flex-col lg:justify-center">
               <div className="w-full">
                 <DynamicFormSection pageData={pageData} />
@@ -112,9 +112,9 @@ export default function FormPageRenderer({
             {hasBanners && (
               <div
                 className="hidden lg:block flex-shrink-0"
-                style={{ width: `${layout.banner_width || 30}%` }}
+                style={{ width: `${layout.banner_width || 35}%` }}
               >
-                <div className="sticky top-16 h-[80vh]">
+                <div className="sticky top-16 h-[800px]">
                   <MultimediaBannerCarousel banners={banners} variant="side" />
                 </div>
               </div>

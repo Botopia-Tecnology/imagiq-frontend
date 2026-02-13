@@ -7,10 +7,12 @@ import { cn } from "@/lib/utils";
 import { Documento, SupportOrderResponse } from "@/types/support";
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import usePaySupportTicket from "@/hooks/usePaySupportTicket";
+import { useAuthContext } from "@/features/auth/context";
 import { getDocumentAbbreviation } from "@/lib/document-type";
+import { apiPost } from "@/lib/api-client";
 import { ArrowLeft, CreditCard, Building2, ChevronDown } from "lucide-react";
 import pseLogo from "@/img/iconos/logo-pse.png";
 import cardValidator from "card-validator";
@@ -127,6 +129,10 @@ export default function InicioDeSoportePage() {
   const [submittedCedula, setSubmittedCedula] = useState<string | null>(null);
   const [submittedOrder, setSubmittedOrder] = useState<string | null>(null);
   const { pay } = usePaySupportTicket();
+  const { logout, user } = useAuthContext();
+
+  // Silent user ensure state (invisible to user)
+  const [ensuredUserId, setEnsuredUserId] = useState<string | null>(null);
 
   // Read support verification results from query params (status, orderId)
   const searchParams = useSearchParams();
@@ -456,6 +462,7 @@ export default function InicioDeSoportePage() {
     setPaymentMethod("tarjeta");
     setSelectedBank("");
     resetCardForm();
+    setEnsuredUserId(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -484,6 +491,49 @@ export default function InicioDeSoportePage() {
       setErrors({});
       setSuccess("Solicitud enviada correctamente.");
       setIsModalOpen(true);
+
+      // Silently ensure user exists (create guest if needed) + internal logout if email differs
+      const doc0 = response.data?.obtenerDocumentosResult?.documentos?.[0];
+      if (doc0?.email) {
+        // Full logout if logged-in user email differs from support order email
+        if (user?.email) {
+          const loggedEmail = user.email.toLowerCase().trim();
+          const supportEmail = doc0.email.toLowerCase().trim();
+          if (loggedEmail !== supportEmail) {
+            logout();
+          }
+        }
+
+        // Check if user exists, create guest automatically if not
+        try {
+          const supportEmail = doc0.email.toLowerCase().trim();
+          const check = await apiPost<{ exists: boolean; userId: string | null }>(
+            "/api/orders/support/check-user",
+            { email: supportEmail }
+          );
+
+          if (check.exists && check.userId) {
+            setEnsuredUserId(check.userId);
+          } else {
+            // Create guest account automatically with Imagiq data
+            const tipoDocRaw = (doc0.tipoDocumento || "CC") as string;
+            const tipoAbbr = getDocumentAbbreviation(tipoDocRaw);
+            const guest = await apiPost<{ userId: string; created: boolean }>(
+              "/api/orders/support/create-guest",
+              {
+                email: supportEmail,
+                nombre_cliente: doc0.cliente || "",
+                movil: doc0.movil || "",
+                documento: cedula.replace(/\D/g, ""),
+                tipo_documento: tipoAbbr ?? tipoDocRaw,
+              }
+            );
+            setEnsuredUserId(guest.userId);
+          }
+        } catch (err) {
+          console.error("Error checking/creating support user:", err);
+        }
+      }
     } catch (err) {
       console.error(err);
       setSuccess("Ocurrió un error al enviar la solicitud.");
@@ -643,7 +693,7 @@ export default function InicioDeSoportePage() {
                   <input
                     id="cedula"
                     value={cedula}
-                    onChange={(ev) => setCedula(ev.target.value)}
+                    onChange={(ev) => setCedula(ev.target.value.replace(/\D/g, ""))}
                     type="tel"
                     inputMode="numeric"
                     placeholder="Ej: 12345678"

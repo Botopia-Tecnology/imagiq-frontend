@@ -36,6 +36,9 @@ const DetailsProductSection: React.FC<{
     selectedStockTotal: number | null;
     selectedVariant: ProductVariant | null;
     selectedSkuPostback: string | null;
+    selectedSkuflixmedia: string | null;
+    selectedModelo: string | null;
+    selectedCodigoMarket: string | null;
     selection: {
       selectedColor: string | null;
       selectedCapacity: string | null;
@@ -93,6 +96,9 @@ const DetailsProductSection: React.FC<{
         selectedStockTotal: productSelection.selectedStockTotal,
         selectedVariant: productSelection.selectedVariant,
         selectedSkuPostback: productSelection.selectedSkuPostback,
+        selectedSkuflixmedia: productSelection.selectedSkuflixmedia,
+        selectedModelo: productSelection.selectedModelo,
+        selectedCodigoMarket: productSelection.selectedCodigoMarket,
         selection: productSelection.selection,
         getSelectedColorOption: productSelection.getSelectedColorOption,
       });
@@ -104,6 +110,9 @@ const DetailsProductSection: React.FC<{
     productSelection.selectedStockTotal,
     productSelection.selectedVariant,
     productSelection.selectedSkuPostback,
+    productSelection.selectedSkuflixmedia,
+    productSelection.selectedModelo,
+    productSelection.selectedCodigoMarket,
     productSelection.selection,
     productSelection.getSelectedColorOption,
     onProductSelectionChange,
@@ -479,7 +488,7 @@ const DetailsProductSection: React.FC<{
                 </header>
 
                 <AddiFinancing
-                  productName={product.name}
+                  productName={cleanProductName(productSelection.selectedModelo || product.name)}
                   selectedColor={
                     productSelection.getSelectedColorOption()
                       ?.nombreColorDisplay ||

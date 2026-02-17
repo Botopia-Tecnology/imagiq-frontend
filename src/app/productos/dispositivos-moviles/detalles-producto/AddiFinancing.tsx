@@ -137,22 +137,22 @@ export default function AddiFinancing({
       <div className="bg-gray-50 rounded-2xl p-4 sm:p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 mb-32 w-full">
         <h3 className="text-lg sm:text-xl font-bold text-[#222] mb-4">Resumen de Compra</h3>
 
-      {productName && (
-        <div className="mb-4">
-          <h4 className="text-base sm:text-lg font-semibold text-[#222] mb-1">
-            {productName}
-          </h4>
-          {(selectedColor || selectedStorage || selectedRam) && (
-            <div className="text-sm text-[#666]">
-              {selectedColor && <span>{selectedColor}</span>}
-              {selectedColor && (selectedStorage || selectedRam) && <span> | </span>}
-              {selectedStorage && <span>{selectedStorage}</span>}
-              {selectedStorage && selectedRam && <span> | </span>}
-              {selectedRam && <span>{selectedRam}</span>}
-            </div>
-          )}
-        </div>
-      )}
+      {productName && (() => {
+        const isValid = (v?: string) => v && v.trim() !== '' && v.trim() !== '-' && v.trim().toLowerCase() !== 'no aplica';
+        const details = [selectedColor, selectedStorage, selectedRam].filter(isValid);
+        return (
+          <div className="mb-4">
+            <h4 className="text-base sm:text-lg font-semibold text-[#222] mb-1">
+              {productName}
+            </h4>
+            {details.length > 0 && (
+              <div className="text-sm text-[#666]">
+                {details.join(' | ')}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="border-t border-gray-300 pt-4 mb-4"></div>
 

@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 import { Documento, SupportOrderResponse } from "@/types/support";
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import usePaySupportTicket from "@/hooks/usePaySupportTicket";
 import { useAuthContext } from "@/features/auth/context";
 import { getDocumentAbbreviation } from "@/lib/document-type";
@@ -22,6 +22,9 @@ type DocumentoWithRegistro = Documento & { registro?: string };
 
 type PaySupportResult = {
   redirect_url?: string;
+  requires3DS?: boolean;
+  ticketId?: string;
+  data3DS?: Record<string, unknown>;
   message?: string;
   [key: string]: unknown;
 };
@@ -130,6 +133,60 @@ export default function InicioDeSoportePage() {
   const [submittedOrder, setSubmittedOrder] = useState<string | null>(null);
   const { pay } = usePaySupportTicket();
   const { logout, user } = useAuthContext();
+  const router = useRouter();
+  const isRedirectingRef = useRef(false);
+
+  // 3DS message listener — mirrors Step7.tsx pattern
+  useEffect(() => {
+    const handle3DSMessage = (event: MessageEvent) => {
+      if (!event.data) return;
+
+      let data = event.data;
+      if (typeof data === "string") {
+        try { data = JSON.parse(data); } catch { /* ignore non-JSON */ }
+      }
+
+      const isEpaycoEvent =
+        data.success !== undefined ||
+        data.message !== undefined ||
+        (data.data && data.data.ref_payco) ||
+        data.MessageType === "profile.completed";
+
+      if (!isEpaycoEvent) return;
+      if (isRedirectingRef.current) return;
+
+      if (
+        (data.success && data.success !== "false") ||
+        (data.data && data.data.ref_payco)
+      ) {
+        const ticketId = localStorage.getItem("pending_support_ticket_id");
+        if (ticketId) {
+          isRedirectingRef.current = true;
+          localStorage.removeItem("pending_support_ticket_id");
+          router.push(`/support/verify-purchase/${ticketId}`);
+        }
+      } else if (
+        data.success === false ||
+        data.message === "Error" ||
+        (data.MessageType === "profile.completed" && data.Status === false)
+      ) {
+        localStorage.removeItem("pending_support_ticket_id");
+        setIsProcessingPayment(false);
+        alert("La autenticación 3D Secure falló. Intenta con otro medio de pago.");
+        try {
+          document.querySelectorAll("iframe").forEach((iframe) => {
+            if (iframe.src.includes("epayco") || iframe.src.includes("3ds") || !iframe.id) {
+              iframe.remove();
+            }
+          });
+          document.body.style.overflow = "";
+        } catch { /* ignore cleanup errors */ }
+      }
+    };
+
+    window.addEventListener("message", handle3DSMessage);
+    return () => window.removeEventListener("message", handle3DSMessage);
+  }, [router]);
 
   // Silent user ensure state (invisible to user)
   const [ensuredUserId, setEnsuredUserId] = useState<string | null>(null);
@@ -419,6 +476,22 @@ export default function InicioDeSoportePage() {
 
       // Llamar al hook para pagar
       const result = (await pay(payloadBase)) as PaySupportResult;
+
+      // Handle 3DS challenge if required
+      if (result?.requires3DS && result?.data3DS) {
+        if (result.ticketId) {
+          localStorage.setItem("pending_support_ticket_id", String(result.ticketId));
+        }
+        if (typeof window !== "undefined" && window.validate3ds) {
+          window.validate3ds(result.data3DS);
+          return; // Redirect happens in the 3DS message listener
+        } else {
+          alert("Error: Script de validación 3DS no disponible. Recarga la página.");
+          setIsProcessingPayment(false);
+          return;
+        }
+      }
+
       if (result?.redirect_url) {
         try {
           new URL(result.redirect_url);

@@ -19,7 +19,6 @@ import { useStockNotification } from "@/hooks/useStockNotification";
 import { useAnalytics } from "@/lib/analytics/hooks/useAnalytics";
 import { useTradeInPrefetch } from "@/hooks/useTradeInPrefetch";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import StickyPriceBar from "@/app/productos/dispositivos-moviles/detalles-producto/StickyPriceBar";
 import QuickNavBar from "../../viewpremium/[id]/components/QuickNavBar";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import BenefitsSection from "../../dispositivos-moviles/detalles-producto/BenefitsSection";
@@ -37,6 +36,9 @@ type ProductSelectionData = {
   selectedStockTotal: number | null;
   selectedVariant: ProductVariant | null;
   selectedSkuPostback: string | null;
+  selectedSkuflixmedia: string | null;
+  selectedModelo: string | null;
+  selectedCodigoMarket: string | null;
   selection: {
     selectedColor: string | null;
     selectedCapacity: string | null;
@@ -326,10 +328,10 @@ export default function ProductViewPage({ params }) {
   const handleRequestStockNotification = async (email: string) => {
     if (!product) return;
 
-    const selectedSku = productSelection.selectedSku || productSelectionState?.selectedSku;
+    const selectedSku = productSelectionState?.selectedSku || productSelection.selectedSku;
     const codigoMarket =
+      productSelectionState?.selectedCodigoMarket ||
       productSelection.selectedCodigoMarket ||
-      productSelectionState?.selectedVariant?.codigoMarket ||
       product.apiProduct?.codigoMarketBase ||
       "";
 
@@ -339,23 +341,6 @@ export default function ProductViewPage({ params }) {
       sku: selectedSku || undefined,
       codigoMarket,
     });
-  };
-
-  // Helper para verificar stock
-  const hasStock = () => {
-    return (
-      productSelection.selectedStockTotal !== null &&
-      productSelection.selectedStockTotal > 0
-    );
-  };
-
-  // Obtener indcerointeres del producto
-  const getIndcerointeres = (): number => {
-    if (product?.apiProduct?.indcerointeres) {
-      const indcerointeresArray = product.apiProduct.indcerointeres;
-      return indcerointeresArray[0] ?? 0;
-    }
-    return 0;
   };
 
   if (!id) {
@@ -375,31 +360,9 @@ export default function ProductViewPage({ params }) {
   }
 
   const productToUse = apiProduct;
-  const indcerointeres = getIndcerointeres();
 
   return (
     <>
-      {/* StickyPriceBar - Barra sticky superior */}
-      <StickyPriceBar
-        deviceName={productToUse.name}
-        basePrice={productSelection.selectedPrice || (() => {
-          const priceStr = productToUse.price || "0";
-          return Number.parseInt(String(priceStr).replaceAll(/\D/g, ''), 10);
-        })()}
-        selectedStorage={productSelection.selection.selectedCapacity || undefined}
-        selectedColor={
-          productSelection.getSelectedColorOption()?.nombreColorDisplay ||
-          productSelection.selection.selectedColor ||
-          undefined
-        }
-        indcerointeres={indcerointeres}
-        allPrices={productToUse.apiProduct?.precioeccommerce || []}
-        isVisible={showStickyBar}
-        onBuyClick={() => {}}
-        hasStock={hasStock()}
-        onNotifyStock={stockNotification.openModal}
-      />
-
       {/* Barra de navegación rápida entre secciones */}
       <QuickNavBar isStickyBarVisible={showStickyBar} />
 
@@ -420,21 +383,22 @@ export default function ProductViewPage({ params }) {
           onClose={stockNotification.closeModal}
           productName={productToUse.name}
           productImage={
-            productSelection.selectedVariant?.imagePreviewUrl ||
             productSelectionState?.selectedVariant?.imagePreviewUrl ||
+            productSelection.selectedVariant?.imagePreviewUrl ||
             (typeof productToUse.image === "string"
               ? productToUse.image
               : smartphonesImg.src)
           }
           selectedColor={
-            productSelection.getSelectedColorOption()?.nombreColorDisplay ||
             productSelectionState?.getSelectedColorOption?.()?.nombreColorDisplay ||
             productSelectionState?.selection?.selectedColor ||
+            productSelection.getSelectedColorOption()?.nombreColorDisplay ||
+            productSelection.selection.selectedColor ||
             undefined
           }
           selectedStorage={
-            productSelection.selection.selectedCapacity ||
             productSelectionState?.selection?.selectedCapacity ||
+            productSelection.selection.selectedCapacity ||
             undefined
           }
           onNotificationRequest={handleRequestStockNotification}
@@ -452,8 +416,8 @@ export default function ProductViewPage({ params }) {
       </section>
 
       {/* Sección de Estreno y Entrego - solo si el producto acepta retoma */}
-      {(productSelection.selectedVariant?.indRetoma === 1 ||
-        (!productSelection.selectedVariant && productToUse.acceptsTradeIn)) && (
+      {((productSelectionState?.selectedVariant?.indRetoma ?? productSelection.selectedVariant?.indRetoma) === 1 ||
+        (!(productSelectionState?.selectedVariant || productSelection.selectedVariant) && productToUse.acceptsTradeIn)) && (
         <div className="bg-white pb-2 md:pb-4 mt-[clamp(1rem,4vw,2rem)] relative z-10 clear-both">
           <div className="container mx-auto px-4 md:px-6 lg:px-12">
             <div className="max-w-7xl mx-auto">
@@ -461,9 +425,9 @@ export default function ProductViewPage({ params }) {
                 onTradeInComplete={(deviceName, value) => {
                   console.log('Trade-in completado:', deviceName, value);
                 }}
-                productSku={productSelection.selectedSku || productSelectionState?.selectedSku || undefined}
+                productSku={productSelectionState?.selectedSku || productSelection.selectedSku || undefined}
                 productName={productToUse.name}
-                skuPostback={productSelection.selectedSkuPostback || productSelectionState?.selectedSkuPostback || undefined}
+                skuPostback={productSelectionState?.selectedSkuPostback || productSelection.selectedSkuPostback || undefined}
               />
             </div>
           </div>
@@ -481,8 +445,8 @@ export default function ProductViewPage({ params }) {
           </div>
         }>
           <FlixmediaPlayer
-            mpn={productSelection.selectedSkuflixmedia || productToUse.skuflixmedia || productToUse.apiProduct?.skuflixmedia?.[0]}
-            ean={productSelection.selectedVariant?.ean || productSelectionState?.selectedVariant?.ean}
+            mpn={productSelectionState?.selectedSkuflixmedia || productSelection.selectedSkuflixmedia || productToUse.skuflixmedia || productToUse.apiProduct?.skuflixmedia?.[0]}
+            ean={productSelectionState?.selectedVariant?.ean || productSelection.selectedVariant?.ean}
             productName={productToUse.name}
             productId={productToUse.id}
             segmento={productToUse.apiProduct?.segmento}

@@ -21,7 +21,10 @@ export default function VerifySupportPurchase(
 
   useEffect(() => {
     params.then(({ id }) => {
-      setOrderId(id);
+      // PSE bank redirects may append query params without '?' (e.g. &transferState=rejected)
+      // which Next.js captures as part of the [id] param. Strip anything after the UUID.
+      const cleanId = id.split("&")[0];
+      setOrderId(cleanId);
     });
   }, [params]);
 

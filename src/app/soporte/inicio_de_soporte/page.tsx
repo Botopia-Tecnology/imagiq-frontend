@@ -483,6 +483,9 @@ export default function InicioDeSoportePage() {
           localStorage.setItem("pending_support_ticket_id", String(result.ticketId));
         }
         if (typeof window !== "undefined" && window.validate3ds) {
+          // Close payment modal so the 3DS modal is visible on top
+          setIsModalOpen(false);
+          setIsProcessingPayment(false);
           window.validate3ds(result.data3DS);
           return; // Redirect happens in the 3DS message listener
         } else {

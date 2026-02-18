@@ -24,6 +24,7 @@ type PaySupportResult = {
   redirect_url?: string;
   requires3DS?: boolean;
   ticketId?: string;
+  orderId?: string;
   data3DS?: Record<string, unknown>;
   message?: string;
   [key: string]: unknown;
@@ -159,18 +160,18 @@ export default function InicioDeSoportePage() {
         (data.success && data.success !== "false") ||
         (data.data && data.data.ref_payco)
       ) {
-        const ticketId = localStorage.getItem("pending_support_ticket_id");
-        if (ticketId) {
+        const orderId = localStorage.getItem("pending_support_order_id");
+        if (orderId) {
           isRedirectingRef.current = true;
-          localStorage.removeItem("pending_support_ticket_id");
-          router.push(`/support/verify-purchase/${ticketId}`);
+          localStorage.removeItem("pending_support_order_id");
+          router.push(`/support/verify-purchase/${orderId}`);
         }
       } else if (
         data.success === false ||
         data.message === "Error" ||
         (data.MessageType === "profile.completed" && data.Status === false)
       ) {
-        localStorage.removeItem("pending_support_ticket_id");
+        localStorage.removeItem("pending_support_order_id");
         setIsProcessingPayment(false);
         alert("La autenticación 3D Secure falló. Intenta con otro medio de pago.");
         try {
@@ -479,8 +480,8 @@ export default function InicioDeSoportePage() {
 
       // Handle 3DS challenge if required
       if (result?.requires3DS && result?.data3DS) {
-        if (result.ticketId) {
-          localStorage.setItem("pending_support_ticket_id", String(result.ticketId));
+        if (result.orderId) {
+          localStorage.setItem("pending_support_order_id", String(result.orderId));
         }
         if (typeof window !== "undefined" && window.validate3ds) {
           // Close payment modal so the 3DS modal is visible on top

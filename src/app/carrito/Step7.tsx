@@ -29,6 +29,7 @@ import {
 import { CheckZeroInterestResponse, BeneficiosDTO, DetalleDispositivoRetoma } from "./types";
 import { apiPost } from "@/lib/api-client";
 import { safeGetLocalStorage } from "@/lib/localStorage";
+import { addressesService } from "@/services/addresses.service";
 import { productEndpoints, deliveryEndpoints, tradeInEndpoints } from "@/lib/api";
 import useSecureStorage from "@/hooks/useSecureStorage";
 import { User } from "@/types/user";
@@ -202,14 +203,29 @@ export default function Step7({ onBack }: Step7Props) {
   } | null>(null);
 
   // Cargar dirección desde localStorage al montar el componente
+  // y validar que sea la predeterminada del usuario
   useEffect(() => {
     try {
       const addressStr = localStorage.getItem('checkout-address');
       if (addressStr) {
         const parsed = JSON.parse(addressStr);
-        //         console.log("📍 [Step7 - Init] Dirección cargada desde localStorage:", parsed);
-        //         console.log("📍 [Step7 - Init] UUID de dirección:", parsed.id);
         setCheckoutAddress(parsed);
+
+        // Siempre asegurar que la dirección de entrega sea la predeterminada en BD
+        if (parsed.id) {
+          console.log("📍 [Step7 - Validación dirección] Asegurando que sea predeterminada:", {
+            id: parsed.id,
+            linea_uno: parsed.linea_uno,
+            ciudad: parsed.ciudad,
+          });
+          addressesService.setDefaultAddress(parsed.id)
+            .then(() => {
+              console.log("✅ [Step7] Dirección de entrega confirmada como predeterminada:", parsed.id);
+            })
+            .catch((err) => {
+              console.error("⚠️ [Step7] Error al establecer dirección como predeterminada (no bloquea):", err);
+            });
+        }
       } else {
         console.warn("⚠️ [Step7 - Init] No se encontró checkout-address en localStorage");
       }

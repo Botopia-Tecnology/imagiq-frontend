@@ -76,24 +76,12 @@ export default function LoginPage() {
     return null;
   })();
 
-  // Solo mostrar "Ya iniciaste sesión" si está autenticado Y NO es invitado (rol 3)
-  if (isAuthenticated && userRole !== 3) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="w-full max-w-md text-center space-y-6">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Ya iniciaste sesión
-          </h1>
-          <p className="text-sm text-gray-600">
-            Si deseas acceder a tu panel, haz clic en el botón.
-          </p>
-          <Button onClick={() => router.push("/perfil")} className="w-full">
-            Ir al Dashboard
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // Si ya está autenticado y no es invitado, redirigir al home
+  useEffect(() => {
+    if (isAuthenticated && userRole !== 3) {
+      router.replace("/");
+    }
+  }, [isAuthenticated, userRole, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

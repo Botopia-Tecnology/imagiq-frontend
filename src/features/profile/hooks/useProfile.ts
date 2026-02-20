@@ -195,9 +195,9 @@ export const useProfile = (): UseProfileReturn => {
 
   // Logout
   const logout = useCallback(async () => {
-    authContext.logout();
     setProfileUser(null);
-    router.push("/login");
+    authContext.logout();
+    router.push("/");
   }, [authContext, router]);
 
   // Cargar perfil al montar si hay usuario autenticado
@@ -222,6 +222,6 @@ export const useProfile = (): UseProfileReturn => {
       updateProfile,
       logout,
     },
-    isLoading: loading,
+    isLoading: loading || authContext.isLoading,
   };
 };

@@ -452,19 +452,8 @@ export default function Step7({ onBack }: Step7Props) {
         let clientEmail = "";
         let clientPhone = "";
 
-        if (billingDataStr) {
-          try {
-            const billing = JSON.parse(billingDataStr);
-            // Intentar separar nombre y apellido si vienen juntos
-            const nameParts = (billing.nombre || "").trim().split(" ");
-            if (nameParts.length > 0) {
-              clientFirstName = nameParts[0];
-              clientLastName = nameParts.slice(1).join(" ");
-            }
-            clientEmail = billing.email || "";
-            clientPhone = billing.telefono || "";
-          } catch (e) { console.error("Error parsing billing for recipient", e); }
-        } else if (userStr) {
+        // Usar datos del usuario para nombre/apellido (campos separados)
+        if (userStr) {
           try {
             const user = JSON.parse(userStr);
             clientFirstName = user.nombre || "";
@@ -472,6 +461,15 @@ export default function Step7({ onBack }: Step7Props) {
             clientEmail = user.email || "";
             clientPhone = user.telefono || user.celular || "";
           } catch (e) { console.error("Error parsing user for recipient", e); }
+        }
+
+        // Complementar con datos de facturación (email, teléfono) si existen
+        if (billingDataStr) {
+          try {
+            const billing = JSON.parse(billingDataStr);
+            if (!clientEmail) clientEmail = billing.email || "";
+            if (!clientPhone) clientPhone = billing.telefono || "";
+          } catch (e) { console.error("Error parsing billing for recipient", e); }
         }
 
         setRecipientData({
@@ -2899,13 +2897,11 @@ export default function Step7({ onBack }: Step7Props) {
         }
         userName={
           loggedUser?.nombre ||
-          (billingData?.nombre ? billingData.nombre.split(" ")[0] : "") ||
           recipientData?.firstName ||
           ""
         }
         userLastName={
           loggedUser?.apellido ||
-          (billingData?.nombre ? billingData.nombre.split(" ").slice(1).join(" ") : "") ||
           recipientData?.lastName ||
           ""
         }

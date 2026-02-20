@@ -111,6 +111,7 @@ const UserOptionsDropdown: React.FC<UserOptionsDropdownProps> = ({
             onClick={() => {
               handleClose();
               logout();
+              router.push("/");
             }}
           >
             <span className="block font-medium">Cerrar sesión</span>

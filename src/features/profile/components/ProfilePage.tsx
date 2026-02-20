@@ -76,6 +76,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
   };
 
   if (!state.user) {
+    if (isLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+          <LoadingSpinner size="sm" />
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow p-6 text-center">

@@ -105,6 +105,27 @@ export interface FormSuccessConfig {
   redirect_url?: string;
 }
 
+export interface LivestreamConfig {
+  primary_video_id: string;
+  backup_video_id?: string;
+  scheduled_start: string;
+  scheduled_end?: string;
+  enable_chat: boolean;
+  enable_countdown: boolean;
+  enable_live_badge: boolean;
+  enable_replay: boolean;
+  autoplay: boolean;
+  countdown_title?: string;
+  countdown_subtitle?: string;
+  countdown_cta_text?: string;
+  countdown_cta_url?: string;
+  thumbnail_url?: string;
+  failover_enabled: boolean;
+  failover_message?: string;
+  chat_position: 'right' | 'below';
+  enable_pip: boolean;
+}
+
 export interface MultimediaPage {
   id: string;
   slug: string;
@@ -132,7 +153,7 @@ export interface MultimediaPage {
   updated_at: string;
   created_by: string;
   // Campos para documentos legales
-  page_type?: 'landing' | 'legal' | 'promo' | 'form';
+  page_type?: 'landing' | 'legal' | 'promo' | 'form' | 'livestream';
   legal_content?: TiptapContent | null;
   legal_sections?: LegalSection[];
   last_updated_legal?: string | null;
@@ -140,6 +161,8 @@ export interface MultimediaPage {
   form_config?: FormConfig;
   form_layout?: FormLayout;
   form_success_config?: FormSuccessConfig;
+  // Campos para livestream
+  livestream_config?: LivestreamConfig | null;
 }
 
 export interface MultimediaPageBanner {
@@ -192,6 +215,32 @@ export interface MultimediaPageData {
   banners: MultimediaPageBanner[];
   faqs: MultimediaPageFAQ[];
   product_cards: ProductCardData[];
+}
+
+/**
+ * Obtiene las páginas multimedia activas de tipo livestream que tengan PiP habilitado
+ */
+export async function getActiveLivestreamPages(): Promise<MultimediaPage[]> {
+  try {
+    const response = await apiGet<{
+      data: Array<{ page: MultimediaPage; banners: MultimediaPageBanner[]; faqs: MultimediaPageFAQ[] }>;
+      meta: { total: number; page: number; limit: number; totalPages: number };
+    }>('/api/multimedia/pages/active?limit=50');
+
+    if (!response?.data || !Array.isArray(response.data)) return [];
+
+    return response.data
+      .map((item) => item.page)
+      .filter(
+        (p) =>
+          p.page_type === 'livestream' &&
+          p.livestream_config?.enable_pip &&
+          p.livestream_config?.primary_video_id,
+      );
+  } catch (error) {
+    console.error('Error fetching active livestream pages:', error);
+    return [];
+  }
 }
 
 /**

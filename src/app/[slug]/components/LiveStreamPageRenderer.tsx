@@ -37,7 +37,7 @@ export default function LiveStreamPageRenderer({
 
       {/* Livestream embed */}
       {pageData.livestream_config && (
-        <LiveStreamSection config={pageData.livestream_config} />
+        <LiveStreamSection config={pageData.livestream_config} slug={pageData.slug} />
       )}
 
       {/* Product title and description */}

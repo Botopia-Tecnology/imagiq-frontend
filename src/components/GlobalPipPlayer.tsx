@@ -1,0 +1,146 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import YouTube, { YouTubeEvent } from 'react-youtube';
+import { useGlobalPip } from '@/contexts/GlobalPipContext';
+
+export default function GlobalPipPlayer() {
+  const { activeStream, isGlobalPipVisible, dismissPip, clearStream } = useGlobalPip();
+  const router = useRouter();
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [showControls, setShowControls] = useState(false);
+  const constraintsRef = useRef({ top: 0, left: 0, right: 0, bottom: 0 });
+
+  // Recalculate drag constraints on resize
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const pipW = w >= 768 ? 384 : 280;
+      const pipH = w >= 768 ? 216 : 158;
+      constraintsRef.current = {
+        top: -(h - pipH - 24),
+        left: -(w - pipW - 24),
+        right: 0,
+        bottom: 0,
+      };
+    };
+
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  if (!activeStream || !isGlobalPipVisible) return null;
+
+  const handleExpand = () => {
+    router.push('/' + activeStream.slug);
+  };
+
+  const handleStateChange = (e: YouTubeEvent<number>) => {
+    // YT.PlayerState.ENDED = 0
+    if (e.data === 0) {
+      clearStream();
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        key="global-pip"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ duration: 0.25, ease: 'easeOut' }}
+        drag
+        dragConstraints={constraintsRef.current}
+        dragElastic={0.1}
+        dragMomentum={false}
+        onDragStart={() => setIsDragging(true)}
+        onDragEnd={() => setIsDragging(false)}
+        onMouseEnter={() => setShowControls(true)}
+        onMouseLeave={() => setShowControls(false)}
+        onTouchStart={() => setShowControls(true)}
+        className="fixed bottom-6 right-6 w-[280px] h-[158px] md:w-[384px] md:h-[216px] rounded-xl overflow-hidden shadow-2xl cursor-grab active:cursor-grabbing"
+        style={{ zIndex: 50000 }}
+      >
+        {/* YouTube player */}
+        <div
+          className="w-full h-full bg-black"
+          style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
+        >
+          <YouTube
+            videoId={activeStream.videoId}
+            opts={{
+              width: '100%',
+              height: '100%',
+              playerVars: {
+                autoplay: 1,
+                mute: 1,
+                modestbranding: 1,
+                rel: 0,
+                playsinline: 1,
+              },
+            }}
+            className="absolute inset-0 w-full h-full"
+            iframeClassName="w-full h-full"
+            onStateChange={handleStateChange}
+          />
+        </div>
+
+        {/* Controls overlay */}
+        <div
+          className={`absolute inset-0 transition-opacity duration-200 ${
+            showControls ? 'opacity-100' : 'opacity-0'
+          }`}
+          style={{ pointerEvents: showControls ? 'auto' : 'none' }}
+        >
+          {/* Top bar */}
+          <div className="absolute top-0 inset-x-0 flex items-center justify-between px-2 py-1.5 bg-gradient-to-b from-black/60 to-transparent">
+            {/* Close button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                dismissPip();
+              }}
+              className="flex items-center justify-center w-7 h-7 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+              aria-label="Cerrar mini-player"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M11 3L3 11M3 3l8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+
+            {/* Expand button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleExpand();
+              }}
+              className="flex items-center justify-center w-7 h-7 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+              aria-label="Expandir video"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M1 5V1h4M13 9v4H9M1 1l4.5 4.5M13 13L8.5 8.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Bottom: mini live indicator */}
+          <div className="absolute bottom-2 left-2">
+            <span className="flex items-center gap-1 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white" />
+              </span>
+              EN VIVO
+            </span>
+          </div>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}

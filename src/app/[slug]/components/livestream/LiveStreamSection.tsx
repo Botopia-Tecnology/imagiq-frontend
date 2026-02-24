@@ -1,9 +1,11 @@
 'use client';
 
+import { useEffect } from 'react';
 import type { LivestreamConfig } from '@/services/multimedia-pages.service';
 import { useLivestreamState } from '@/hooks/useLivestreamState';
 import { useLivestreamFailover } from '@/hooks/useLivestreamFailover';
 import { usePictureInPicture } from '@/hooks/usePictureInPicture';
+import { useGlobalPip } from '@/contexts/GlobalPipContext';
 import LiveStreamPlayer from './LiveStreamPlayer';
 import CountdownOverlay from './CountdownOverlay';
 import LiveBadge from './LiveBadge';
@@ -13,6 +15,7 @@ import PipPlayerWrapper from './PipPlayerWrapper';
 
 interface LiveStreamSectionProps {
   config: LivestreamConfig;
+  slug: string;
 }
 
 function PreStreamPlaceholder() {
@@ -47,12 +50,20 @@ function PreStreamPlaceholder() {
   );
 }
 
-export default function LiveStreamSection({ config }: LiveStreamSectionProps) {
+export default function LiveStreamSection({ config, slug }: LiveStreamSectionProps) {
   const streamState = useLivestreamState(config);
   const failover = useLivestreamFailover(config, streamState);
   const pip = usePictureInPicture({ enabled: config.enable_pip && streamState.phase === 'live' });
+  const { registerStream } = useGlobalPip();
 
   const { phase, activeVideoId, timeUntilStart } = streamState;
+
+  // Register stream in global context for cross-page PiP
+  useEffect(() => {
+    if (phase === 'live' && config.enable_pip) {
+      registerStream({ videoId: activeVideoId, slug });
+    }
+  }, [phase, config.enable_pip, activeVideoId, slug, registerStream]);
   const { isFailingOver, handlePlayerError, handlePlayerStateChange } = failover;
 
   const showChat = config.enable_chat && phase === 'live';

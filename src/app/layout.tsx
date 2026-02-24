@@ -30,6 +30,8 @@ import { SelectedColorProvider } from "@/contexts/SelectedColorContext";
 import { PointsProvider } from "@/contexts/PointsContext";
 import { SelectedStoreProvider } from "@/contexts/SelectedStoreContext";
 import { ChatbotProvider } from "@/contexts/ChatbotContext";
+import { GlobalPipProvider } from "@/contexts/GlobalPipContext";
+import GlobalPipPlayer from "@/components/GlobalPipPlayer";
 import { HeroProvider } from "@/contexts/HeroContext";
 import { CategoryMetadataProvider } from "@/contexts/CategoryMetadataContext";
 import MaintenanceScreen from "@/components/MaintenanceScreen";
@@ -173,6 +175,7 @@ export default function RootLayout({
                                 <PointsProvider>
                                   <SelectedStoreProvider>
                                     <ChatbotProvider>
+                                      <GlobalPipProvider>
                                       {/* Mostrar pantalla de mantenimiento si está activada */}
                                       {isMaintenanceMode ? (
                                         <MaintenanceScreen />
@@ -181,6 +184,9 @@ export default function RootLayout({
                                       )}
                                       {/* Widget del chatbot - solo si NO está en mantenimiento */}
                                       {!isMaintenanceMode && <ChatbotWidget />}
+                                      {/* Global PiP mini-player - persists across pages */}
+                                      {!isMaintenanceMode && <GlobalPipPlayer />}
+                                      </GlobalPipProvider>
                                     </ChatbotProvider>
                                   </SelectedStoreProvider>
                                   {/* Toast notifications */}

@@ -9,6 +9,7 @@ import MultimediaBannerCarousel from './MultimediaBannerCarousel';
 import ProductSection from './ProductSection';
 import FAQAccordion from './FAQAccordion';
 import FormPageRenderer from './FormPageRenderer';
+import LiveStreamPageRenderer from './LiveStreamPageRenderer';
 import type { MultimediaPageData } from '@/services/multimedia-pages.service';
 
 interface MultimediaPageClientProps {
@@ -38,6 +39,18 @@ export default function MultimediaPageClient({ pageData }: MultimediaPageClientP
   }, []);
 
   const { page, banners, faqs, product_cards } = data;
+
+  // Render livestream page if page_type is 'livestream'
+  if (page.page_type === 'livestream' && page.livestream_config) {
+    return (
+      <LiveStreamPageRenderer
+        pageData={page}
+        banners={banners}
+        faqs={faqs}
+        productCards={product_cards}
+      />
+    );
+  }
 
   // Render form page if page_type is 'form'
   if (page.page_type === 'form') {

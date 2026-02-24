@@ -33,26 +33,52 @@ export function GlobalPipProvider({ children }: { children: ReactNode }) {
   const [isDismissed, setIsDismissed] = useState(false);
   const [isGlobalPipVisible, setIsGlobalPipVisible] = useState(false);
 
-  // Auto-fetch active livestream on mount
+  // Auto-fetch active livestream on mount — only show PiP when stream is live
   useEffect(() => {
     let cancelled = false;
+    let startTimer: ReturnType<typeof setTimeout> | null = null;
 
     async function fetchActiveStream() {
       const pages = await getActiveLivestreamPages();
       if (cancelled) return;
+      if (pages.length === 0) return;
 
-      if (pages.length > 0) {
-        const page = pages[0]; // Use the first active livestream
-        const config = page.livestream_config!;
+      const page = pages[0];
+      const config = page.livestream_config!;
+      const now = Date.now();
+      const startTime = new Date(config.scheduled_start).getTime();
+      const endTime = config.scheduled_end
+        ? new Date(config.scheduled_end).getTime()
+        : null;
+
+      // Stream already ended — don't show
+      if (endTime && now >= endTime) return;
+
+      const register = () => {
         setActiveStream((prev) => {
           if (prev?.videoId === config.primary_video_id && prev?.slug === page.slug) return prev;
           return { videoId: config.primary_video_id, slug: page.slug };
         });
+      };
+
+      if (now >= startTime) {
+        // Stream is live — register immediately
+        register();
+      } else {
+        // Stream hasn't started — schedule auto-activation for when it begins
+        const delay = startTime - now;
+        startTimer = setTimeout(() => {
+          if (!cancelled) register();
+        }, delay);
       }
     }
 
     fetchActiveStream();
-    return () => { cancelled = true; };
+
+    return () => {
+      cancelled = true;
+      if (startTimer) clearTimeout(startTimer);
+    };
   }, []);
 
   // Route-based visibility: show PiP when NOT on the stream page

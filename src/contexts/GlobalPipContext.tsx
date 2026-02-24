@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
+import { getActiveLivestreamPages } from '@/services/multimedia-pages.service';
 
 interface ActiveStream {
   videoId: string;
@@ -31,6 +32,28 @@ export function GlobalPipProvider({ children }: { children: ReactNode }) {
   const [activeStream, setActiveStream] = useState<ActiveStream | null>(null);
   const [isDismissed, setIsDismissed] = useState(false);
   const [isGlobalPipVisible, setIsGlobalPipVisible] = useState(false);
+
+  // Auto-fetch active livestream on mount
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchActiveStream() {
+      const pages = await getActiveLivestreamPages();
+      if (cancelled) return;
+
+      if (pages.length > 0) {
+        const page = pages[0]; // Use the first active livestream
+        const config = page.livestream_config!;
+        setActiveStream((prev) => {
+          if (prev?.videoId === config.primary_video_id && prev?.slug === page.slug) return prev;
+          return { videoId: config.primary_video_id, slug: page.slug };
+        });
+      }
+    }
+
+    fetchActiveStream();
+    return () => { cancelled = true; };
+  }, []);
 
   // Route-based visibility: show PiP when NOT on the stream page
   useEffect(() => {

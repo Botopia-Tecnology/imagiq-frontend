@@ -216,6 +216,32 @@ export interface MultimediaPageData {
 }
 
 /**
+ * Obtiene las páginas multimedia activas de tipo livestream que tengan PiP habilitado
+ */
+export async function getActiveLivestreamPages(): Promise<MultimediaPage[]> {
+  try {
+    const response = await apiGet<{
+      data: Array<{ page: MultimediaPage; banners: MultimediaPageBanner[]; faqs: MultimediaPageFAQ[] }>;
+      meta: { total: number; page: number; limit: number; totalPages: number };
+    }>('/api/multimedia/pages/active?limit=50');
+
+    if (!response?.data || !Array.isArray(response.data)) return [];
+
+    return response.data
+      .map((item) => item.page)
+      .filter(
+        (p) =>
+          p.page_type === 'livestream' &&
+          p.livestream_config?.enable_pip &&
+          p.livestream_config?.primary_video_id,
+      );
+  } catch (error) {
+    console.error('Error fetching active livestream pages:', error);
+    return [];
+  }
+}
+
+/**
  * Obtiene una página multimedia activa por slug
  */
 export async function getActivePageBySlug(slug: string): Promise<MultimediaPageData | null> {

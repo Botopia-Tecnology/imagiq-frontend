@@ -79,6 +79,8 @@ export default function LiveStreamSection({ config, slug }: LiveStreamSectionPro
           subtitle={config.countdown_subtitle}
           thumbnailUrl={config.thumbnail_url}
           videoId={config.primary_video_id}
+          ctaText={config.countdown_cta_text}
+          ctaUrl={config.countdown_cta_url}
         />
         <PreStreamPlaceholder />
       </section>

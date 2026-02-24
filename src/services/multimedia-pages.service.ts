@@ -117,6 +117,8 @@ export interface LivestreamConfig {
   autoplay: boolean;
   countdown_title?: string;
   countdown_subtitle?: string;
+  countdown_cta_text?: string;
+  countdown_cta_url?: string;
   thumbnail_url?: string;
   failover_enabled: boolean;
   failover_message?: string;

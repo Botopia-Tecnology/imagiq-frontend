@@ -6,6 +6,8 @@ interface CountdownOverlayProps {
   subtitle?: string;
   thumbnailUrl?: string;
   videoId: string;
+  ctaText?: string;
+  ctaUrl?: string;
 }
 
 function formatCountdown(ms: number) {
@@ -29,6 +31,8 @@ export default function CountdownOverlay({
   subtitle,
   thumbnailUrl,
   videoId,
+  ctaText,
+  ctaUrl,
 }: CountdownOverlayProps) {
   const countdown = formatCountdown(timeUntilStart);
   const bgImage = thumbnailUrl || `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
@@ -72,6 +76,16 @@ export default function CountdownOverlay({
           <span className="text-xl sm:text-2xl md:text-4xl font-light text-white/50">:</span>
           <CountdownUnit value={countdown.seconds} label="SEG" />
         </div>
+
+        {/* CTA button */}
+        {ctaText && ctaUrl && (
+          <a
+            href={ctaUrl}
+            className="inline-block mt-4 sm:mt-6 px-6 py-2.5 sm:py-3 bg-white text-gray-900 font-semibold rounded-full hover:bg-gray-100 transition-colors text-sm sm:text-base"
+          >
+            {ctaText}
+          </a>
+        )}
 
         {/* Pulsing indicator */}
         <div className="mt-4 sm:mt-6 flex items-center gap-2">

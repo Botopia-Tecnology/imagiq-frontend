@@ -27,6 +27,7 @@ import {
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 import type { FrontendFilterParams } from "@/lib/sharedInterfaces";
 import { productCache } from "@/lib/productCache";
+import { connectSocket } from "@/lib/socket";
 
 type ProductFilters = FrontendFilterParams;
 
@@ -884,6 +885,29 @@ export const useProducts = (
       await fetchProducts(filtersToUse, false, 0);
     }
   }, [initialFilters, currentFilters, currentSearchQuery, currentPage, fetchProducts, searchProducts, convertFiltersToApiParams]);
+
+  // Keep a stable ref to refreshProducts so the socket listener doesn't re-register
+  const refreshProductsRef = useRef(refreshProducts);
+  refreshProductsRef.current = refreshProducts;
+
+  // Listen for real-time product updates (e.g. visibility changes from dashboard)
+  // When received, clear the in-memory cache and refetch fresh data
+  useEffect(() => {
+    const socket = connectSocket('products');
+
+    const handleProductsUpdated = () => {
+      console.log('[useProducts] products_updated received, clearing cache and refetching');
+      productCache.clear();
+      refreshProductsRef.current();
+    };
+
+    socket.on('products_updated', handleProductsUpdated);
+
+    return () => {
+      socket.off('products_updated', handleProductsUpdated);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Cargar productos iniciales y cuando cambien los filtros
   useEffect(() => {

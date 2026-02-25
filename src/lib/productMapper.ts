@@ -439,9 +439,24 @@ export function mapApiProductsToFrontend(apiProducts: ProductOrBundleApiData[]):
     console.warn('[mapApiProductsToFrontend] Recibido valor inválido:', apiProducts);
     return [];
   }
-  
+
+  const environment = process.env.NEXT_PUBLIC_ENVIRONMENT || 'production';
+
   return apiProducts
     .filter((item): item is ProductApiData => !isBundle(item))
+    .filter((item) => {
+      // Filtrar por visibilidad del entorno
+      const visibilityArray = environment === 'staging'
+        ? item.visibleStaging
+        : item.visibleProduction;
+
+      // Si el campo existe, verificar que al menos una variante sea visible
+      // Si el campo no existe (backend sin actualizar), mostrar el producto
+      if (visibilityArray && Array.isArray(visibilityArray) && visibilityArray.length > 0) {
+        return visibilityArray.some(v => v === true);
+      }
+      return true;
+    })
     .map(mapApiProductToFrontend);
 }
 
@@ -692,12 +707,29 @@ export function mapApiProductsAndBundles(apiItems: ProductOrBundleApiData[]): {
   const bundles: BundleCardProps[] = [];
   const orderedItems: MixedProductItem[] = [];
 
+  // Determinar el entorno actual para filtrar por visibilidad
+  const environment = typeof window !== 'undefined'
+    ? process.env.NEXT_PUBLIC_ENVIRONMENT || 'production'
+    : process.env.NEXT_PUBLIC_ENVIRONMENT || 'production';
+
   apiItems.forEach(item => {
     if (isBundle(item)) {
       const mappedBundle = mapApiBundleToFrontend(item);
       bundles.push(mappedBundle);
       orderedItems.push({ ...mappedBundle, itemType: 'bundle' as const });
     } else {
+      // Filtrar productos según visibilidad del entorno
+      const visibilityArray = environment === 'staging'
+        ? item.visibleStaging
+        : item.visibleProduction;
+
+      // Si el campo existe, verificar que al menos una variante sea visible
+      // Si el campo no existe (backend sin actualizar), mostrar el producto
+      if (visibilityArray && Array.isArray(visibilityArray) && visibilityArray.length > 0) {
+        const isVisible = visibilityArray.some(v => v === true);
+        if (!isVisible) return; // No incluir este producto
+      }
+
       const mappedProduct = mapApiProductToFrontend(item);
       products.push(mappedProduct);
       orderedItems.push({ ...mappedProduct, itemType: 'product' as const });

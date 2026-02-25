@@ -51,6 +51,8 @@ export interface ProductGrouped {
   largo: number[];
   peso: number[];
   unidad?: string[];
+  visibleStaging?: boolean[];
+  visibleProduction?: boolean[];
   isBundle?: false;
 }
 

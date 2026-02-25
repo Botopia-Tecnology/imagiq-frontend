@@ -198,8 +198,30 @@ export function mapApiProductToFrontend(product: ProductOrBundle): ProductCardPr
 }
 
 /**
+ * Verifica si un producto es visible según el entorno actual
+ */
+function isProductVisible(product: ProductOrBundle): boolean {
+  const environment = process.env.NEXT_PUBLIC_ENVIRONMENT || 'production';
+
+  // Solo filtrar productos (no bundles)
+  if ('isBundle' in product && product.isBundle) return true;
+
+  const grouped = product as ProductGrouped;
+  const visibilityArray = environment === 'staging'
+    ? grouped.visibleStaging
+    : grouped.visibleProduction;
+
+  // Si el campo existe, verificar que al menos una variante sea visible
+  // Si no existe, mostrar el producto (backward compatibility)
+  if (visibilityArray && Array.isArray(visibilityArray) && visibilityArray.length > 0) {
+    return visibilityArray.some(v => v === true);
+  }
+  return true;
+}
+
+/**
  * Mapea un array de productos/bundles de la API a ProductCardProps[]
  */
 export function mapApiProductsToFrontend(products: ProductOrBundle[]): ProductCardProps[] {
-  return products.map(mapApiProductToFrontend);
+  return products.filter(isProductVisible).map(mapApiProductToFrontend);
 }

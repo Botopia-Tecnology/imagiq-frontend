@@ -895,10 +895,49 @@ export const useProducts = (
   useEffect(() => {
     const socket = connectSocket('products');
 
-    const handleProductsUpdated = () => {
-      console.log('[useProducts] products_updated received, clearing cache and refetching');
+    const handleProductsUpdated = (data?: { codigoMarketBase?: string; visibleProduction?: boolean; visibleStaging?: boolean }) => {
+      const env = process.env.NEXT_PUBLIC_ENVIRONMENT || 'production';
+      const visibilityField = env === 'staging' ? 'visibleStaging' : 'visibleProduction';
+      const newVisibility = data?.[visibilityField];
+      const codigoMarketBase = data?.codigoMarketBase;
+
+      console.log('[useProducts] products_updated received', {
+        rawData: data,
+        env,
+        visibilityField,
+        newVisibility,
+        codigoMarketBase,
+        currentProductCount: products.length,
+      });
+
       productCache.clear();
-      refreshProductsRef.current();
+
+      if (codigoMarketBase !== undefined && newVisibility !== undefined) {
+        if (newVisibility === false) {
+          // HIDE: Remove product from current state immediately (instant, no HTTP request)
+          console.log(`[useProducts] HIDING product ${codigoMarketBase} instantly`);
+          setProducts(prev => {
+            const filtered = prev.filter(p => {
+              // Match by product base ID (codigoMarketBase)
+              if (p.id === codigoMarketBase) return false;
+              // Also match if the value is a variant SKU (check against all color SKUs)
+              if (p.colors?.some(c => c.sku === codigoMarketBase)) return false;
+              return true;
+            });
+            console.log(`[useProducts] Products: ${prev.length} -> ${filtered.length}`);
+            return filtered;
+          });
+          setTotalItems(prev => Math.max(0, prev - 1));
+        } else {
+          // SHOW: Product data not in state, refetch to get it
+          console.log(`[useProducts] SHOWING product ${codigoMarketBase}, refetching...`);
+          refreshProductsRef.current();
+        }
+      } else {
+        // Fallback: no visibility details, just refetch
+        console.log('[useProducts] No visibility details in payload, falling back to refetch');
+        refreshProductsRef.current();
+      }
     };
 
     socket.on('products_updated', handleProductsUpdated);

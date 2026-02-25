@@ -6,7 +6,7 @@
  */
 
 import { Suspense } from "react";
-import { getHomeProducts, getStores, getProductsByCategory } from "@/lib/api-server";
+import { getStores, getProductsByCategory, getProductBySku } from "@/lib/api-server";
 import { mapApiProductsToFrontend } from "@/lib/mappers/product-mapper";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 
@@ -40,33 +40,33 @@ import HomePageClient from "./HomePageClient";
 export const revalidate = 60;
 
 export default async function HomePage() {
-  // Fetch paralelo de datos en el servidor - más eficiente que CSR
-  // Pedimos 50 productos de AV y 100 de DA para asegurar 4 con stock después del filtrado
-  const [productsData, tvProductsData, appliancesData, stores] = await Promise.all([
-    getHomeProducts(300).catch(() => ({
-      products: [],
-      totalItems: 0,
-      totalPages: 0,
-      currentPage: 1,
-      hasNextPage: false,
-      hasPreviousPage: false,
-    })),
-    getProductsByCategory("AV", undefined, undefined, 1, 50, "precio", "desc").catch(() => ({
-      products: [],
-      totalItems: 0,
-      totalPages: 0,
-      currentPage: 1,
-      hasNextPage: false,
-      hasPreviousPage: false,
-    })),
-    getProductsByCategory("DA", undefined, undefined, 1, 100, "precio", "desc").catch(() => ({
-      products: [],
-      totalItems: 0,
-      totalPages: 0,
-      currentPage: 1,
-      hasNextPage: false,
-      hasPreviousPage: false,
-    })),
+  // SKUs de productos destacados para el showcase (de más caro a más económico)
+  const showcaseSKUs = [
+    'SM-S948BLBKLTC',   // Galaxy S26 Ultra 5G
+    'EF-RS948CBEGWW',   // Rugged Magnet Case
+    'EF-ES948CBEGWW',   // Silicone Magnet Case
+    'EF-CS948CTEGWW',   // Clear Magnet Case
+  ];
+
+  const emptyResult = {
+    products: [],
+    totalItems: 0,
+    totalPages: 0,
+    currentPage: 1,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  };
+
+  // Fetch paralelo de datos en el servidor
+  const [showcaseResults, tvProductsData, appliancesData, stores] = await Promise.all([
+    // Fetch de los 4 productos destacados por SKU en paralelo
+    Promise.all(
+      showcaseSKUs.map(sku =>
+        getProductBySku(sku).catch(() => emptyResult)
+      )
+    ),
+    getProductsByCategory("AV", undefined, undefined, 1, 50, "precio", "desc").catch(() => emptyResult),
+    getProductsByCategory("DA", undefined, undefined, 1, 100, "precio", "desc").catch(() => emptyResult),
     getStores().catch(() => []),
   ]);
 
@@ -79,10 +79,10 @@ export default async function HomePage() {
     return stockTotal ? stockTotal > 0 : false;
   };
 
-  // Mapear productos de API a formato del frontend y filtrar por stock > 0
-  // Tomar solo los primeros 4 con stock disponible
-  const mappedProducts = productsData.products.length > 0
-    ? mapApiProductsToFrontend(productsData.products).filter(hasStock)
+  // Combinar los productos del showcase en orden (más caro a más económico)
+  const showcaseProducts = showcaseResults.flatMap(r => r.products);
+  const mappedProducts = showcaseProducts.length > 0
+    ? mapApiProductsToFrontend(showcaseProducts)
     : [];
 
   const mappedTVProducts = tvProductsData.products.length > 0

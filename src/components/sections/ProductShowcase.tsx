@@ -36,104 +36,16 @@ export default function ProductShowcase({ initialProducts }: ProductShowcaseProp
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
 
-  // Filtrar productos específicos para el showcase
+  // Los productos ya vienen en orden desde el servidor (más caro a más económico)
+  // Solo deduplicar por id y tomar los primeros 4
   const products = useMemo(() => {
     if (!allProducts || allProducts.length === 0) return [];
-
-    // Función auxiliar para limpiar y parsear precios (robusta para cualquier formato)
-    const parsePrice = (price: string | number | undefined): number => {
-      if (typeof price === 'number') return price;
-      if (!price) return 0;
-      // Eliminar todo lo que no sea dígito (elimina $, puntos, comas, espacios)
-      const cleanPrice = price.toString().replace(/\D/g, '');
-      return parseFloat(cleanPrice || '0');
-    };
-
-    // Función auxiliar: verifica si un producto tiene un SKU que coincide
-    const hasMatchingSKU = (product: ProductCardProps, skuPrefix: string): boolean => {
-      const skuArray = product.apiProduct?.sku;
-      if (!Array.isArray(skuArray)) return false;
-      return skuArray.some(sku => sku?.includes(skuPrefix));
-    };
-
-    // 1. Encontrar el Watch 8 (Prioridad 1)
-    const watch8 = allProducts.find(p =>
-      hasMatchingSKU(p, 'SM-L500') ||
-      hasMatchingSKU(p, 'SM-L320') ||
-      (p.name && p.name.includes('Watch8'))
-    );
-
-    // 2. Encontrar los Celulares más caros (Premium)
-    const phones = allProducts
-      .filter(p => {
-        const name = p.name ? p.name.toLowerCase() : '';
-        const price = parsePrice(p.price);
-
-        // Debe ser un Galaxy
-        const isGalaxy = name.includes('galaxy');
-
-        // FILTRO DE PRECIO: Solo productos de más de 2 Millones
-        const isPremiumPrice = price > 2000000;
-
-        // Exclusiones explícitas de accesorios y otros
-        const isNotAccessory = !name.includes('funda') &&
-          !name.includes('cover') &&
-          !name.includes('cubierta') &&
-          !name.includes('case') &&
-          !name.includes('protector') &&
-          !name.includes('cargador') &&
-          !name.includes('adaptador') &&
-          !name.includes('correa') &&
-          !name.includes('fit') &&
-          !name.includes('buds') &&
-          !name.includes('watch');
-
-        // No debe ser "Test"
-        const isNotTest = !name.includes('test');
-
-        return isGalaxy && isPremiumPrice && isNotAccessory && isNotTest;
-      })
-      .sort((a, b) => {
-        // Ordenar por precio descendente
-        return parsePrice(b.price) - parsePrice(a.price);
-      });
-
-    // Construir la lista final: Watch 8 + Top 3 Celulares Premium
-    const finalProducts: ProductCardProps[] = [];
-
-    if (watch8) {
-      finalProducts.push(watch8);
-    }
-
-    // Rellenar con los teléfonos más caros encontrados
-    const phonesNeeded = 4 - finalProducts.length;
-    const uniquePhones = phones.filter(p => p.id !== watch8?.id);
-    finalProducts.push(...uniquePhones.slice(0, phonesNeeded));
-
-    // FALLBACK: Si aún faltan productos (algo falló con los filtros estrictos),
-    // rellenar con cualquier cosa cara que no sea accesorio obvio
-    if (finalProducts.length < 4) {
-      const existingIds = new Set(finalProducts.map(p => p.id));
-      const remainingNeeded = 4 - finalProducts.length;
-
-      const fallbackProducts = allProducts
-        .filter(p => !existingIds.has(p.id))
-        .filter(p => {
-          const name = p.name ? p.name.toLowerCase() : '';
-          const price = parsePrice(p.price);
-          return price > 500000 && // Precio decente
-            !name.includes('funda') &&
-            !name.includes('cover') &&
-            !name.includes('tv') &&
-            !name.includes('nevera');
-        })
-        .sort((a, b) => parsePrice(b.price) - parsePrice(a.price))
-        .slice(0, remainingNeeded);
-
-      finalProducts.push(...fallbackProducts);
-    }
-
-    return finalProducts.slice(0, 4);
+    const seen = new Set<string>();
+    return allProducts.filter(p => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    }).slice(0, 4);
   }, [allProducts]);
 
   // Manejar toggle de favoritos
@@ -240,6 +152,7 @@ export default function ProductShowcase({ initialProducts }: ProductShowcaseProp
             <ProductCard
               key={product.id}
               {...product}
+              forceNuevo
               isFavorite={isFavorite(product.id)}
               onToggleFavorite={handleToggleFavorite}
             />
@@ -256,6 +169,7 @@ export default function ProductShowcase({ initialProducts }: ProductShowcaseProp
               >
                 <ProductCard
                   {...product}
+                  forceNuevo
                   isFavorite={isFavorite(product.id)}
                   onToggleFavorite={handleToggleFavorite}
                 />

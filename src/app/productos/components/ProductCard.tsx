@@ -90,6 +90,7 @@ export interface ProductCardProps {
   isInChat?: boolean; // Indica si está siendo renderizado en el chat (para ajustar estilos)
   skuflixmedia?: string; // SKU específico para Flixmedia
   ceroInteresData?: ZeroInterestSkuResult[]; // Datos de cero interés para este producto
+  forceNuevo?: boolean; // Forzar ribbon "Nuevo" sin depender de gama
 }
 
 export default function ProductCard({
@@ -112,6 +113,7 @@ export default function ProductCard({
   isInChat = false, // Por defecto NO está en chat
   acceptsTradeIn, // Indica si el producto acepta retoma
   ceroInteresData, // Datos de cero interés desde el parent
+  forceNuevo = false, // Forzar ribbon "Nuevo"
 }: ProductCardProps & { puntos_q?: number }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -696,8 +698,8 @@ export default function ProductCard({
       >
         {/* Sección de imagen con carrusel */}
         <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
-          {/* Etiqueta "Nuevo" - Ribbon esquina superior izquierda (solo si gama es "Nuevo") */}
-          {apiProduct?.gama?.some((g) => g?.toLowerCase() === 'nuevo') && (
+          {/* Etiqueta "Nuevo" - Ribbon esquina superior izquierda (si gama es "Nuevo" o forceNuevo) */}
+          {(forceNuevo || apiProduct?.gama?.some((g) => g?.toLowerCase() === 'nuevo')) && (
             <div className="absolute top-0 left-0 z-10 overflow-hidden w-[170px] h-[170px]">
               <div className="absolute top-[38px] left-[-42px] w-[220px] bg-blue-600 text-white text-[14px] font-bold text-center py-[10px] -rotate-45 shadow-md tracking-wide">
                 Nuevo

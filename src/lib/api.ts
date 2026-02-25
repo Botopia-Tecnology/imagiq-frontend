@@ -788,6 +788,7 @@ export interface ProductApiData {
   skuflixmedia?: string[]; // SKU para Flixmedia
   visibleStaging?: boolean[]; // Visibilidad en staging (por variante)
   visibleProduction?: boolean[]; // Visibilidad en producción (por variante)
+  gama?: string[]; // Gama del producto (ej: "Nuevo", "Linea", "N-1")
 }
 
 // Tipo unión para productos y bundles

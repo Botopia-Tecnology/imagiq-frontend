@@ -696,6 +696,15 @@ export default function ProductCard({
       >
         {/* Sección de imagen con carrusel */}
         <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
+          {/* Etiqueta "Nuevo" - Ribbon esquina superior izquierda (solo si gama es "Nuevo") */}
+          {apiProduct?.gama?.some((g) => g?.toLowerCase() === 'nuevo') && (
+            <div className="absolute top-0 left-0 z-10 overflow-hidden w-[170px] h-[170px]">
+              <div className="absolute top-[38px] left-[-42px] w-[220px] bg-blue-600 text-white text-[14px] font-bold text-center py-[10px] -rotate-45 shadow-md tracking-wide">
+                Nuevo
+              </div>
+            </div>
+          )}
+
           {/* Etiqueta de Addi - Parte inferior izquierda */}
           <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 py-1.5 px-2.5 bg-white/95 backdrop-blur-sm rounded-lg shadow-sm">
             <Image

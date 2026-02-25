@@ -138,7 +138,7 @@ export default function Step7({ onBack }: Step7Props) {
     useState<CheckZeroInterestResponse | null>(null);
   const [shippingVerification, setShippingVerification] =
     useState<ShippingVerification | null>(null);
-  const { products, calculations } = useCart();
+  const { products, calculations, appliedCouponCode } = useCart();
 
   // Calcular ahorro total por descuentos de productos
   const productSavings = useMemo(() => {
@@ -1729,6 +1729,7 @@ export default function Step7({ onBack }: Step7Props) {
             } : {}),
             informacion_facturacion,
             beneficios: buildBeneficios(),
+            couponCode: appliedCouponCode || undefined,
           });
 
           if ("error" in res) {
@@ -1834,6 +1835,7 @@ export default function Step7({ onBack }: Step7Props) {
             informacion_facturacion,
             beneficios: buildBeneficios(),
             bankName: paymentData.bankName || "",
+            couponCode: appliedCouponCode || undefined,
           });
           if ("error" in res) {
             setError(res.message);
@@ -1886,6 +1888,7 @@ export default function Step7({ onBack }: Step7Props) {
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),
+            couponCode: appliedCouponCode || undefined,
           });
           if ("error" in res) {
             setError(res.message);

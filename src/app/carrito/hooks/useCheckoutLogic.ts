@@ -173,7 +173,7 @@ function buildBeneficiosArray(
 export function useCheckoutLogic() {
   const { redirectToError } = usePurchaseFlow();
   const router = useRouter();
-  const { products: cartProducts, appliedDiscount, calculations } = useCart();
+  const { products: cartProducts, appliedDiscount, appliedCouponCode, calculations } = useCart();
   const [checkoutAddress, _] = useSecureStorage<{ id: string } | null>("checkout-address", null);
 
   // Hook de caché para zero interest
@@ -564,6 +564,7 @@ export function useCheckoutLogic() {
           res = await payWithAddi({
             currency: "COP",
             items: cartProducts.map((p) => ({
+              id: p.id,
               name: String(p.name),
               sku: String(p.sku),
               ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
@@ -594,6 +595,7 @@ export function useCheckoutLogic() {
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),
+            couponCode: appliedCouponCode || undefined,
           });
           if ("error" in res) {
             // Check if it's an out-of-stock error
@@ -622,10 +624,10 @@ export function useCheckoutLogic() {
           if (selectedCardId) {
             // Pago con tarjeta guardada
             res = await payWithSavedCard({
-              cardId: selectedCardId,
+              cardTokenId: selectedCardId,
               dues: card.installments || "1",
               items: cartProducts.map((p) => ({
-
+                id: p.id,
                 name: String(p.name),
                 sku: String(p.sku),
                 ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
@@ -655,6 +657,7 @@ export function useCheckoutLogic() {
                 direccionId: checkoutAddress?.id || "",
               },
               informacion_facturacion,
+              couponCode: appliedCouponCode || undefined,
               beneficios: buildBeneficiosArray(cartProducts, 'tarjeta', (() => {
                 // Calcular si aplica 0% interés para esta tarjeta y cuotas
                 try {
@@ -687,6 +690,7 @@ export function useCheckoutLogic() {
               cardNumber: card.number,
               dues: card.installments,
               items: cartProducts.map((p) => ({
+                id: p.id,
                 name: String(p.name),
                 sku: String(p.sku),
                 ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
@@ -716,6 +720,7 @@ export function useCheckoutLogic() {
                 direccionId: checkoutAddress?.id || "",
               },
               informacion_facturacion,
+              couponCode: appliedCouponCode || undefined,
               beneficios: (() => {
                 console.log('[buildBeneficios - TARJETA NUEVA] Iniciando construcción de beneficios');
                 const beneficios: BeneficiosDTO[] = [
@@ -761,6 +766,7 @@ export function useCheckoutLogic() {
             description: "Imagiq Store",
             currency: "COP",
             items: cartProducts.map((p) => ({
+              id: p.id,
               name: String(p.name),
               sku: String(p.sku),
               ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
@@ -789,6 +795,7 @@ export function useCheckoutLogic() {
               direccionId: direction.id || "",
             },
             informacion_facturacion,
+            couponCode: appliedCouponCode || undefined,
             beneficios: (() => {
               console.log('[buildBeneficios - PSE] Iniciando construcción de beneficios');
               const beneficios: BeneficiosDTO[] = [

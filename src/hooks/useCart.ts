@@ -80,6 +80,7 @@ interface UseCartReturn {
   // Estado
   products: CartProduct[];
   appliedDiscount: number;
+  appliedCouponCode: string | null;
   isLoading: boolean;
   loadingShippingInfo: Record<string, boolean>;
 
@@ -96,6 +97,8 @@ interface UseCartReturn {
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   applyDiscount: (discount: number) => void;
+  applyCoupon: (code: string, discount: number) => void;
+  removeCoupon: () => void;
 
   // Acciones de Bundle
   addBundleToCart: (
@@ -121,6 +124,7 @@ interface UseCartReturn {
 const STORAGE_KEYS = {
   CART_ITEMS: "cart-items",
   APPLIED_DISCOUNT: "applied-discount",
+  COUPON_CODE: "coupon-code",
 } as const;
 
 // Real shipping used in calculations is 0 (envío gratuito). Keep original value for marketing display.
@@ -270,6 +274,18 @@ function getStoredDiscount(): number {
   }
 }
 
+// Función para obtener cupón aplicado
+function getStoredCouponCode(): string | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    return localStorage.getItem(STORAGE_KEYS.COUPON_CODE) || null;
+  } catch (error) {
+    console.warn("Error reading coupon code from localStorage:", error);
+    return null;
+  }
+}
+
 // Función para formatear precios en COP
 export const formatPrice = (price: number): string => {
   if (!isFinite(price) || isNaN(price)) return "$0";
@@ -279,6 +295,7 @@ export const formatPrice = (price: number): string => {
 export function useCart(): UseCartReturn {
   const [products, setProducts] = useState<CartProduct[]>(() => getStoredProducts());
   const [appliedDiscount, setAppliedDiscount] = useState(() => getStoredDiscount());
+  const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(() => getStoredCouponCode());
   const [isLoading, setIsLoading] = useState(false);
   const [loadingShippingInfo, setLoadingShippingInfo] = useState<Record<string, boolean>>({});
 
@@ -403,6 +420,7 @@ export function useCart(): UseCartReturn {
     const handleStorageChange = () => {
       setProducts(getStoredProducts());
       setAppliedDiscount(getStoredDiscount());
+      setAppliedCouponCode(getStoredCouponCode());
     };
     // Escuchar tanto el evento 'storage' nativo (entre tabs) como el evento personalizado (mismo tab)
     window.addEventListener("storage", handleStorageChange);
@@ -459,6 +477,10 @@ export function useCart(): UseCartReturn {
     try {
       localStorage.setItem(STORAGE_KEYS.APPLIED_DISCOUNT, String(discount));
       setAppliedDiscount(discount);
+      // Sincronizar con otras instancias de useCart() en la misma tab
+      setTimeout(() => {
+        window.dispatchEvent(new Event("storage"));
+      }, 0);
     } catch (error) {
       console.error("Error saving discount to localStorage:", error);
     }
@@ -821,8 +843,11 @@ export function useCart(): UseCartReturn {
       setTimeout(() => {
         apiDelete(`/api/cart/items/clear`);
         localStorage.removeItem(STORAGE_KEYS.CART_ITEMS);
-        // Limpiar también el trade-in al vaciar el carrito
+        // Limpiar también el trade-in y cupón al vaciar el carrito
         localStorage.removeItem("imagiq_trade_in");
+        localStorage.removeItem(STORAGE_KEYS.COUPON_CODE);
+        setAppliedCouponCode(null);
+        saveDiscount(0);
 
         // Disparar evento de storage para sincronizar entre pestañas
         try {
@@ -865,6 +890,30 @@ export function useCart(): UseCartReturn {
     },
     [saveDiscount]
   );
+
+  const applyCoupon = useCallback(
+    (code: string, discount: number) => {
+      const normalizedCode = code.trim().toUpperCase();
+      try {
+        localStorage.setItem(STORAGE_KEYS.COUPON_CODE, normalizedCode);
+      } catch (error) {
+        console.error("Error saving coupon code to localStorage:", error);
+      }
+      setAppliedCouponCode(normalizedCode);
+      saveDiscount(Math.max(0, discount));
+    },
+    [saveDiscount]
+  );
+
+  const removeCoupon = useCallback(() => {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.COUPON_CODE);
+    } catch (error) {
+      console.error("Error removing coupon code from localStorage:", error);
+    }
+    setAppliedCouponCode(null);
+    saveDiscount(0);
+  }, [saveDiscount]);
 
   // ==================== MÉTODOS DE BUNDLE ====================
 
@@ -1262,6 +1311,7 @@ export function useCart(): UseCartReturn {
     // Estado
     products,
     appliedDiscount,
+    appliedCouponCode,
     isLoading,
     loadingShippingInfo,
 
@@ -1274,6 +1324,8 @@ export function useCart(): UseCartReturn {
     updateQuantity,
     clearCart,
     applyDiscount,
+    applyCoupon,
+    removeCoupon,
 
     // Acciones de Bundle
     addBundleToCart,

@@ -3,6 +3,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useCart } from "@/hooks/useCart";
+import CouponInput from "./CouponInput";
 import { productEndpoints } from "@/lib/api";
 import {
   buildGlobalCanPickUpKey,
@@ -79,6 +80,10 @@ export default function Step4OrderSummary({
     formatPrice: cartFormatPrice,
     isEmpty: hookIsEmpty,
     products: hookProducts,
+    applyCoupon,
+    removeCoupon,
+    appliedCouponCode,
+    appliedDiscount,
   } = useCart();
 
   // Usar props si existen, sino usar hook (para reactividad inmediata en Step1)
@@ -1199,14 +1204,35 @@ export default function Step4OrderSummary({
           </div>
         )}
 
-        {/* Descuento por cupón (si existe) */}
-        {calculations.discount > 0 && (
-          <div className="flex justify-between text-sm">
-            <span>Descuento cupón</span>
-            <span className="text-red-600">
+        {/* Cupón aplicado - línea integrada en el resumen */}
+        {appliedCouponCode && calculations.discount > 0 && (
+          <div className="flex justify-between items-center text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-green-600 font-medium">
+                Bono {appliedCouponCode}
+              </span>
+              {isStep1 && (
+                <button
+                  type="button"
+                  onClick={removeCoupon}
+                  className="text-xs text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                >
+                  Eliminar
+                </button>
+              )}
+            </div>
+            <span className="text-green-600 font-semibold">
               -{cartFormatPrice(calculations.discount)}
             </span>
           </div>
+        )}
+
+        {/* Input de cupón (solo en Step1, sin cupón aplicado) */}
+        {isStep1 && !appliedCouponCode && (
+          <CouponInput
+            onApply={applyCoupon}
+            cartProducts={products}
+          />
         )}
 
         {/* Envío - Ocultar en Step1 */}

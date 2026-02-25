@@ -76,6 +76,11 @@ interface CartCalculations {
   total: number;
 }
 
+export interface CouponRequirements {
+  eligibleIdentifiers: string[];
+  requiredCompanionIdentifiers: string[];
+}
+
 interface UseCartReturn {
   // Estado
   products: CartProduct[];
@@ -97,8 +102,9 @@ interface UseCartReturn {
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   applyDiscount: (discount: number) => void;
-  applyCoupon: (code: string, discount: number) => void;
+  applyCoupon: (code: string, discount: number, requirements?: CouponRequirements) => void;
   removeCoupon: () => void;
+  checkCouponInvalidation: (sku: string) => boolean;
 
   // Acciones de Bundle
   addBundleToCart: (
@@ -125,7 +131,18 @@ const STORAGE_KEYS = {
   CART_ITEMS: "cart-items",
   APPLIED_DISCOUNT: "applied-discount",
   COUPON_CODE: "coupon-code",
+  COUPON_REQUIREMENTS: "coupon-requirements",
 } as const;
+
+function getStoredCouponRequirements(): CouponRequirements | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.COUPON_REQUIREMENTS);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
 
 // Real shipping used in calculations is 0 (envío gratuito). Keep original value for marketing display.
 export const ORIGINAL_SHIPPING_COST = 20000;
@@ -303,6 +320,9 @@ export function useCart(): UseCartReturn {
   const addProductTimeoutRef = useRef<Record<string, number>>({});
   // Ref para evitar duplicidad de alertas (toast)
   const toastActiveRef = useRef<Record<string, boolean>>({});
+  // Skip the coupon auto-check on the render cycle right after applyCoupon
+  // (the backend just validated it — no need to re-check immediately)
+  const couponJustAppliedRef = useRef(false);
 
   // Función helper para obtener userId
   const getUserId = useCallback((): string | undefined => {
@@ -846,6 +866,7 @@ export function useCart(): UseCartReturn {
         // Limpiar también el trade-in y cupón al vaciar el carrito
         localStorage.removeItem("imagiq_trade_in");
         localStorage.removeItem(STORAGE_KEYS.COUPON_CODE);
+        localStorage.removeItem(STORAGE_KEYS.COUPON_REQUIREMENTS);
         setAppliedCouponCode(null);
         saveDiscount(0);
 
@@ -892,13 +913,17 @@ export function useCart(): UseCartReturn {
   );
 
   const applyCoupon = useCallback(
-    (code: string, discount: number) => {
+    (code: string, discount: number, requirements?: CouponRequirements) => {
       const normalizedCode = code.trim().toUpperCase();
       try {
         localStorage.setItem(STORAGE_KEYS.COUPON_CODE, normalizedCode);
+        if (requirements) {
+          localStorage.setItem(STORAGE_KEYS.COUPON_REQUIREMENTS, JSON.stringify(requirements));
+        }
       } catch (error) {
         console.error("Error saving coupon code to localStorage:", error);
       }
+      couponJustAppliedRef.current = true;
       setAppliedCouponCode(normalizedCode);
       saveDiscount(Math.max(0, discount));
     },
@@ -908,12 +933,99 @@ export function useCart(): UseCartReturn {
   const removeCoupon = useCallback(() => {
     try {
       localStorage.removeItem(STORAGE_KEYS.COUPON_CODE);
+      localStorage.removeItem(STORAGE_KEYS.COUPON_REQUIREMENTS);
     } catch (error) {
       console.error("Error removing coupon code from localStorage:", error);
     }
     setAppliedCouponCode(null);
     saveDiscount(0);
   }, [saveDiscount]);
+
+  // Checks if removing a product (by SKU) would invalidate the active coupon
+  const checkCouponInvalidation = useCallback(
+    (skuToRemove: string): boolean => {
+      if (!appliedCouponCode) return false;
+      const requirements = getStoredCouponRequirements();
+      if (!requirements) return false;
+      // Can't validate without identifiers — assume no invalidation
+      if (requirements.eligibleIdentifiers.length === 0 && requirements.requiredCompanionIdentifiers.length === 0) return false;
+
+      // Build identifier set for products that would REMAIN after removal
+      const remainingIdentifiers = new Set<string>();
+      for (const product of products) {
+        if (product.sku === skuToRemove) continue;
+        if (product.sku) remainingIdentifiers.add(product.sku);
+        if (product.skuPostback) remainingIdentifiers.add(product.skuPostback);
+        if (product.id) remainingIdentifiers.add(product.id);
+      }
+
+      const hasEligible =
+        requirements.eligibleIdentifiers.length === 0 ||
+        requirements.eligibleIdentifiers.some(id => remainingIdentifiers.has(id));
+      const hasCompanion =
+        requirements.requiredCompanionIdentifiers.length === 0 ||
+        requirements.requiredCompanionIdentifiers.some(id => remainingIdentifiers.has(id));
+
+      return !hasEligible || !hasCompanion;
+    },
+    [appliedCouponCode, products]
+  );
+
+  // Auto-remove coupon if required products are no longer in cart
+  useEffect(() => {
+    if (!appliedCouponCode) return;
+    if (products.length === 0) return;
+    // Skip the check right after applyCoupon — the backend just validated it
+    if (couponJustAppliedRef.current) {
+      couponJustAppliedRef.current = false;
+      return;
+    }
+
+    const requirements = getStoredCouponRequirements();
+    const hasLocalRequirements = requirements &&
+      (requirements.eligibleIdentifiers.length > 0 || requirements.requiredCompanionIdentifiers.length > 0);
+
+    if (hasLocalRequirements) {
+      // Fast path: validate locally
+      const cartIdentifiers = new Set<string>();
+      for (const p of products) {
+        if (p.sku) cartIdentifiers.add(p.sku);
+        if (p.skuPostback) cartIdentifiers.add(p.skuPostback);
+        if (p.id) cartIdentifiers.add(p.id);
+      }
+
+      const hasEligible =
+        requirements.eligibleIdentifiers.length === 0 ||
+        requirements.eligibleIdentifiers.some(id => cartIdentifiers.has(id));
+      const hasCompanion =
+        requirements.requiredCompanionIdentifiers.length === 0 ||
+        requirements.requiredCompanionIdentifiers.some(id => cartIdentifiers.has(id));
+
+      if (!hasEligible || !hasCompanion) {
+        removeCoupon();
+        toast.info("Bono eliminado", {
+          description: `El bono ${appliedCouponCode} fue removido porque los productos requeridos ya no están en el carrito.`,
+          duration: 4000,
+        });
+      }
+    } else {
+      // Fallback: re-validate with backend (requirements not available locally)
+      const items = products.map(p => ({
+        sku: p.sku,
+        skupostback: p.skuPostback || p.sku,
+        id: p.id,
+      }));
+      apiPost("/api/payments/validate-coupon", { couponCode: appliedCouponCode, items })
+        .catch(() => {
+          // Backend rejected — coupon no longer valid with current products
+          removeCoupon();
+          toast.info("Bono eliminado", {
+            description: `El bono ${appliedCouponCode} fue removido porque los productos requeridos ya no están en el carrito.`,
+            duration: 4000,
+          });
+        });
+    }
+  }, [products, appliedCouponCode, removeCoupon]);
 
   // ==================== MÉTODOS DE BUNDLE ====================
 
@@ -1326,6 +1438,7 @@ export function useCart(): UseCartReturn {
     applyDiscount,
     applyCoupon,
     removeCoupon,
+    checkCouponInvalidation,
 
     // Acciones de Bundle
     addBundleToCart,

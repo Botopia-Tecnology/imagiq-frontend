@@ -2,9 +2,10 @@
 import { TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
 import TradeInModal from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInModal";
 import { useCart, type CartProduct, type BundleInfo } from "@/hooks/useCart";
+import { CouponRemovalWarningModal } from "./components/CouponRemovalWarningModal";
 import { useAnalyticsWithUser } from "@/lib/analytics";
 import { tradeInEndpoints } from "@/lib/api";
-import { apiDelete, apiPut } from "@/lib/api-client";
+import { apiDelete, apiPost, apiPut } from "@/lib/api-client";
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import Step4OrderSummary from "./components/Step4OrderSummary";
@@ -77,6 +78,10 @@ export default function Step1({
     calculations,
     loadingShippingInfo,
     formatPrice,
+    appliedCouponCode,
+    appliedDiscount,
+    removeCoupon,
+    checkCouponInvalidation,
     // Métodos de Bundle
     updateBundleQuantity,
     removeBundleProduct,
@@ -491,17 +496,103 @@ export default function Step1({
     }
   };
 
+  // Estado para el modal de advertencia de cupón
+  const [couponWarning, setCouponWarning] = useState<{
+    productIdx: number;
+    productName: string;
+  } | null>(null);
+  const [checkingCoupon, setCheckingCoupon] = useState(false);
+
+  /**
+   * Checks if the coupon would still be valid with the remaining products.
+   * Uses local identifiers if available, otherwise calls the backend.
+   */
+  const wouldRemovalInvalidateCoupon = useCallback(
+    async (skuToRemove: string): Promise<boolean> => {
+      if (!appliedCouponCode) return false;
+
+      // Try local check first (fast path — works when backend returns identifiers)
+      const localResult = checkCouponInvalidation(skuToRemove);
+      if (localResult) return true;
+
+      // If local check says "no invalidation", verify: do we actually have identifiers?
+      // If requirements are empty, we need to ask the backend
+      const storedReqs = localStorage.getItem("coupon-requirements");
+      if (storedReqs) {
+        try {
+          const reqs = JSON.parse(storedReqs);
+          if (reqs.eligibleIdentifiers?.length > 0 || reqs.requiredCompanionIdentifiers?.length > 0) {
+            // We have real requirements and local check said OK
+            return false;
+          }
+        } catch { /* fall through to backend */ }
+      }
+
+      // Fallback: call backend with the products that would remain
+      const remainingProducts = cartProducts.filter(p => p.sku !== skuToRemove);
+      if (remainingProducts.length === 0) return true; // No products left = coupon invalid
+
+      try {
+        const items = remainingProducts.map(p => ({
+          sku: p.sku,
+          skupostback: p.skuPostback || p.sku,
+          id: p.id,
+        }));
+        await apiPost("/api/payments/validate-coupon", {
+          couponCode: appliedCouponCode,
+          items,
+        });
+        // Backend says OK — coupon would still be valid
+        return false;
+      } catch {
+        // Backend rejected — coupon would be invalid without this product
+        return true;
+      }
+    },
+    [appliedCouponCode, checkCouponInvalidation, cartProducts]
+  );
+
   // Eliminar producto usando el hook
-  // Esto evita el problema de actualizar el estado durante el renderizado
-  const handleRemove = (idx: number) => {
+  const handleRemove = async (idx: number) => {
     const product = cartProducts[idx];
-    const productId = product?.sku;
+    if (!product) return;
+
+    // If there's an active coupon, check if removal would invalidate it
+    if (appliedCouponCode) {
+      setCheckingCoupon(true);
+      try {
+        const wouldInvalidate = await wouldRemovalInvalidateCoupon(product.sku);
+        if (wouldInvalidate) {
+          setCouponWarning({
+            productIdx: idx,
+            productName: product.name,
+          });
+          return;
+        }
+      } finally {
+        setCheckingCoupon(false);
+      }
+    }
+
+    // No coupon impact — proceed with removal
+    const productId = product.sku;
+    apiDelete(`/api/cart/items/${productId}`);
+    setTimeout(() => {
+      removeProduct(product.sku);
+    }, 0);
+  };
+
+  const handleConfirmCouponRemoval = () => {
+    if (!couponWarning) return;
+    const product = cartProducts[couponWarning.productIdx];
     if (product) {
-      apiDelete(`/api/cart/items/${productId}`);
+      apiDelete(`/api/cart/items/${product.sku}`);
       setTimeout(() => {
         removeProduct(product.sku);
+        removeCoupon();
       }, 0);
     }
+    setCouponWarning(null);
   };
 
   // ...existing code...
@@ -1074,7 +1165,16 @@ export default function Step1({
         />
       )}
 
-
+      {couponWarning && (
+        <CouponRemovalWarningModal
+          isOpen={true}
+          couponCode={appliedCouponCode || ""}
+          discountAmount={appliedDiscount}
+          productName={couponWarning.productName}
+          onConfirm={handleConfirmCouponRemoval}
+          onCancel={() => setCouponWarning(null)}
+        />
+      )}
 
     </main>
   );

@@ -1,15 +1,17 @@
 "use client";
 import React, { useState } from "react";
 import { apiPost } from "@/lib/api-client";
-import type { CartProduct } from "@/hooks/useCart";
+import type { CartProduct, CouponRequirements } from "@/hooks/useCart";
 
 interface CouponValidationResponse {
   couponCode: string;
   discountAmount: number;
+  eligibleIdentifiers?: string[];
+  requiredCompanionIdentifiers?: string[];
 }
 
 interface CouponInputProps {
-  readonly onApply: (code: string, discount: number) => void;
+  readonly onApply: (code: string, discount: number, requirements?: CouponRequirements) => void;
   readonly cartProducts: CartProduct[];
 }
 
@@ -41,7 +43,10 @@ export default function CouponInput({
         { couponCode: trimmedCode, items }
       );
 
-      onApply(result.couponCode, result.discountAmount);
+      onApply(result.couponCode, result.discountAmount, {
+        eligibleIdentifiers: result.eligibleIdentifiers || [],
+        requiredCompanionIdentifiers: result.requiredCompanionIdentifiers || [],
+      });
       setCode("");
       setError(null);
       setIsOpen(false);

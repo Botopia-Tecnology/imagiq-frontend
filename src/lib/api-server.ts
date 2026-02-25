@@ -156,6 +156,19 @@ export async function getProductById(
   );
 }
 
+export async function getProductBySku(
+  sku: string
+): Promise<SearchBundlesResult> {
+  const params = new URLSearchParams({
+    sku,
+    limit: "5",
+  });
+
+  return serverFetch<SearchBundlesResult>(
+    `/api/products/v2/filtered?${params}`
+  );
+}
+
 /**
  * Busca productos por texto (usa Elasticsearch)
  */

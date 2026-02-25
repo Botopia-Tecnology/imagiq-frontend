@@ -8,6 +8,7 @@ export interface BasicPaymentData {
   codigo_bodega?: string;
   informacion_facturacion: InformacionFacturacion;
   beneficios?: BeneficiosDTO[];
+  couponCode?: string;
 }
 export interface InformacionFacturacion {
   type: string;

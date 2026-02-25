@@ -25,7 +25,6 @@ export async function payWithCard(
       ...props,
       dues: props.dues.trim() === "" ? "1" : props.dues,
     });
-    console.log("[DEBUG PAYLOAD NEW CARD] Items:", JSON.stringify(props.items.map(i => ({ sku: i.sku, cat: i.categoria, category: i.category }))));
     return data;
   } catch (error) {
     console.error("Error processing card payment:", error);
@@ -36,16 +35,15 @@ export async function payWithCard(
   }
 }
 
-// Nueva función para pagar con tarjeta guardada (token)
+// Pagar con tarjeta guardada (token)
 export async function payWithSavedCard(
-  props: Omit<CardPaymentData, "cardNumber" | "cardExpMonth" | "cardExpYear" | "cardCvc"> & { cardId: string }
+  props: Omit<CardPaymentData, "cardNumber" | "cardExpMonth" | "cardExpYear" | "cardCvc"> & { cardTokenId: string }
 ): Promise<{ redirectionUrl: string; requires3DS?: boolean; data3DS?: unknown; orderId?: string } | { error: string; message: string }> {
   try {
     const data = await apiPost<{ redirectionUrl: string; requires3DS?: boolean; data3DS?: unknown; orderId?: string }>('/api/payments/epayco/saved-card', {
       ...props,
       dues: props.dues.trim() === "" ? "1" : props.dues,
     });
-    console.log("[DEBUG PAYLOAD SAVED CARD] Items:", JSON.stringify(props.items.map(i => ({ sku: i.sku, cat: i.categoria, category: i.category }))));
     return data;
   } catch (error) {
     console.error("Error processing saved card payment:", error);

@@ -6,7 +6,7 @@
  */
 
 import { Suspense } from "react";
-import { getStores, getProductsByCategory, getProductBySku } from "@/lib/api-server";
+import { getHomeProducts, getStores, getProductsByCategory } from "@/lib/api-server";
 import { mapApiProductsToFrontend } from "@/lib/mappers/product-mapper";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 
@@ -40,14 +40,6 @@ import HomePageClient from "./HomePageClient";
 export const revalidate = 60;
 
 export default async function HomePage() {
-  // SKUs de productos destacados para el showcase (de más caro a más económico)
-  const showcaseSKUs = [
-    'SM-S948BLBKLTC',   // Galaxy S26 Ultra 5G
-    'EF-RS948CBEGWW',   // Rugged Magnet Case
-    'EF-ES948CBEGWW',   // Silicone Magnet Case
-    'EF-CS948CTEGWW',   // Clear Magnet Case
-  ];
-
   const emptyResult = {
     products: [],
     totalItems: 0,
@@ -58,13 +50,9 @@ export default async function HomePage() {
   };
 
   // Fetch paralelo de datos en el servidor
-  const [showcaseResults, tvProductsData, appliancesData, stores] = await Promise.all([
-    // Fetch de los 4 productos destacados por SKU en paralelo
-    Promise.all(
-      showcaseSKUs.map(sku =>
-        getProductBySku(sku).catch(() => emptyResult)
-      )
-    ),
+  // Incluimos IM (dispositivos móviles) porque contiene el S26 Ultra y accesorios del showcase
+  const [imProductsData, tvProductsData, appliancesData, stores] = await Promise.all([
+    getProductsByCategory("IM", undefined, undefined, 1, 500, "precio", "desc").catch(() => emptyResult),
     getProductsByCategory("AV", undefined, undefined, 1, 50, "precio", "desc").catch(() => emptyResult),
     getProductsByCategory("DA", undefined, undefined, 1, 100, "precio", "desc").catch(() => emptyResult),
     getStores().catch(() => []),
@@ -79,10 +67,9 @@ export default async function HomePage() {
     return stockTotal ? stockTotal > 0 : false;
   };
 
-  // Combinar los productos del showcase en orden (más caro a más económico)
-  const showcaseProducts = showcaseResults.flatMap(r => r.products);
-  const mappedProducts = showcaseProducts.length > 0
-    ? mapApiProductsToFrontend(showcaseProducts)
+  // Mapear productos IM (donde están el S26 Ultra y accesorios)
+  const mappedProducts = imProductsData.products.length > 0
+    ? mapApiProductsToFrontend(imProductsData.products).filter(hasStock)
     : [];
 
   const mappedTVProducts = tvProductsData.products.length > 0

@@ -36,16 +36,35 @@ export default function ProductShowcase({ initialProducts }: ProductShowcaseProp
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
 
-  // Los productos ya vienen en orden desde el servidor (más caro a más económico)
-  // Solo deduplicar por id y tomar los primeros 4
+  // SKUs específicos para el showcase (de más caro a más económico)
   const products = useMemo(() => {
     if (!allProducts || allProducts.length === 0) return [];
-    const seen = new Set<string>();
-    return allProducts.filter(p => {
-      if (seen.has(p.id)) return false;
-      seen.add(p.id);
-      return true;
-    }).slice(0, 4);
+
+    const showcaseSKUs = [
+      'SM-S948BLBKLTC',   // Galaxy S26 Ultra 5G
+      'EF-RS948CBEGWW',   // Rugged Magnet Case
+      'EF-ES948CBEGWW',   // Silicone Magnet Case
+      'EF-CS948CTEGWW',   // Clear Magnet Case
+    ];
+
+    const findBySku = (sku: string) =>
+      allProducts.find(p => {
+        const api = p.apiProduct;
+        if (!api) return false;
+        if (Array.isArray(api.sku) && api.sku.some(s => s === sku)) return true;
+        if (Array.isArray(api.skuPostback) && (api.skuPostback as string[]).some(s => s === sku)) return true;
+        return false;
+      });
+
+    const result: ProductCardProps[] = [];
+    for (const sku of showcaseSKUs) {
+      const found = findBySku(sku);
+      if (found && !result.some(p => p.id === found.id)) {
+        result.push(found);
+      }
+    }
+
+    return result;
   }, [allProducts]);
 
   // Manejar toggle de favoritos

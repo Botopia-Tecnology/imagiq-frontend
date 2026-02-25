@@ -30,58 +30,6 @@ type PaySupportResult = {
   [key: string]: unknown;
 };
 
-// Normalize and map document type inputs (accepts abbrev. or full names, with/without accents)
-function normalizeTipoDocumento(input?: string) {
-  if (!input) return "Cédula de Ciudadania";
-  const key = input
-    .toString()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]/g, "")
-    .trim();
-
-  const map: Record<string, string> = {
-    cc: "Cédula de Ciudadania",
-    cedula: "Cédula de Ciudadania",
-    "cedula de ciudadania": "Cédula de Ciudadania",
-    ce: "Cédula de Extranjería",
-    "cedula de extranjeria": "Cédula de Extranjería",
-    te: "Tarjeta de Extranjería",
-    "tarjeta de extranjeria": "Tarjeta de Extranjería",
-    ti: "Tarjeta de Identidad",
-    "tarjeta de identidad": "Tarjeta de Identidad",
-    nuip: "Número Unico de Identificación Personal",
-    "numero unico de identificacion personal":
-      "Número Unico de Identificación Personal",
-    rc: "Registro Civil",
-    "registro civil": "Registro Civil",
-    pa: "Pasaporte",
-    pasaporte: "Pasaporte",
-    pet: "Permiso Especial de Trabajo",
-    ppt: "Permiso de Protección Temporal",
-    nit: "Número de Identificación Tributaria",
-    crs: "Cert Regis suces iliq pers nat no doc id",
-    sil: "Sucesión ilíquida,exp. por notaria",
-    dx: "Documento definido información exogena",
-    nitext: "ID de extranjeros diferente al NIT",
-    die: "Documento de identificación extranjero",
-    pjex: "Doc Identificación Ext Persona Jurídica",
-    cd: "Carné Diplomático",
-  };
-
-  return (
-    map[key] ??
-    map[
-    input
-      .toString()
-      .toLowerCase()
-      .replace(/[^a-z0-9 ]/g, "")
-    ] ??
-    input
-  );
-}
-
 // Tipo para bancos PSE
 interface Bank {
   bankCode: string;
@@ -372,6 +320,31 @@ export default function InicioDeSoportePage() {
       return;
     }
 
+    // Pre-flight: validar que los datos del documento de Novasoft estén completos
+    const cedulaSource = submittedCedula ?? cedula;
+    const cedulaDigits = cedulaSource ? cedulaSource.replace(/\D/g, "") : "";
+    const numeroOrden =
+      submittedOrder ??
+      orden ??
+      (doc as DocumentoWithRegistro).registro ??
+      doc.documento ??
+      "";
+
+    const missingFields: string[] = [];
+    if (!doc.email?.trim()) missingFields.push("email");
+    if (!doc.movil?.trim()) missingFields.push("teléfono");
+    if (!doc.estadoCodigo?.trim()) missingFields.push("estado del documento");
+    if (!doc.cliente?.trim()) missingFields.push("nombre del cliente");
+    if (!cedulaDigits) missingFields.push("documento de identidad");
+    if (!numeroOrden.trim()) missingFields.push("número de orden");
+
+    if (missingFields.length > 0) {
+      alert(
+        `No se puede procesar el pago. Faltan datos requeridos: ${missingFields.join(", ")}. Por favor contacta a soporte.`
+      );
+      return;
+    }
+
     setIsProcessingPayment(true);
 
     try {
@@ -419,24 +392,9 @@ export default function InicioDeSoportePage() {
 
       const normalizedValor = normalizeMonetaryAmount(raw);
 
-      // Use the order number the user entered when creating the support request.
-      // Prefer the submitted order (saved after form submit); fall back to the current input.
-      const numeroOrden =
-        submittedOrder ??
-        orden ??
-        (doc as DocumentoWithRegistro).registro ??
-        doc.documento ??
-        "";
-
-      // Use the cedula that was submitted with the support-order (digits only).
-      // Fall back to current input only if submitted value is not available.
-      const cedulaSource = submittedCedula ?? cedula;
-      const cedulaDigits = cedulaSource ? cedulaSource.replace(/\D/g, "") : "";
-
       const tipoDocRaw = (doc.tipoDocumento || "CC") as string;
-      // Preferir la abreviación (CC, CE, etc.) cuando sea posible, sino enviar nombre normalizado
-      const tipoAbbr = getDocumentAbbreviation(tipoDocRaw);
-      const tipo_documento = tipoAbbr ?? normalizeTipoDocumento(tipoDocRaw);
+      // Siempre enviar abreviación (CC, CE, etc.). Default CC si no se reconoce.
+      const tipo_documento = getDocumentAbbreviation(tipoDocRaw) ?? "CC";
 
       const payloadBase: Record<string, unknown> = {
         numero_orden: numeroOrden,
@@ -445,12 +403,8 @@ export default function InicioDeSoportePage() {
         concepto: doc.concepto || "Pago soporte",
         movil_usuario: doc.movil || "",
         medio_pago: paymentMethod === "tarjeta" ? 2 : 3,
-        // Always send the user's entered cédula number (digits only). Do not fall back
-        // to the document from the backend response to ensure the payment is tied
-        // to the user-entered identity.
         documento_usuario: cedulaDigits,
         tipo_documento: tipo_documento,
-        // estado: usar el código de estado del documento para que el backend lo relacione
         estado: doc.estadoCodigo ?? "",
         valor: normalizedValor,
       };

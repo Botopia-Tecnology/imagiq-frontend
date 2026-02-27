@@ -293,6 +293,12 @@ function FlixmediaPlayerComponent({
         console.log('[FLIX] loader.js cargado OK');
         applyStyles();
 
+        // Forzar a Flixmedia a re-escanear y renderizar contenido
+        // Necesario porque loader.js solo se inicializa una vez globalmente
+        try {
+          window.flixJsCallbacks?.loadService?.('inpage');
+        } catch { /* ignore */ }
+
         const cont = document.getElementById(containerId);
         if (cont) {
           observer = new MutationObserver(() => {

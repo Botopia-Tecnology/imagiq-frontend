@@ -114,6 +114,7 @@ function mapProductGroupedToCard(product: ProductGrouped): ProductCardProps {
     indRetoma: product.indRetoma,
     indcerointeres: product.indcerointeres,
     skuPostback: product.skuPostback,
+    skuflixmedia: product.skuflixmedia,
     ancho: product.ancho,
     alto: product.alto,
     largo: product.largo,
@@ -135,7 +136,7 @@ function mapProductGroupedToCard(product: ProductGrouped): ProductCardProps {
     apiProduct,
     acceptsTradeIn: mainIndRetoma === 1,
     desDetallada: mainDesDetallada,
-    skuflixmedia: mainSku,
+    skuflixmedia: product.skuflixmedia?.[0] || mainSku,
   };
 }
 

@@ -21,6 +21,7 @@ import { useProduct } from "@/features/products/useProducts";
 import FlixmediaPlayer from "@/components/FlixmediaPlayer";
 import MultimediaBottomBar from "@/components/MultimediaBottomBar";
 import { usePrefetchProduct } from "@/hooks/usePrefetchProduct";
+import { hasPremiumContent } from "@/lib/flixmedia";
 
 // Skeleton de carga mejorado
 function MultimediaPageSkeleton() {
@@ -232,40 +233,9 @@ export default function MultimediaPage({
     return segmentoValue?.toUpperCase() === 'PREMIUM';
   };
 
-  // Función helper para verificar si el producto tiene contenido premium
-  // Verifica tanto en apiProduct como en los colores del producto
-  const hasPremiumContent = (): boolean => {
+  const hasPremiumContentCheck = (): boolean => {
     if (!product) return false;
-
-    // Verificar en apiProduct (imagenPremium/videoPremium o sus alias)
-    // imagenPremium/videoPremium vienen como string[][] (array de arrays)
-    const checkArrayOfArrays = (arr?: string[][]): boolean => {
-      if (!arr || !Array.isArray(arr)) return false;
-      return arr.some((innerArray: string[]) => {
-        if (!Array.isArray(innerArray) || innerArray.length === 0) return false;
-        return innerArray.some(item => item && typeof item === 'string' && item.trim() !== '');
-      });
-    };
-
-    const hasApiPremiumContent =
-      checkArrayOfArrays(product.apiProduct?.imagenPremium) ||
-      checkArrayOfArrays(product.apiProduct?.videoPremium) ||
-      checkArrayOfArrays(product.apiProduct?.imagen_premium) ||
-      checkArrayOfArrays(product.apiProduct?.video_premium);
-
-    // Verificar en los colores del producto (imagen_premium/video_premium)
-    // En los colores vienen como string[] (array simple)
-    const hasColorPremiumContent = product.colors?.some(color => {
-      const hasColorImages = color.imagen_premium && Array.isArray(color.imagen_premium) &&
-        color.imagen_premium.length > 0 &&
-        color.imagen_premium.some(img => img && typeof img === 'string' && img.trim() !== '');
-      const hasColorVideos = color.video_premium && Array.isArray(color.video_premium) &&
-        color.video_premium.length > 0 &&
-        color.video_premium.some(vid => vid && typeof vid === 'string' && vid.trim() !== '');
-      return hasColorImages || hasColorVideos;
-    }) || false;
-
-    return hasApiPremiumContent || hasColorPremiumContent;
+    return hasPremiumContent(product.apiProduct, product.colors);
   };
 
   // Determinar la ruta según el segmento O el contenido premium del producto
@@ -291,25 +261,11 @@ export default function MultimediaPage({
 
   const segmento = getSegmento();
   const isPremium = isPremiumProduct(segmento);
-  const hasPremium = hasPremiumContent();
+  const hasPremium = hasPremiumContentCheck();
 
-  // DEBUG: Log para verificar valores
-  console.log('[MULTIMEDIA] 🔍 Verificando ruta:', {
-    segmento,
-    isPremium,
-    hasPremium,
-    productSegmento: product?.segmento,
-    apiProductSegmento: product?.apiProduct?.segmento,
-    hasApiPremiumImages: !!product?.apiProduct?.imagenPremium?.length,
-    hasApiPremiumVideos: !!product?.apiProduct?.videoPremium?.length,
-  });
-
-  // Usar viewpremium si es premium O tiene contenido premium
   const viewRoute = (isPremium || hasPremium)
     ? `/productos/viewpremium/${id}`
     : `/productos/view/${id}`;
-
-  console.log('[MULTIMEDIA] ➡️ Ruta seleccionada:', viewRoute);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">

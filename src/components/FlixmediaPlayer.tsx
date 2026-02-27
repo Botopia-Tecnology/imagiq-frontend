@@ -136,9 +136,9 @@ function FlixmediaPlayerComponent({
     cleanupOwnScripts();
 
     const init = async () => {
-      // Parsear SKUs
       let targetMpn: string | null = null;
       let targetEan: string | null = null;
+      let isFallbackMode = false;
 
       if (mpn) {
         const skus = parseSkuString(mpn);
@@ -208,25 +208,20 @@ function FlixmediaPlayerComponent({
 
           // Si no encontramos contenido con ninguna variante
           if (!matchData || matchData.event !== 'matchhit') {
-            setHasContent(false);
-            redirectToView();
-            return;
+            console.log('[FLIX] Match API falló para', targetMpn || targetEan, '→ intentando fallback con loader.js');
+            isFallbackMode = true;
+          } else {
+            // Usar el MPN que funcionó
+            if (matchedMpn) {
+              targetMpn = matchedMpn;
+            }
+            setHasContent(true);
           }
-
-          // Usar el MPN que funcionó
-          if (matchedMpn) {
-            targetMpn = matchedMpn;
-          }
-
-          setHasContent(true);
         } catch (error) {
           if (abortController.signal.aborted) return;
-          console.error('[FLIXMEDIA PLAYER] Error verificando contenido:', error);
-          if (isMounted) {
-            setHasContent(false);
-            redirectToView();
-          }
-          return;
+          if (!isMounted) return;
+          console.log('[FLIX] Error de red en Match API → intentando fallback', error);
+          isFallbackMode = true;
         }
       }
 
@@ -280,36 +275,55 @@ function FlixmediaPlayerComponent({
       script.setAttribute("data-flix-button", "");
       script.setAttribute("data-flix-price", "");
 
-      // Función para verificar si hay error de Flixmedia
+      // Verificar si loader.js renderizó contenido multimedia real (no boilerplate/errores)
+      const hasRealContent = (cont: HTMLElement): boolean => {
+        if (cont.children.length === 0) return false;
+        // Solo contar como contenido real: iframes, múltiples imágenes, o videos
+        return cont.querySelector('iframe') !== null ||
+               cont.querySelectorAll('img').length > 1 ||
+               cont.querySelector('video') !== null;
+      };
+
+      // Verificar si hay error de Flixmedia
       const checkForFlixError = () => {
         const cont = document.getElementById(containerId);
         if (!cont) return false;
-
         const text = cont.textContent?.toLowerCase() || '';
         const hasErrorText = text.includes('producto no encontrado') ||
                             text.includes('no se pudo cargar') ||
                             text.includes('product not found') ||
                             text.includes('no content available');
-
         const hasBlueBackground = cont.innerHTML.includes('17407A') ||
                                  cont.innerHTML.includes('rgb(23, 64, 122)');
-
         return hasErrorText || hasBlueBackground;
       };
+
+      let fallbackResolved = false;
 
       script.onload = () => {
         applyStyles();
 
-        // MutationObserver para detectar errores inyectados por Flixmedia
         const cont = document.getElementById(containerId);
         if (cont) {
           const observer = new MutationObserver(() => {
+            if (!isMounted || fallbackResolved) { observer.disconnect(); return; }
+
+            // Detectar error → redirigir inmediato
             if (checkForFlixError()) {
+              console.log('[FLIX] Error de Flixmedia detectado → redirigiendo');
+              fallbackResolved = true;
               observer.disconnect();
               setHasFlixError(true);
-              if (!preventRedirectRef.current) {
-                redirectToView();
-              }
+              if (!preventRedirectRef.current) redirectToView();
+              return;
+            }
+
+            // En fallback: detectar contenido real → mostrarlo
+            if (isFallbackMode && hasRealContent(cont)) {
+              console.log('[FLIX] Fallback exitoso: contenido real detectado');
+              fallbackResolved = true;
+              observer.disconnect();
+              setHasContent(true);
             }
           });
 
@@ -320,17 +334,45 @@ function FlixmediaPlayerComponent({
             attributes: true
           });
 
-          // Verificar después de un timeout como fallback
-          setTimeout(() => {
-            if (checkForFlixError()) {
-              observer.disconnect();
-              setHasFlixError(true);
-              if (!preventRedirectRef.current) {
-                redirectToView();
+          if (isFallbackMode) {
+            // Fallback: si en 2s no hay contenido real → redirigir SIEMPRE
+            setTimeout(() => {
+              if (!isMounted || fallbackResolved) {
+                console.log('[FLIX] Fallback timeout: ya resuelto o desmontado', { isMounted, fallbackResolved });
+                return;
               }
-            }
-          }, 2000);
+              console.log('[FLIX] Fallback timeout 2s: sin contenido real → redirigiendo', {
+                children: cont.children.length,
+                hasIframe: cont.querySelector('iframe') !== null,
+                imgCount: cont.querySelectorAll('img').length,
+                hasVideo: cont.querySelector('video') !== null,
+                innerHTMLLength: cont.innerHTML.length
+              });
+              fallbackResolved = true;
+              observer.disconnect();
+              setHasContent(false);
+              if (!preventRedirectRef.current) redirectToView();
+            }, 2000);
+          } else {
+            // Path normal: solo verificar errores
+            setTimeout(() => {
+              if (!isMounted) return;
+              if (checkForFlixError()) {
+                observer.disconnect();
+                setHasFlixError(true);
+                if (!preventRedirectRef.current) redirectToView();
+              }
+            }, 2000);
+          }
         }
+      };
+
+      // Si el script falla al cargar → redirigir
+      script.onerror = () => {
+        console.log('[FLIX] Error cargando loader.js → redirigiendo');
+        if (!isMounted) return;
+        setHasContent(false);
+        if (!preventRedirectRef.current) redirectToView();
       };
 
       script.src = "//media.flixfacts.com/js/loader.js";
@@ -384,7 +426,7 @@ function FlixmediaPlayerComponent({
       <div
         id={containerId}
         className="w-full"
-        style={hasContent ? undefined : { display: 'none' }}
+        style={hasContent === false ? { display: 'none' } : undefined}
       />
     </div>
   );

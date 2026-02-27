@@ -149,6 +149,8 @@ export const productEndpoints = {
 
     // Función para normalizar parámetros y crear clave de deduplicación
     // Ignora parámetros no críticos que no afectan qué productos se obtienen
+    const DYNAMIC_FILTER_RE = /^[a-zA-Z0-9]+_(equal|not_equal|in|not_in|contains|starts_with|ends_with|greater_than|less_than|greater_than_or_equal|less_than_or_equal|range_min|range_max)$/;
+
     const normalizeParams = (params: ProductFilterParams): string => {
       const critical: Record<string, string> = {};
 
@@ -161,6 +163,13 @@ export const productEndpoints = {
       if (params.limit !== undefined) critical.limit = String(params.limit);
       if (params.lazyLimit !== undefined) critical.lazyLimit = String(params.lazyLimit);
       if (params.lazyOffset !== undefined) critical.lazyOffset = String(params.lazyOffset);
+
+      // Incluir filtros dinámicos (ej: device_contains, precioeccommerce_range_min)
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '' && DYNAMIC_FILTER_RE.test(key)) {
+          critical[key] = String(value);
+        }
+      }
 
       // Ignorar: sortBy, sortOrder, page (no afectan qué productos se obtienen)
 

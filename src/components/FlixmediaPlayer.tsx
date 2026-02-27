@@ -8,7 +8,7 @@
 "use client";
 
 import { useEffect, memo, useCallback, useState, useRef } from "react";
-import { parseSkuString, generateMpnVariants, hasPremiumContent as checkPremiumContent } from "@/lib/flixmedia";
+import { parseSkuString, checkFlixmediaAvailability, checkFlixmediaAvailabilityByEan, hasPremiumContent as checkPremiumContent } from "@/lib/flixmedia";
 import { useRouter } from "next/navigation";
 
 declare global {
@@ -126,6 +126,7 @@ function FlixmediaPlayerComponent({
   useEffect(() => {
     let isMounted = true;
     const abortController = new AbortController();
+    let observer: MutationObserver | null = null;
 
     // Solo limpiar scripts de ESTE contenedor específico, no de otros componentes
     const cleanupOwnScripts = () => {
@@ -163,74 +164,57 @@ function FlixmediaPlayerComponent({
         setHasContent(true);
       } else {
         // Modo standalone: Verificar si hay contenido con la API de Match
-        // Probar TODAS las variantes del MPN en paralelo con Promise.any()
+        // Usa el skuflixmedia DIRECTO del backend (ya viene en formato correcto)
+        // Cache in-memory de 5 min (flixmedia.ts)
         try {
-          let matchedMpn: string | null = null;
-          let matchData: { event?: string } | null = null;
+          let matched = false;
 
           if (targetMpn) {
-            const mpnVariants = generateMpnVariants(targetMpn);
+            const result = await checkFlixmediaAvailability(
+              targetMpn,
+              undefined,
+              undefined,
+              abortController.signal
+            );
+            if (!isMounted) return;
 
-            // Lanzar todas las variantes en paralelo
-            const variantPromises = mpnVariants.map(async (variant) => {
-              const matchUrl = `https://media.flixcar.com/delivery/webcall/match/${DISTRIBUTOR_ID}/${LANGUAGE}/mpn/${encodeURIComponent(variant)}`;
-              const response = await fetch(matchUrl, { signal: abortController.signal });
-              if (!response.ok) throw new Error('not ok');
-              const data = await response.json();
-              if (data.event !== 'matchhit') throw new Error('no match');
-              return { variant, data };
-            });
-
-            try {
-              const result = await Promise.any(variantPromises);
-              if (!isMounted) return;
-              matchedMpn = result.variant;
-              matchData = result.data;
-            } catch {
-              // Todas las variantes fallaron
-              if (!isMounted) return;
+            if (result.available) {
+              matched = true;
+              setHasContent(true);
             }
           } else if (targetEan) {
-            const matchUrl = `https://media.flixcar.com/delivery/webcall/match/${DISTRIBUTOR_ID}/${LANGUAGE}/ean/${encodeURIComponent(targetEan)}`;
-            try {
-              const response = await fetch(matchUrl, { signal: abortController.signal });
-              if (!isMounted) return;
-              if (response.ok) {
-                const data = await response.json();
-                if (data.event === 'matchhit') {
-                  matchData = data;
-                }
-              }
-            } catch {
-              if (!isMounted) return;
+            const result = await checkFlixmediaAvailabilityByEan(
+              targetEan,
+              undefined,
+              undefined,
+              abortController.signal
+            );
+            if (!isMounted) return;
+
+            if (result.available) {
+              matched = true;
+              setHasContent(true);
             }
           }
 
-          // Si no encontramos contenido con ninguna variante
-          if (!matchData || matchData.event !== 'matchhit') {
-            console.log('[FLIX] Match API falló para', targetMpn || targetEan, '→ intentando fallback con loader.js');
-            isFallbackMode = true;
-          } else {
-            // Usar el MPN que funcionó
-            if (matchedMpn) {
-              targetMpn = matchedMpn;
-            }
-            setHasContent(true);
+          if (!matched) {
+            // Match API respondió: no hay contenido → redirigir inmediatamente
+            console.log('[FLIX] Sin contenido para', targetMpn || targetEan, '→ redirigiendo');
+            setHasContent(false);
+            if (!preventRedirectRef.current) redirectToView();
+            return;
           }
         } catch (error) {
           if (abortController.signal.aborted) return;
           if (!isMounted) return;
-          console.log('[FLIX] Error de red en Match API → intentando fallback', error);
+          // Solo usar fallback si hubo error de red (API caída, timeout, etc.)
+          console.log('[FLIX] Error de red en Match API → intentando fallback con loader.js', error);
           isFallbackMode = true;
         }
       }
 
       // Limpiar scripts propios antes de cargar nuevo
       cleanupOwnScripts();
-
-      // El container siempre está en el DOM (renderizado con display:none si no hay contenido)
-      // requestAnimationFrame garantiza que el DOM se actualizó tras el setState
-      await new Promise(resolve => requestAnimationFrame(resolve));
 
       if (!isMounted) return;
 
@@ -305,14 +289,14 @@ function FlixmediaPlayerComponent({
 
         const cont = document.getElementById(containerId);
         if (cont) {
-          const observer = new MutationObserver(() => {
-            if (!isMounted || fallbackResolved) { observer.disconnect(); return; }
+          observer = new MutationObserver(() => {
+            if (!isMounted || fallbackResolved) { observer?.disconnect(); return; }
 
             // Detectar error → redirigir inmediato
             if (checkForFlixError()) {
               console.log('[FLIX] Error de Flixmedia detectado → redirigiendo');
               fallbackResolved = true;
-              observer.disconnect();
+              observer?.disconnect();
               setHasFlixError(true);
               if (!preventRedirectRef.current) redirectToView();
               return;
@@ -322,7 +306,7 @@ function FlixmediaPlayerComponent({
             if (isFallbackMode && hasRealContent(cont)) {
               console.log('[FLIX] Fallback exitoso: contenido real detectado');
               fallbackResolved = true;
-              observer.disconnect();
+              observer?.disconnect();
               setHasContent(true);
             }
           });
@@ -349,7 +333,7 @@ function FlixmediaPlayerComponent({
                 innerHTMLLength: cont.innerHTML.length
               });
               fallbackResolved = true;
-              observer.disconnect();
+              observer?.disconnect();
               setHasContent(false);
               if (!preventRedirectRef.current) redirectToView();
             }, 2000);
@@ -358,7 +342,7 @@ function FlixmediaPlayerComponent({
             setTimeout(() => {
               if (!isMounted) return;
               if (checkForFlixError()) {
-                observer.disconnect();
+                observer?.disconnect();
                 setHasFlixError(true);
                 if (!preventRedirectRef.current) redirectToView();
               }
@@ -384,6 +368,7 @@ function FlixmediaPlayerComponent({
     return () => {
       isMounted = false;
       abortController.abort();
+      observer?.disconnect();
       // Solo limpiar scripts de ESTE contenedor específico
       const scripts = document.querySelectorAll(`script[data-flix-inpage="${containerId}"]`);
       scripts.forEach(s => s.remove());

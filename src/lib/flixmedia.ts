@@ -38,15 +38,16 @@ function setCachedMatch(cacheKey: string, result: FlixmediaAvailability): void {
 export async function checkFlixmediaAvailability(
   mpn: string,
   distributorId: string = FLIXMEDIA_CONFIG.distributorId,
-  language: string = FLIXMEDIA_CONFIG.language
+  language: string = FLIXMEDIA_CONFIG.language,
+  signal?: AbortSignal
 ): Promise<FlixmediaAvailability> {
   const cacheKey = `mpn:${distributorId}:${language}:${mpn}`;
   const cached = getCachedMatch(cacheKey);
   if (cached) return cached;
 
   try {
-    const url = `${FLIXMEDIA_CONFIG.matchApiUrl}/${distributorId}/${language}/mpn/${mpn}`;
-    const response = await fetch(url);
+    const url = `${FLIXMEDIA_CONFIG.matchApiUrl}/${distributorId}/${language}/mpn/${encodeURIComponent(mpn)}`;
+    const response = await fetch(url, signal ? { signal } : undefined);
     const data = await response.json();
 
     if (data.event === "matchhit" && data.product_id) {
@@ -69,15 +70,16 @@ export async function checkFlixmediaAvailability(
 export async function checkFlixmediaAvailabilityByEan(
   ean: string,
   distributorId: string = FLIXMEDIA_CONFIG.distributorId,
-  language: string = FLIXMEDIA_CONFIG.language
+  language: string = FLIXMEDIA_CONFIG.language,
+  signal?: AbortSignal
 ): Promise<FlixmediaAvailability> {
   const cacheKey = `ean:${distributorId}:${language}:${ean}`;
   const cached = getCachedMatch(cacheKey);
   if (cached) return cached;
 
   try {
-    const url = `${FLIXMEDIA_CONFIG.matchApiUrl}/${distributorId}/${language}/ean/${ean}`;
-    const response = await fetch(url);
+    const url = `${FLIXMEDIA_CONFIG.matchApiUrl}/${distributorId}/${language}/ean/${encodeURIComponent(ean)}`;
+    const response = await fetch(url, signal ? { signal } : undefined);
     const data = await response.json();
 
     if (data.event === "matchhit" && data.product_id) {

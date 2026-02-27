@@ -35,6 +35,8 @@ export interface BaseApiFilters {
   limit?: number;
   lazyLimit?: number;
   lazyOffset?: number;
+  /** Permite filtros dinámicos con sintaxis column_operator (ej: device_contains, precioeccommerce_range_min) */
+  [key: string]: string | number | boolean | undefined;
 }
 
 /**

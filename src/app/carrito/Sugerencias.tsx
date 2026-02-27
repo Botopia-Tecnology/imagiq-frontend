@@ -321,27 +321,49 @@ export default function Sugerencias({
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        const response = await fetchWithTimeout(
-          productEndpoints.getFiltered({
-            subcategoria: "Accesorios",
-            limit: 50,
-            sortBy: "precio",
-            sortOrder: "desc",
-          }),
-          8000
-        );
+        // Dual fetch: accesorios compatibles + universales en paralelo
+        // Compatible: filtra por subcategoria=Accesorios (fundas, cargadores específicos, etc.)
+        // Universal: filtra por device LIKE '%Universal%' (sin restricción de subcategoría,
+        //   así incluye Galaxy Buds, proyectores, y cualquier producto Universal_IM/Universal_HA/etc.)
+        const [compatResult, universalResult] = await Promise.allSettled([
+          fetchWithTimeout(
+            productEndpoints.getFiltered({
+              subcategoria: "Accesorios",
+              limit: 100,
+              sortBy: "precio",
+              sortOrder: "desc",
+            }),
+            8000
+          ),
+          fetchWithTimeout(
+            productEndpoints.getFiltered({
+              device_contains: "Universal",
+              limit: 50,
+              sortBy: "precio",
+              sortOrder: "asc",
+            }),
+            8000
+          ),
+        ]);
 
         // Si fue abortado, no actualizar state
         if (controller.signal.aborted) return;
 
-        if (!response.success || !response.data?.products) {
-          if (cachedCompatibles) {
-            setSugerenciasCompatibles(cachedCompatibles.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
-          }
-          if (cachedUniversal) {
-            setSugerenciasUniversales(cachedUniversal.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
-          }
+        const compatResponse = compatResult.status === 'fulfilled' ? compatResult.value : null;
+        const universalResponse = universalResult.status === 'fulfilled' ? universalResult.value : null;
+
+        // Si ambos fallaron completamente, usar cache o reintentar
+        const compatOk = compatResponse?.success && compatResponse.data?.products;
+        const universalOk = universalResponse?.success && universalResponse.data?.products;
+
+        if (!compatOk && !universalOk) {
           if (cachedCompatibles || cachedUniversal) {
+            if (cachedCompatibles) {
+              setSugerenciasCompatibles(cachedCompatibles.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
+            }
+            if (cachedUniversal) {
+              setSugerenciasUniversales(cachedUniversal.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
+            }
             setLoading(false);
             isFetchingRef.current = false;
             hasFetchedRef.current = true;
@@ -353,14 +375,8 @@ export default function Sugerencias({
             if (controller.signal.aborted) return;
             continue;
           }
-          const filteredCompatibles: ProductApiData[] = cachedCompatibles !== null
-            ? (cachedCompatibles as ProductApiData[]).filter((p: ProductApiData) => !cartSkus.has(p.sku[0]))
-            : [];
-          const filteredUniversales: ProductApiData[] = cachedUniversal !== null
-            ? (cachedUniversal as ProductApiData[]).filter((p: ProductApiData) => !cartSkus.has(p.sku[0]))
-            : [];
-          setSugerenciasCompatibles(filteredCompatibles);
-          setSugerenciasUniversales(filteredUniversales);
+          setSugerenciasCompatibles([]);
+          setSugerenciasUniversales([]);
           setLoading(false);
           isFetchingRef.current = false;
           hasFetchedRef.current = true;
@@ -368,49 +384,83 @@ export default function Sugerencias({
           return;
         }
 
-        const allProducts = response.data.products;
+        // Procesar accesorios compatibles (del fetch de subcategoria=Accesorios)
         const seenSkus = new Set<string>();
         const compatibleAccessories: ProductApiData[] = [];
         const universalAccessories: ProductApiData[] = [];
 
-        for (const item of allProducts) {
-          if (isBundle(item)) continue;
+        // Helper para validar producto (imagen y stock)
+        const isValidProduct = (product: ProductApiData): boolean => {
+          if (!product.imagePreviewUrl?.[0] || product.imagePreviewUrl[0].trim() === '') return false;
+          if (!hasStock(product)) return false;
+          return true;
+        };
 
-          const product = item;
-          const sku = product.sku[0];
-          if (seenSkus.has(sku) || cartSkus.has(sku)) continue;
-          seenSkus.add(sku);
+        // Paso 1: Del fetch compatible (subcategoria=Accesorios), separar compatibles y universales
+        if (compatOk) {
+          for (const item of compatResponse!.data!.products) {
+            if (isBundle(item)) continue;
+            const product = item as ProductApiData;
+            const sku = product.sku[0];
+            if (seenSkus.has(sku) || cartSkus.has(sku)) continue;
+            if (!isValidProduct(product)) continue;
 
-          if (!product.imagePreviewUrl?.[0] || product.imagePreviewUrl[0].trim() === '') continue;
-          if (!hasStock(product)) continue;
-
-          if (isUniversalAccessory(product, cartCategories)) {
-            if (universalAccessories.length < 4) universalAccessories.push(product);
-          } else if (modelos.length > 0) {
-            const isCompatible = isAccessoryCompatible(product, modelos);
-            if (isCompatible && compatibleAccessories.length < 4) {
+            if (isUniversalAccessory(product, cartCategories)) {
+              // Producto universal encontrado en el fetch de Accesorios (ej: cargador)
+              universalAccessories.push(product);
+              seenSkus.add(sku);
+            } else if (modelos.length > 0 && isAccessoryCompatible(product, modelos) && compatibleAccessories.length < 4) {
               compatibleAccessories.push(product);
+              seenSkus.add(sku);
             }
           }
-
-          // Early exit si ya tenemos suficientes
-          if (compatibleAccessories.length >= 4 && universalAccessories.length >= 4) break;
         }
 
-        // Ordenar por precio (mayor primero)
+        // Paso 2: Del fetch universal (device_contains=Universal), agregar universales adicionales
+        if (universalOk) {
+          for (const item of universalResponse!.data!.products) {
+            if (isBundle(item)) continue;
+            const product = item as ProductApiData;
+            const sku = product.sku[0];
+            if (seenSkus.has(sku) || cartSkus.has(sku)) continue;
+            if (!isValidProduct(product)) continue;
+
+            if (isUniversalAccessory(product, cartCategories)) {
+              universalAccessories.push(product);
+              seenSkus.add(sku);
+            }
+          }
+        }
+
+        // Ordenar compatibles por precio (mayor primero)
         compatibleAccessories.sort((a, b) => {
           const priceA = a.precioeccommerce?.[0] || a.precioNormal?.[0] || 0;
           const priceB = b.precioeccommerce?.[0] || b.precioNormal?.[0] || 0;
           return priceB - priceA;
         });
 
-        const hasNewResults = compatibleAccessories.length > 0 || universalAccessories.length > 0;
+        // Ordenar universales por precio (mayor primero)
+        universalAccessories.sort((a, b) => {
+          const priceA = a.precioeccommerce?.[0] || a.precioNormal?.[0] || 0;
+          const priceB = b.precioeccommerce?.[0] || b.precioNormal?.[0] || 0;
+          return priceB - priceA;
+        });
+
+        // Fallback a cache si uno de los fetches falló
+        const finalCompatible = compatibleAccessories.length > 0
+          ? compatibleAccessories
+          : (cachedCompatibles ? cachedCompatibles.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])) : []);
+        const finalUniversal = universalAccessories.length > 0
+          ? universalAccessories
+          : (cachedUniversal ? cachedUniversal.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])) : []);
+
+        const hasNewResults = finalCompatible.length > 0 || finalUniversal.length > 0;
         const hasExistingResults = sugerenciasCompatiblesRef.current.length > 0 || sugerenciasUniversalesRef.current.length > 0;
 
         // Solo actualizar state si hay resultados nuevos O si no teníamos nada antes
         if (hasNewResults || !hasExistingResults) {
-          setSugerenciasCompatibles(compatibleAccessories);
-          setSugerenciasUniversales(universalAccessories);
+          setSugerenciasCompatibles(finalCompatible);
+          setSugerenciasUniversales(finalUniversal);
         }
 
         // Solo actualizar cache si hay resultados — no sobreescribir cache bueno con vacío
@@ -431,17 +481,15 @@ export default function Sugerencias({
         console.warn(`Sugerencias: intento ${attempt}/${maxRetries} falló:`, error);
 
         if (attempt === maxRetries) {
-          if (cachedCompatibles || cachedUniversal) {
-            if (cachedCompatibles) {
-              setSugerenciasCompatibles(cachedCompatibles.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
-            } else {
-              setSugerenciasCompatibles([]);
-            }
-            if (cachedUniversal) {
-              setSugerenciasUniversales(cachedUniversal.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
-            } else {
-              setSugerenciasUniversales([]);
-            }
+          if (cachedCompatibles) {
+            setSugerenciasCompatibles(cachedCompatibles.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
+          } else {
+            setSugerenciasCompatibles([]);
+          }
+          if (cachedUniversal) {
+            setSugerenciasUniversales(cachedUniversal.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
+          } else {
+            setSugerenciasUniversales([]);
           }
           setLoading(false);
           isFetchingRef.current = false;

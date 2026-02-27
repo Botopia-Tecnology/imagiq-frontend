@@ -262,7 +262,21 @@ function FlixmediaPlayerComponent({
         applyStyles();
       }, "inpage");
 
-      // Crear script siguiendo el método del PDF (Sección 1b - Alternative Implementation)
+      // Limpiar keys de Flixmedia del localStorage que interfieren con cargas posteriores
+      try {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('flix') || key.startsWith('_flix'))) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+        if (keysToRemove.length > 0) {
+          console.log('[FLIX] Limpiadas keys de localStorage:', keysToRemove);
+        }
+      } catch { /* localStorage no disponible */ }
+
       const script = document.createElement("script");
       script.type = "text/javascript";
       script.async = true;

@@ -384,13 +384,9 @@ function FlixmediaPlayerComponent({
       isMounted = false;
       abortController.abort();
       observer?.disconnect();
-      // Solo limpiar scripts de ESTE contenedor específico
-      const scripts = document.querySelectorAll(`script[data-flix-inpage="${containerId}"]`);
-      scripts.forEach(s => s.remove());
-      const container = document.getElementById(containerId);
-      if (container) {
-        container.innerHTML = '';
-      }
+      // NO borrar container.innerHTML ni scripts aquí.
+      // Flixmedia mantiene estado global y no re-renderiza si se limpia el container.
+      // Los scripts se limpian al inicio de init() con cleanupOwnScripts() cuando cambian las props.
     };
   }, [mpn, ean, containerId, applyStyles, redirectToView, router, hasPremiumContentCheck]);
 

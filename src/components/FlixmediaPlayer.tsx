@@ -172,12 +172,14 @@ function FlixmediaPlayerComponent({
           let matched = false;
 
           if (targetMpn) {
+            console.log('[FLIX] Verificando Match API para:', targetMpn);
             const result = await checkFlixmediaAvailability(
               targetMpn,
               undefined,
               undefined,
               abortController.signal
             );
+            console.log('[FLIX] Match API resultado:', result, '| isMounted:', isMounted);
             if (!isMounted) return;
 
             if (result.available) {
@@ -221,6 +223,7 @@ function FlixmediaPlayerComponent({
       if (!isMounted) return;
 
       const container = document.getElementById(containerId);
+      console.log('[FLIX] Container encontrado:', !!container, containerId);
       if (!container) return;
 
       // Configurar callbacks ANTES de cargar el script
@@ -287,6 +290,7 @@ function FlixmediaPlayerComponent({
       let fallbackResolved = false;
 
       script.onload = () => {
+        console.log('[FLIX] loader.js cargado OK');
         applyStyles();
 
         const cont = document.getElementById(containerId);
@@ -362,12 +366,14 @@ function FlixmediaPlayerComponent({
       };
 
       script.src = "//media.flixfacts.com/js/loader.js";
+      console.log('[FLIX] Cargando loader.js con MPN:', targetMpn, 'container:', containerId);
       document.head.appendChild(script);
     };
 
     init();
 
     return () => {
+      console.log('[FLIX] Cleanup: desmontando componente');
       isMounted = false;
       abortController.abort();
       observer?.disconnect();

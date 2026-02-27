@@ -150,6 +150,8 @@ function FlixmediaPlayerComponent({
         if (eans.length > 0) targetEan = eans[0];
       }
 
+      console.log('[FLIX] SKU para Flixmedia:', { mpn, targetMpn, targetEan });
+
       if (!targetMpn && !targetEan) {
         if (!preventRedirectRef.current) {
           redirectToView();

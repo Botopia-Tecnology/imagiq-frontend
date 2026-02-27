@@ -28,42 +28,6 @@ interface FlixmediaDetailsProps {
   onError?: () => void;
 }
 
-/**
- * Hook personalizado para precargar Flixmedia temprano
- */
-function useFlixmediaPreload() {
-  useEffect(() => {
-    // Precargar recursos de Flixmedia apenas se monte el componente
-    if (typeof window === 'undefined') return;
-
-    // DNS prefetch
-    const dnsPrefetch = document.createElement('link');
-    dnsPrefetch.rel = 'dns-prefetch';
-    dnsPrefetch.href = '//media.flixfacts.com';
-    if (!document.querySelector('link[href="//media.flixfacts.com"]')) {
-      document.head.appendChild(dnsPrefetch);
-    }
-
-    // Preconnect
-    const preconnect = document.createElement('link');
-    preconnect.rel = 'preconnect';
-    preconnect.href = 'https://media.flixfacts.com';
-    preconnect.crossOrigin = 'anonymous';
-    if (!document.querySelector('link[href="https://media.flixfacts.com"]')) {
-      document.head.appendChild(preconnect);
-    }
-
-    // Preload del script
-    const preload = document.createElement('link');
-    preload.rel = 'preload';
-    preload.as = 'script';
-    preload.href = '//media.flixfacts.com/js/loader.js';
-    if (!document.querySelector('link[href="//media.flixfacts.com/js/loader.js"]')) {
-      document.head.appendChild(preload);
-    }
-  }, []);
-}
-
 function FlixmediaDetailsComponent({
   mpn,
   ean,
@@ -71,15 +35,10 @@ function FlixmediaDetailsComponent({
   onError,
 }: FlixmediaDetailsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  // Generar ID único para este montaje - usar timestamp para garantizar unicidad en navegación SPA
   const [uniqueId] = useState(() => `flix-specifications-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   const currentMpnRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  // Estado para ocultar si Flixmedia muestra error
   const [hasFlixError, setHasFlixError] = useState(false);
-
-  // Precargar recursos de Flixmedia temprano
-  useFlixmediaPreload();
 
   const applyStyles = useCallback(() => {
     if (document.getElementById('flixmedia-specifications-styles')) return;
@@ -266,7 +225,6 @@ function FlixmediaDetailsComponent({
   }, []);
 
   useEffect(() => {
-    // Cargar inmediatamente al montar el componente
     let isMounted = true;
     let targetMpn: string | null = null;
     let targetEan: string | null = null;
@@ -284,60 +242,19 @@ function FlixmediaDetailsComponent({
       return;
     }
 
-    const productKey = targetMpn || targetEan || '';
+    currentMpnRef.current = targetMpn || targetEan || '';
 
-    // Limpiar scripts y contenedores de Flixmedia previos
-    const cleanupFlixmediaScripts = () => {
-      const allFlixScripts = document.querySelectorAll('script[data-flix-inpage], script[src*="flixfacts"], script[src*="flixcar"]');
-      allFlixScripts.forEach(s => s.remove());
-
-      const allFlixContainers = document.querySelectorAll('[id^="flix-specifications-"]');
-      allFlixContainers.forEach(container => {
-        if (container.id !== uniqueId) {
-          container.innerHTML = '';
-        }
-      });
-
-      if (typeof window !== 'undefined') {
-        (window as typeof window & { flixLoaded?: unknown }).flixLoaded = undefined;
-        (window as typeof window & { _flix?: unknown })._flix = undefined;
-        (window as typeof window & { flix?: unknown }).flix = undefined;
-        (window as typeof window & { FlixMedia?: unknown }).FlixMedia = undefined;
-      }
+    // Solo limpiar scripts propios de ESTE componente
+    const cleanupOwnScripts = () => {
+      const ownScripts = document.querySelectorAll(`script[data-flix-inpage="${uniqueId}"]`);
+      ownScripts.forEach(s => s.remove());
     };
 
-    // Limpiar scripts previos
-    cleanupFlixmediaScripts();
-    currentMpnRef.current = productKey;
-
-    // Función para verificar si el contenedor está listo
-    const waitForContainer = (): Promise<HTMLElement> => {
-      return new Promise((resolve, reject) => {
-        let attempts = 0;
-        const maxAttempts = 50;
-
-        const checkContainer = () => {
-          attempts++;
-          const container = document.getElementById(uniqueId);
-
-          if (container) {
-            resolve(container);
-          } else if (attempts >= maxAttempts) {
-            reject(new Error('Container timeout'));
-          } else {
-            setTimeout(checkContainer, 100);
-          }
-        };
-
-        checkContainer();
-      });
-    };
+    cleanupOwnScripts();
 
     const loadScript = (container: HTMLElement) => {
       container.innerHTML = '';
-
-      const oldScripts = document.querySelectorAll(`script[data-flix-inpage="${uniqueId}"]`);
-      oldScripts.forEach(s => s.remove());
+      cleanupOwnScripts();
 
       const checkForFlixError = () => {
         const cont = document.getElementById(uniqueId);
@@ -394,13 +311,10 @@ function FlixmediaDetailsComponent({
       });
       observer.observe(container, { childList: true, subtree: true, characterData: true });
 
-      // Crear y configurar el script
-      const headID = document.getElementsByTagName("head")[0];
       const flixScript = document.createElement('script');
       flixScript.type = 'text/javascript';
       flixScript.async = true;
 
-      // Configurar atributos según PDF Sección 1b
       flixScript.setAttribute('data-flix-distributor', '17257');
       flixScript.setAttribute('data-flix-language', 'f5');
       flixScript.setAttribute('data-flix-brand', 'Samsung');
@@ -433,23 +347,25 @@ function FlixmediaDetailsComponent({
         }
       }, 5000);
 
-      headID.appendChild(flixScript);
+      document.head.appendChild(flixScript);
       flixScript.src = '//media.flixfacts.com/js/loader.js';
     };
 
-    waitForContainer()
-      .then(loadScript)
-      .catch(err => {
-        console.error('[FLIXMEDIA DETAILS] Error:', err);
-        if (isMounted) setIsLoading(false);
-      });
+    // El div con id={uniqueId} ya está en el DOM cuando useEffect corre (post-render)
+    // No necesitamos polling - acceso directo
+    const container = document.getElementById(uniqueId);
+    if (container) {
+      loadScript(container);
+    } else {
+      console.error('[FLIXMEDIA DETAILS] Container not found');
+      setIsLoading(false);
+    }
 
     return () => {
       isMounted = false;
-      // Limpiar scripts específicos de este componente
+      // Solo limpiar scripts de ESTE componente
       const scripts = document.querySelectorAll(`script[data-flix-inpage="${uniqueId}"]`);
       scripts.forEach(s => s.remove());
-      // Limpiar el contenedor
       const container = document.getElementById(uniqueId);
       if (container) {
         container.innerHTML = '';
@@ -462,14 +378,12 @@ function FlixmediaDetailsComponent({
     return null;
   }
 
-  // Si Flixmedia mostró un error, no renderizar nada
   if (hasFlixError) {
     return null;
   }
 
   return (
     <div ref={containerRef} className={`${className} w-full relative min-h-[100px]`}>
-      {/* Mostrar skeleton mientras carga */}
       {isLoading && (
         <div className="absolute inset-0 z-10 bg-white">
           <FlixmediaSpecsSkeleton />

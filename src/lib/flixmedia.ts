@@ -15,6 +15,23 @@ export interface FlixmediaAvailability {
   productId?: string;
 }
 
+// Cache in-memory para respuestas del Match API (TTL: 5 minutos)
+const matchCache = new Map<string, { result: FlixmediaAvailability; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000;
+
+function getCachedMatch(cacheKey: string): FlixmediaAvailability | null {
+  const cached = matchCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.result;
+  }
+  if (cached) matchCache.delete(cacheKey);
+  return null;
+}
+
+function setCachedMatch(cacheKey: string, result: FlixmediaAvailability): void {
+  matchCache.set(cacheKey, { result, timestamp: Date.now() });
+}
+
 /**
  * Verifica si Flixmedia tiene contenido para un MPN/SKU específico
  */
@@ -23,15 +40,23 @@ export async function checkFlixmediaAvailability(
   distributorId: string = FLIXMEDIA_CONFIG.distributorId,
   language: string = FLIXMEDIA_CONFIG.language
 ): Promise<FlixmediaAvailability> {
+  const cacheKey = `mpn:${distributorId}:${language}:${mpn}`;
+  const cached = getCachedMatch(cacheKey);
+  if (cached) return cached;
+
   try {
     const url = `${FLIXMEDIA_CONFIG.matchApiUrl}/${distributorId}/${language}/mpn/${mpn}`;
     const response = await fetch(url);
     const data = await response.json();
 
     if (data.event === "matchhit" && data.product_id) {
-      return { available: true, productId: data.product_id };
+      const result = { available: true, productId: data.product_id };
+      setCachedMatch(cacheKey, result);
+      return result;
     } else {
-      return { available: false };
+      const result = { available: false };
+      setCachedMatch(cacheKey, result);
+      return result;
     }
   } catch {
     return { available: false };
@@ -46,15 +71,23 @@ export async function checkFlixmediaAvailabilityByEan(
   distributorId: string = FLIXMEDIA_CONFIG.distributorId,
   language: string = FLIXMEDIA_CONFIG.language
 ): Promise<FlixmediaAvailability> {
+  const cacheKey = `ean:${distributorId}:${language}:${ean}`;
+  const cached = getCachedMatch(cacheKey);
+  if (cached) return cached;
+
   try {
     const url = `${FLIXMEDIA_CONFIG.matchApiUrl}/${distributorId}/${language}/ean/${ean}`;
     const response = await fetch(url);
     const data = await response.json();
 
     if (data.event === "matchhit" && data.product_id) {
-      return { available: true, productId: data.product_id };
+      const result = { available: true, productId: data.product_id };
+      setCachedMatch(cacheKey, result);
+      return result;
     } else {
-      return { available: false };
+      const result = { available: false };
+      setCachedMatch(cacheKey, result);
+      return result;
     }
   } catch {
     return { available: false };
@@ -63,52 +96,42 @@ export async function checkFlixmediaAvailabilityByEan(
 
 /**
  * Busca el primer SKU disponible en una lista de SKUs
- * OPTIMIZADO: Usa Promise.any() para búsqueda paralela en lugar de secuencial
- * Esto reduce el tiempo de búsqueda de O(n) a O(1) en el mejor caso
+ * Usa Promise.any() para búsqueda paralela
  */
 export async function findAvailableSku(skus: string[]): Promise<string | null> {
   try {
-    // Crear una promesa por cada SKU que resuelva solo si tiene contenido disponible
     const promises = skus.map(async (sku) => {
       const result = await checkFlixmediaAvailability(sku);
       if (result.available) {
-        return sku; // Resuelve con el SKU si está disponible
+        return sku;
       }
-      throw new Error(`SKU ${sku} no disponible`); // Rechaza si no está disponible
+      throw new Error(`SKU ${sku} no disponible`);
     });
 
-    // Promise.any() devuelve el primer SKU que tenga contenido disponible
-    // Todas las peticiones se hacen en paralelo, reduciendo el tiempo total
     const availableSku = await Promise.any(promises);
     return availableSku;
   } catch {
-    // Solo llega aquí si TODOS los SKUs fallaron (AggregateError)
     return null;
   }
 }
 
 /**
  * Busca el primer EAN disponible en una lista de EANs
- * OPTIMIZADO: Usa Promise.any() para búsqueda paralela en lugar de secuencial
- * Esto reduce el tiempo de búsqueda de O(n) a O(1) en el mejor caso
+ * Usa Promise.any() para búsqueda paralela
  */
 export async function findAvailableEan(eans: string[]): Promise<string | null> {
   try {
-    // Crear una promesa por cada EAN que resuelva solo si tiene contenido disponible
     const promises = eans.map(async (ean) => {
       const result = await checkFlixmediaAvailabilityByEan(ean);
       if (result.available) {
-        return ean; // Resuelve con el EAN si está disponible
+        return ean;
       }
-      throw new Error(`EAN ${ean} no disponible`); // Rechaza si no está disponible
+      throw new Error(`EAN ${ean} no disponible`);
     });
 
-    // Promise.any() devuelve el primer EAN que tenga contenido disponible
-    // Todas las peticiones se hacen en paralelo, reduciendo el tiempo total
     const availableEan = await Promise.any(promises);
     return availableEan;
   } catch {
-    // Solo llega aquí si TODOS los EANs fallaron (AggregateError)
     return null;
   }
 }
@@ -129,26 +152,23 @@ export function buildFlixmediaUrl(
  * Algunos productos usan formato con guiones/barras y otros sin ellos
  */
 export function generateMpnVariants(mpn: string): string[] {
-  const variants: string[] = [mpn]; // Original primero
-  
-  // Variante sin caracteres especiales (guiones, barras, espacios)
+  const variants: string[] = [mpn];
+
   const normalized = mpn.replace(/[-\/\s]/g, '');
   if (normalized !== mpn) {
     variants.push(normalized);
   }
-  
-  // Variante con guiones convertidos a barras
+
   const withSlash = mpn.replace(/-/g, '/');
   if (withSlash !== mpn && !variants.includes(withSlash)) {
     variants.push(withSlash);
   }
-  
-  // Variante con barras convertidas a guiones
+
   const withDash = mpn.replace(/\//g, '-');
   if (withDash !== mpn && !variants.includes(withDash)) {
     variants.push(withDash);
   }
-  
+
   return variants;
 }
 
@@ -164,12 +184,10 @@ export function parseSkuString(skuString: string): string[] {
 
 /**
  * Prefetch del script de Flixmedia para mejorar la velocidad de carga
- * Se debe llamar en eventos como hover o focus, o al inicio de la página
  */
 export function prefetchFlixmediaScript() {
   if (typeof window === 'undefined') return;
 
-  // Verificar si ya existe el preload o el script
   if (
     document.querySelector('link[href*="flixfacts.com/js/loader.js"]') ||
     document.querySelector('script[src*="flixfacts.com/js/loader.js"]')
@@ -182,19 +200,14 @@ export function prefetchFlixmediaScript() {
   link.as = 'script';
   link.href = '//media.flixfacts.com/js/loader.js';
   document.head.appendChild(link);
-
-  console.log('🚀 [Flixmedia] Script prefetching initiated');
 }
 
 /**
- * Precarga el script de Flixmedia INMEDIATAMENTE al cargar la página
- * Esto reduce significativamente el tiempo de carga del contenido multimedia
- * Según la guía de Flixmedia, esto mejora la percepción de velocidad
+ * Precarga el script de Flixmedia al cargar la página
  */
 export function preloadFlixmediaScriptEarly() {
   if (typeof window === 'undefined') return;
 
-  // Usar dns-prefetch y preconnect para optimizar la conexión
   const dnsPrefetch = document.createElement('link');
   dnsPrefetch.rel = 'dns-prefetch';
   dnsPrefetch.href = '//media.flixfacts.com';
@@ -206,8 +219,48 @@ export function preloadFlixmediaScriptEarly() {
   preconnect.crossOrigin = 'anonymous';
   document.head.appendChild(preconnect);
 
-  // Precargar el script de loader
   prefetchFlixmediaScript();
+}
 
-  console.log('🚀 [Flixmedia] Early preload + DNS prefetch + preconnect initialized');
+/**
+ * Verifica si un producto tiene contenido premium (imágenes o videos)
+ * Utilidad compartida entre FlixmediaPlayer y la página multimedia
+ */
+export function hasPremiumContent(
+  apiProduct?: {
+    imagenPremium?: string[][];
+    videoPremium?: string[][];
+    imagen_premium?: string[][];
+    video_premium?: string[][];
+  },
+  productColors?: Array<{
+    imagen_premium?: string[];
+    video_premium?: string[];
+  }>
+): boolean {
+  const checkArrayOfArrays = (arr?: string[][]): boolean => {
+    if (!arr || !Array.isArray(arr)) return false;
+    return arr.some((innerArray: string[]) => {
+      if (!Array.isArray(innerArray) || innerArray.length === 0) return false;
+      return innerArray.some(item => item && typeof item === 'string' && item.trim() !== '');
+    });
+  };
+
+  const hasApiPremiumContent =
+    checkArrayOfArrays(apiProduct?.imagenPremium) ||
+    checkArrayOfArrays(apiProduct?.videoPremium) ||
+    checkArrayOfArrays(apiProduct?.imagen_premium) ||
+    checkArrayOfArrays(apiProduct?.video_premium);
+
+  const hasColorPremiumContent = productColors?.some(color => {
+    const hasColorImages = color.imagen_premium && Array.isArray(color.imagen_premium) &&
+      color.imagen_premium.length > 0 &&
+      color.imagen_premium.some(img => img && typeof img === 'string' && img.trim() !== '');
+    const hasColorVideos = color.video_premium && Array.isArray(color.video_premium) &&
+      color.video_premium.length > 0 &&
+      color.video_premium.some(vid => vid && typeof vid === 'string' && vid.trim() !== '');
+    return hasColorImages || hasColorVideos;
+  }) || false;
+
+  return hasApiPremiumContent || hasColorPremiumContent;
 }

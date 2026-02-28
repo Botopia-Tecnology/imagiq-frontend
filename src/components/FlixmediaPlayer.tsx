@@ -56,11 +56,15 @@ function FlixmediaPlayerComponent({
   productColors
 }: FlixmediaPlayerProps) {
   const router = useRouter();
-  const [containerId] = useState(() => `flix-inpage-${Date.now()}`);
+  // ID estático como en la guía oficial de Flixmedia - loader.js trackea por container ID
+  const containerId = "flix-inpage";
   const [hasContent, setHasContent] = useState<boolean | null>(null);
   const [hasFlixError, setHasFlixError] = useState(false);
 
   // Refs para mantener valores actuales (evitar stale closures)
+  // Router ref es CLAVE: useRouter() cambia de referencia en Next.js, lo que
+  // causaba que redirectToView se recreara y el effect se re-ejecutara innecesariamente
+  const routerRef = useRef(router);
   const segmentoRef = useRef(segmento);
   const productIdRef = useRef(productId);
   const apiProductRef = useRef(apiProduct);
@@ -69,12 +73,13 @@ function FlixmediaPlayerComponent({
 
   // Actualizar refs cuando cambien las props
   useEffect(() => {
+    routerRef.current = router;
     segmentoRef.current = segmento;
     productIdRef.current = productId;
     apiProductRef.current = apiProduct;
     productColorsRef.current = productColors;
     preventRedirectRef.current = preventRedirect;
-  }, [segmento, productId, apiProduct, productColors, preventRedirect]);
+  }, [router, segmento, productId, apiProduct, productColors, preventRedirect]);
 
   const applyStyles = useCallback(() => {
     if (document.getElementById("flixmedia-player-styles")) return;
@@ -120,21 +125,32 @@ function FlixmediaPlayerComponent({
       ? `/productos/viewpremium/${currentProductId}`
       : `/productos/view/${currentProductId}`;
 
-    router.replace(route);
-  }, [router, hasPremiumContentCheck]);
+    routerRef.current.replace(route);
+  }, [hasPremiumContentCheck]);
 
   useEffect(() => {
     let isMounted = true;
     const abortController = new AbortController();
     let observer: MutationObserver | null = null;
 
-    // Solo limpiar scripts de ESTE contenedor específico, no de otros componentes
-    const cleanupOwnScripts = () => {
-      const ownScripts = document.querySelectorAll(`script[data-flix-inpage="${containerId}"]`);
-      ownScripts.forEach(s => s.remove());
+    // Limpiar TODO el estado de Flixmedia para inicialización limpia
+    // loader.js no fue diseñado para SPAs, así que necesitamos reseteo completo
+    const cleanupFlixmedia = () => {
+      // Remover TODOS los scripts de Flixmedia (loader + contenido)
+      document.querySelectorAll('script[data-flix-distributor]').forEach(s => s.remove());
+      document.querySelectorAll('script[src*="flixfacts.com"], script[src*="flixcar.com"]').forEach(s => s.remove());
+      // Remover iframes inyectados por Flixmedia
+      document.querySelectorAll('iframe[src*="flixcar.com"], iframe[src*="flixfacts.com"]').forEach(el => el.remove());
+      // Reset TODAS las variables globales de Flixmedia
+      // (incluyendo estado interno de tracking que impide re-inicialización)
+      Object.keys(window).forEach(key => {
+        if (key.toLowerCase().includes('flix')) {
+          try { delete (window as unknown as Record<string, unknown>)[key]; } catch { /* readonly */ }
+        }
+      });
     };
 
-    cleanupOwnScripts();
+    cleanupFlixmedia();
 
     const init = async () => {
       let targetMpn: string | null = null;
@@ -149,6 +165,8 @@ function FlixmediaPlayerComponent({
         const eans = parseSkuString(ean);
         if (eans.length > 0) targetEan = eans[0];
       }
+
+      console.log('[FLIX] SKU para Flixmedia:', { mpn, targetMpn, targetEan });
 
       if (!targetMpn && !targetEan) {
         if (!preventRedirectRef.current) {
@@ -170,12 +188,14 @@ function FlixmediaPlayerComponent({
           let matched = false;
 
           if (targetMpn) {
+            console.log('[FLIX] Verificando Match API para:', targetMpn);
             const result = await checkFlixmediaAvailability(
               targetMpn,
               undefined,
               undefined,
               abortController.signal
             );
+            console.log('[FLIX] Match API resultado:', result, '| isMounted:', isMounted);
             if (!isMounted) return;
 
             if (result.available) {
@@ -213,13 +233,17 @@ function FlixmediaPlayerComponent({
         }
       }
 
-      // Limpiar scripts propios antes de cargar nuevo
-      cleanupOwnScripts();
+      // Limpiar estado de Flixmedia antes de cargar nuevo
+      cleanupFlixmedia();
 
       if (!isMounted) return;
 
       const container = document.getElementById(containerId);
+      console.log('[FLIX] Container encontrado:', !!container, containerId);
       if (!container) return;
+
+      // Limpiar contenido previo del container
+      container.innerHTML = '';
 
       // Configurar callbacks ANTES de cargar el script
       if (!window.flixJsCallbacks) {
@@ -238,7 +262,7 @@ function FlixmediaPlayerComponent({
         const route = (isPremiumSegment || hasPremium)
           ? `/productos/viewpremium/${currentProductId}`
           : `/productos/view/${currentProductId}`;
-        router.push(route);
+        routerRef.current.push(route);
       };
 
       // Configurar callback de renderizado
@@ -246,23 +270,9 @@ function FlixmediaPlayerComponent({
         applyStyles();
       }, "inpage");
 
-      // Crear script siguiendo el método del PDF (Sección 1b - Alternative Implementation)
-      const script = document.createElement("script");
-      script.type = "text/javascript";
-      script.async = true;
-      script.setAttribute("data-flix-distributor", DISTRIBUTOR_ID);
-      script.setAttribute("data-flix-language", LANGUAGE);
-      script.setAttribute("data-flix-brand", "Samsung");
-      script.setAttribute("data-flix-mpn", targetMpn || "");
-      script.setAttribute("data-flix-ean", targetEan || "");
-      script.setAttribute("data-flix-inpage", containerId);
-      script.setAttribute("data-flix-button", "");
-      script.setAttribute("data-flix-price", "");
-
       // Verificar si loader.js renderizó contenido multimedia real (no boilerplate/errores)
       const hasRealContent = (cont: HTMLElement): boolean => {
         if (cont.children.length === 0) return false;
-        // Solo contar como contenido real: iframes, múltiples imágenes, o videos
         return cont.querySelector('iframe') !== null ||
                cont.querySelectorAll('img').length > 1 ||
                cont.querySelector('video') !== null;
@@ -284,15 +294,36 @@ function FlixmediaPlayerComponent({
 
       let fallbackResolved = false;
 
-      script.onload = () => {
+      // Función que se ejecuta DESPUÉS de que loader.js esté listo
+      const onLoaderReady = () => {
+        console.log('[FLIX] loader.js listo');
         applyStyles();
+
+        // Verificar visibilidad del contenido después de que Flixmedia tenga tiempo de renderizar
+        setTimeout(() => {
+          const c = document.getElementById(containerId);
+          if (c) {
+            const rect = c.getBoundingClientRect();
+            console.log('[FLIX] Estado del container:', {
+              children: c.children.length,
+              innerHTML_length: c.innerHTML.length,
+              height: rect.height,
+              visible: rect.height > 0 && c.innerHTML.length > 0,
+              hasIframe: !!c.querySelector('iframe'),
+              hasImages: c.querySelectorAll('img').length,
+              hasVideo: !!c.querySelector('video'),
+              firstChildTag: c.children[0]?.tagName || 'VACÍO',
+            });
+          } else {
+            console.log('[FLIX] Container NO encontrado después de loader.js');
+          }
+        }, 3000);
 
         const cont = document.getElementById(containerId);
         if (cont) {
           observer = new MutationObserver(() => {
             if (!isMounted || fallbackResolved) { observer?.disconnect(); return; }
 
-            // Detectar error → redirigir inmediato
             if (checkForFlixError()) {
               console.log('[FLIX] Error de Flixmedia detectado → redirigiendo');
               fallbackResolved = true;
@@ -302,7 +333,6 @@ function FlixmediaPlayerComponent({
               return;
             }
 
-            // En fallback: detectar contenido real → mostrarlo
             if (isFallbackMode && hasRealContent(cont)) {
               console.log('[FLIX] Fallback exitoso: contenido real detectado');
               fallbackResolved = true;
@@ -312,33 +342,18 @@ function FlixmediaPlayerComponent({
           });
 
           observer.observe(cont, {
-            childList: true,
-            subtree: true,
-            characterData: true,
-            attributes: true
+            childList: true, subtree: true, characterData: true, attributes: true
           });
 
           if (isFallbackMode) {
-            // Fallback: si en 2s no hay contenido real → redirigir SIEMPRE
             setTimeout(() => {
-              if (!isMounted || fallbackResolved) {
-                console.log('[FLIX] Fallback timeout: ya resuelto o desmontado', { isMounted, fallbackResolved });
-                return;
-              }
-              console.log('[FLIX] Fallback timeout 2s: sin contenido real → redirigiendo', {
-                children: cont.children.length,
-                hasIframe: cont.querySelector('iframe') !== null,
-                imgCount: cont.querySelectorAll('img').length,
-                hasVideo: cont.querySelector('video') !== null,
-                innerHTMLLength: cont.innerHTML.length
-              });
+              if (!isMounted || fallbackResolved) return;
               fallbackResolved = true;
               observer?.disconnect();
               setHasContent(false);
               if (!preventRedirectRef.current) redirectToView();
             }, 2000);
           } else {
-            // Path normal: solo verificar errores
             setTimeout(() => {
               if (!isMounted) return;
               if (checkForFlixError()) {
@@ -351,14 +366,29 @@ function FlixmediaPlayerComponent({
         }
       };
 
-      // Si el script falla al cargar → redirigir
+      // Siempre cargar loader.js limpio (reset completo de Flixmedia arriba)
+      console.log('[FLIX] Cargando loader.js con MPN:', targetMpn, 'container:', containerId);
+      const script = document.createElement("script");
+      script.type = "text/javascript";
+      script.async = true;
+      script.setAttribute("data-flix-distributor", DISTRIBUTOR_ID);
+      script.setAttribute("data-flix-language", LANGUAGE);
+      script.setAttribute("data-flix-brand", "Samsung");
+      script.setAttribute("data-flix-mpn", targetMpn || "");
+      script.setAttribute("data-flix-ean", targetEan || "");
+      script.setAttribute("data-flix-sku", "");
+      script.setAttribute("data-flix-inpage", containerId);
+      script.setAttribute("data-flix-button", "");
+      script.setAttribute("data-flix-button-image", "");
+      script.setAttribute("data-flix-price", "");
+      script.setAttribute("data-flix-fallback-language", "");
+      script.onload = onLoaderReady;
       script.onerror = () => {
         console.log('[FLIX] Error cargando loader.js → redirigiendo');
         if (!isMounted) return;
         setHasContent(false);
         if (!preventRedirectRef.current) redirectToView();
       };
-
       script.src = "//media.flixfacts.com/js/loader.js";
       document.head.appendChild(script);
     };
@@ -366,18 +396,16 @@ function FlixmediaPlayerComponent({
     init();
 
     return () => {
+      console.log('[FLIX] Cleanup: desmontando componente');
       isMounted = false;
       abortController.abort();
       observer?.disconnect();
-      // Solo limpiar scripts de ESTE contenedor específico
-      const scripts = document.querySelectorAll(`script[data-flix-inpage="${containerId}"]`);
-      scripts.forEach(s => s.remove());
-      const container = document.getElementById(containerId);
-      if (container) {
-        container.innerHTML = '';
-      }
+      // Limpiar Flixmedia al desmontar para que el próximo mount inicie limpio
+      cleanupFlixmedia();
     };
-  }, [mpn, ean, containerId, applyStyles, redirectToView, router, hasPremiumContentCheck]);
+  // SOLO re-ejecutar cuando mpn o ean cambian. Todo lo demás usa refs.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mpn, ean]);
 
   // Sin MPN ni EAN
   if (!mpn && !ean) {

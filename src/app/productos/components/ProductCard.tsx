@@ -1088,15 +1088,15 @@ export default function ProductCard({
               </button>
             </div>
 
-            {/* Mensaje de cuotas sin interés - Altura fija para mantener consistencia */}
-            <div className="mt-2 sm:mt-3 min-h-[120px] sm:min-h-[130px] flex items-start justify-center">
-              {apiProduct?.indcerointeres?.[0] === 1 && (
+            {/* Mensaje de cuotas sin interés */}
+            {apiProduct?.indcerointeres?.[0] === 1 && (
+              <div className="mt-2 sm:mt-3 flex items-start justify-center">
                 <CeroInteresSection
                   ceroInteresData={ceroInteresData}
                   isInChat={isInChat}
                 />
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -137,8 +137,13 @@ function FlixmediaPlayerComponent({
       document.querySelectorAll('script[src*="flixfacts.com"], script[src*="flixcar.com"]').forEach(s => s.remove());
       // Remover iframes inyectados por Flixmedia
       document.querySelectorAll('iframe[src*="flixcar.com"], iframe[src*="flixfacts.com"]').forEach(el => el.remove());
-      // Reset callbacks de Flixmedia (NO borrar FlixjQ2 y otras libs internas)
-      delete (window as unknown as Record<string, unknown>).flixJsCallbacks;
+      // Reset TODAS las variables globales de Flixmedia
+      // (incluyendo estado interno de tracking que impide re-inicialización)
+      Object.keys(window).forEach(key => {
+        if (key.toLowerCase().includes('flix')) {
+          try { delete (window as unknown as Record<string, unknown>)[key]; } catch { /* readonly */ }
+        }
+      });
     };
 
     cleanupFlixmedia();
@@ -290,6 +295,26 @@ function FlixmediaPlayerComponent({
         console.log('[FLIX] loader.js listo');
         applyStyles();
 
+        // Verificar visibilidad del contenido después de que Flixmedia tenga tiempo de renderizar
+        setTimeout(() => {
+          const c = document.getElementById(containerId);
+          if (c) {
+            const rect = c.getBoundingClientRect();
+            console.log('[FLIX] Estado del container:', {
+              children: c.children.length,
+              innerHTML_length: c.innerHTML.length,
+              height: rect.height,
+              visible: rect.height > 0 && c.innerHTML.length > 0,
+              hasIframe: !!c.querySelector('iframe'),
+              hasImages: c.querySelectorAll('img').length,
+              hasVideo: !!c.querySelector('video'),
+              firstChildTag: c.children[0]?.tagName || 'VACÍO',
+            });
+          } else {
+            console.log('[FLIX] Container NO encontrado después de loader.js');
+          }
+        }, 3000);
+
         const cont = document.getElementById(containerId);
         if (cont) {
           observer = new MutationObserver(() => {
@@ -371,9 +396,8 @@ function FlixmediaPlayerComponent({
       isMounted = false;
       abortController.abort();
       observer?.disconnect();
-      // NO borrar container.innerHTML ni scripts aquí.
-      // Flixmedia mantiene estado global y no re-renderiza si se limpia el container.
-      // Los scripts se limpian al inicio de init() con cleanupOwnScripts() cuando cambian las props.
+      // Limpiar Flixmedia al desmontar para que el próximo mount inicie limpio
+      cleanupFlixmedia();
     };
   }, [mpn, ean, applyStyles, redirectToView, router, hasPremiumContentCheck]);
 

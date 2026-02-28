@@ -62,6 +62,9 @@ function FlixmediaPlayerComponent({
   const [hasFlixError, setHasFlixError] = useState(false);
 
   // Refs para mantener valores actuales (evitar stale closures)
+  // Router ref es CLAVE: useRouter() cambia de referencia en Next.js, lo que
+  // causaba que redirectToView se recreara y el effect se re-ejecutara innecesariamente
+  const routerRef = useRef(router);
   const segmentoRef = useRef(segmento);
   const productIdRef = useRef(productId);
   const apiProductRef = useRef(apiProduct);
@@ -70,12 +73,13 @@ function FlixmediaPlayerComponent({
 
   // Actualizar refs cuando cambien las props
   useEffect(() => {
+    routerRef.current = router;
     segmentoRef.current = segmento;
     productIdRef.current = productId;
     apiProductRef.current = apiProduct;
     productColorsRef.current = productColors;
     preventRedirectRef.current = preventRedirect;
-  }, [segmento, productId, apiProduct, productColors, preventRedirect]);
+  }, [router, segmento, productId, apiProduct, productColors, preventRedirect]);
 
   const applyStyles = useCallback(() => {
     if (document.getElementById("flixmedia-player-styles")) return;
@@ -121,8 +125,8 @@ function FlixmediaPlayerComponent({
       ? `/productos/viewpremium/${currentProductId}`
       : `/productos/view/${currentProductId}`;
 
-    router.replace(route);
-  }, [router, hasPremiumContentCheck]);
+    routerRef.current.replace(route);
+  }, [hasPremiumContentCheck]);
 
   useEffect(() => {
     let isMounted = true;
@@ -258,7 +262,7 @@ function FlixmediaPlayerComponent({
         const route = (isPremiumSegment || hasPremium)
           ? `/productos/viewpremium/${currentProductId}`
           : `/productos/view/${currentProductId}`;
-        router.push(route);
+        routerRef.current.push(route);
       };
 
       // Configurar callback de renderizado
@@ -399,7 +403,9 @@ function FlixmediaPlayerComponent({
       // Limpiar Flixmedia al desmontar para que el próximo mount inicie limpio
       cleanupFlixmedia();
     };
-  }, [mpn, ean, applyStyles, redirectToView, router, hasPremiumContentCheck]);
+  // SOLO re-ejecutar cuando mpn o ean cambian. Todo lo demás usa refs.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mpn, ean]);
 
   // Sin MPN ni EAN
   if (!mpn && !ean) {

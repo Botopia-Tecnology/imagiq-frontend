@@ -180,11 +180,11 @@ export default function ProductShowcase({ initialProducts }: ProductShowcaseProp
 
         {/* Mobile: Scroll horizontal */}
         <div className="md:hidden overflow-x-auto scrollbar-hide">
-          <div className="flex gap-[25px] px-4">
+          <div className="flex gap-3 px-4">
             {products.map((product) => (
               <div
                 key={product.id}
-                className="shrink-0 w-[calc(100vw-32px)] sm:w-[280px]"
+                className="shrink-0 w-[75vw] sm:w-[280px]"
               >
                 <ProductCard
                   {...product}

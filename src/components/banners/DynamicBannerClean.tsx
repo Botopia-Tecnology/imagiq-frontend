@@ -528,7 +528,7 @@ export default function DynamicBannerClean({
 
   const content = (
     <div className={`relative w-full overflow-hidden max-w-[1440px] mx-auto ${className}`}>
-      <div className="relative w-full min-h-[645px] md:min-h-[500px] lg:min-h-[800px] rounded-lg overflow-hidden">
+      <div className="relative w-full min-h-[580px] md:min-h-[500px] lg:min-h-[800px] rounded-lg overflow-hidden">
         {showOverlay && <div className="absolute inset-0 bg-black/30 z-10" />}
 
         {/* Todos los banners en posición absoluta con transición fade + slide */}

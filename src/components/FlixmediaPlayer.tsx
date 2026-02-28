@@ -56,7 +56,8 @@ function FlixmediaPlayerComponent({
   productColors
 }: FlixmediaPlayerProps) {
   const router = useRouter();
-  const [containerId] = useState(() => `flix-inpage-${Date.now()}`);
+  // ID estático como en la guía oficial de Flixmedia - loader.js trackea por container ID
+  const containerId = "flix-inpage";
   const [hasContent, setHasContent] = useState<boolean | null>(null);
   const [hasFlixError, setHasFlixError] = useState(false);
 
@@ -128,13 +129,19 @@ function FlixmediaPlayerComponent({
     const abortController = new AbortController();
     let observer: MutationObserver | null = null;
 
-    // Solo limpiar scripts de ESTE contenedor específico, no de otros componentes
-    const cleanupOwnScripts = () => {
-      const ownScripts = document.querySelectorAll(`script[data-flix-inpage="${containerId}"]`);
-      ownScripts.forEach(s => s.remove());
+    // Limpiar TODO el estado de Flixmedia para inicialización limpia
+    // loader.js no fue diseñado para SPAs, así que necesitamos reseteo completo
+    const cleanupFlixmedia = () => {
+      // Remover TODOS los scripts de Flixmedia (loader + contenido)
+      document.querySelectorAll('script[data-flix-distributor]').forEach(s => s.remove());
+      document.querySelectorAll('script[src*="flixfacts.com"], script[src*="flixcar.com"]').forEach(s => s.remove());
+      // Remover iframes inyectados por Flixmedia
+      document.querySelectorAll('iframe[src*="flixcar.com"], iframe[src*="flixfacts.com"]').forEach(el => el.remove());
+      // Reset callbacks de Flixmedia (NO borrar FlixjQ2 y otras libs internas)
+      delete (window as unknown as Record<string, unknown>).flixJsCallbacks;
     };
 
-    cleanupOwnScripts();
+    cleanupFlixmedia();
 
     const init = async () => {
       let targetMpn: string | null = null;
@@ -217,14 +224,17 @@ function FlixmediaPlayerComponent({
         }
       }
 
-      // Limpiar scripts propios antes de cargar nuevo
-      cleanupOwnScripts();
+      // Limpiar estado de Flixmedia antes de cargar nuevo
+      cleanupFlixmedia();
 
       if (!isMounted) return;
 
       const container = document.getElementById(containerId);
       console.log('[FLIX] Container encontrado:', !!container, containerId);
       if (!container) return;
+
+      // Limpiar contenido previo del container
+      container.innerHTML = '';
 
       // Configurar callbacks ANTES de cargar el script
       if (!window.flixJsCallbacks) {
@@ -280,11 +290,6 @@ function FlixmediaPlayerComponent({
         console.log('[FLIX] loader.js listo');
         applyStyles();
 
-        // Forzar a Flixmedia a re-escanear y renderizar contenido
-        try {
-          window.flixJsCallbacks?.loadService?.('inpage');
-        } catch { /* ignore */ }
-
         const cont = document.getElementById(containerId);
         if (cont) {
           observer = new MutationObserver(() => {
@@ -332,49 +337,31 @@ function FlixmediaPlayerComponent({
         }
       };
 
-      // Verificar si loader.js ya está cargado globalmente
-      const existingScript = document.querySelector('script[src*="flixfacts.com/js/loader.js"]');
-
-      if (existingScript) {
-        // loader.js ya está cargado → crear un script con los datos del producto
-        // y forzar re-render con loadService
-        console.log('[FLIX] loader.js ya cargado, re-usando con MPN:', targetMpn, 'container:', containerId);
-        const dataScript = document.createElement("script");
-        dataScript.type = "text/javascript";
-        dataScript.setAttribute("data-flix-distributor", DISTRIBUTOR_ID);
-        dataScript.setAttribute("data-flix-language", LANGUAGE);
-        dataScript.setAttribute("data-flix-brand", "Samsung");
-        dataScript.setAttribute("data-flix-mpn", targetMpn || "");
-        dataScript.setAttribute("data-flix-ean", targetEan || "");
-        dataScript.setAttribute("data-flix-inpage", containerId);
-        dataScript.setAttribute("data-flix-button", "");
-        dataScript.setAttribute("data-flix-price", "");
-        document.head.appendChild(dataScript);
-        onLoaderReady();
-      } else {
-        // Primera carga: crear script con src de loader.js
-        console.log('[FLIX] Cargando loader.js con MPN:', targetMpn, 'container:', containerId);
-        const script = document.createElement("script");
-        script.type = "text/javascript";
-        script.async = true;
-        script.setAttribute("data-flix-distributor", DISTRIBUTOR_ID);
-        script.setAttribute("data-flix-language", LANGUAGE);
-        script.setAttribute("data-flix-brand", "Samsung");
-        script.setAttribute("data-flix-mpn", targetMpn || "");
-        script.setAttribute("data-flix-ean", targetEan || "");
-        script.setAttribute("data-flix-inpage", containerId);
-        script.setAttribute("data-flix-button", "");
-        script.setAttribute("data-flix-price", "");
-        script.onload = onLoaderReady;
-        script.onerror = () => {
-          console.log('[FLIX] Error cargando loader.js → redirigiendo');
-          if (!isMounted) return;
-          setHasContent(false);
-          if (!preventRedirectRef.current) redirectToView();
-        };
-        script.src = "//media.flixfacts.com/js/loader.js";
-        document.head.appendChild(script);
-      }
+      // Siempre cargar loader.js limpio (reset completo de Flixmedia arriba)
+      console.log('[FLIX] Cargando loader.js con MPN:', targetMpn, 'container:', containerId);
+      const script = document.createElement("script");
+      script.type = "text/javascript";
+      script.async = true;
+      script.setAttribute("data-flix-distributor", DISTRIBUTOR_ID);
+      script.setAttribute("data-flix-language", LANGUAGE);
+      script.setAttribute("data-flix-brand", "Samsung");
+      script.setAttribute("data-flix-mpn", targetMpn || "");
+      script.setAttribute("data-flix-ean", targetEan || "");
+      script.setAttribute("data-flix-sku", "");
+      script.setAttribute("data-flix-inpage", containerId);
+      script.setAttribute("data-flix-button", "");
+      script.setAttribute("data-flix-button-image", "");
+      script.setAttribute("data-flix-price", "");
+      script.setAttribute("data-flix-fallback-language", "");
+      script.onload = onLoaderReady;
+      script.onerror = () => {
+        console.log('[FLIX] Error cargando loader.js → redirigiendo');
+        if (!isMounted) return;
+        setHasContent(false);
+        if (!preventRedirectRef.current) redirectToView();
+      };
+      script.src = "//media.flixfacts.com/js/loader.js";
+      document.head.appendChild(script);
     };
 
     init();
@@ -388,7 +375,7 @@ function FlixmediaPlayerComponent({
       // Flixmedia mantiene estado global y no re-renderiza si se limpia el container.
       // Los scripts se limpian al inicio de init() con cleanupOwnScripts() cuando cambian las props.
     };
-  }, [mpn, ean, containerId, applyStyles, redirectToView, router, hasPremiumContentCheck]);
+  }, [mpn, ean, applyStyles, redirectToView, router, hasPremiumContentCheck]);
 
   // Sin MPN ni EAN
   if (!mpn && !ean) {

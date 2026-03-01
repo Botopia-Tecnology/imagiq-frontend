@@ -60,6 +60,9 @@ export interface UseProductSelectionReturn {
   availableCapacities: string[];
   availableMemoriaram: string[];
 
+  // Todas las capacidades únicas del producto (sin filtrar por color/RAM)
+  allCapacities: string[];
+
   // Información del producto seleccionado
   selectedSku: string | null;
   selectedSkuPostback: string | null;
@@ -367,6 +370,28 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
     return Array.from(memoriaram);
   }, [allVariants, selection.selectedColor, activeCapacityFilter]);
 
+  // Todas las capacidades únicas del producto (sin filtrar por color/RAM)
+  const allCapacitiesUnfiltered = useMemo(() => {
+    const capacities = new Set<string>();
+
+    for (const variant of allVariants) {
+      const capacityValue = variant.capacity?.trim();
+      const isValidCapacity = capacityValue &&
+        capacityValue !== '' &&
+        capacityValue !== '-' &&
+        capacityValue.toLowerCase() !== 'no aplica' &&
+        capacityValue.toLowerCase() !== 'n/a' &&
+        capacityValue.toLowerCase() !== 'no especifica' &&
+        capacityValue.toLowerCase() !== 'no especificado';
+
+      if (isValidCapacity) {
+        capacities.add(variant.capacity);
+      }
+    }
+
+    return Array.from(capacities);
+  }, [allVariants]);
+
   // Función auxiliar para encontrar la variante exacta que coincida con los parámetros
   // Si hay múltiples variantes que coinciden, selecciona la que tenga mayor stockTotal
   const findVariant = useCallback((color: string, capacity?: string | null, memoriaram?: string | null) => {
@@ -613,6 +638,7 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
     availableColors: availableColorsFiltered,
     availableCapacities: availableCapacitiesFiltered,
     availableMemoriaram: availableMemoriaramFiltered,
+    allCapacities: allCapacitiesUnfiltered,
     selectedSku,
     selectedSkuPostback: selectedVariant?.skuPostback || null,
     selectedSkuflixmedia: selectedVariant?.skuflixmedia || null,

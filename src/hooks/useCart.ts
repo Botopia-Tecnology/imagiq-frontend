@@ -341,32 +341,28 @@ export function useCart(): UseCartReturn {
     setLoadingShippingInfo((prev) => ({ ...prev, [sku]: true }));
 
     try {
-      // Obtener ciudad de la dirección predeterminada
-      let userCity: string | undefined = undefined;
+      // Obtener addressId de la dirección predeterminada
+      let addressId: string | undefined = undefined;
       try {
         const savedAddress = localStorage.getItem("checkout-address");
         if (savedAddress) {
           const parsed = JSON.parse(savedAddress);
-          const city = parsed.ciudad?.toUpperCase();
-          // Solo incluir cities si ES Bogotá
-          if (city && (city === "BOGOTÁ" || city === "BOGOTA")) {
-            userCity = "BOGOTÁ";
-          }
+          addressId = parsed.id;
         }
       } catch (error) {
-        console.error("Error al leer ciudad de dirección:", error);
+        console.error("Error al leer dirección:", error);
       }
 
       const response = await productEndpoints.getCandidateStores({
         products: [{ sku: sku, quantity }],
         user_id: userId,
-        ...(userCity && { cities: [userCity] }),
+        ...(addressId && { addressId }),
       });
 
       if (response.success && response.data) {
         const { stores, default_direction, canPickUp } = response.data;
 
-        let shippingCity = "BOGOTÁ"; // default_direction.ciudad ||
+        let shippingCity = default_direction?.ciudad || "BOGOTÁ";
         let shippingStore = "";
 
         const storeEntries = Object.entries(stores);
@@ -433,6 +429,26 @@ export function useCart(): UseCartReturn {
         loadShippingInfoForProduct(product.sku, userId, product.quantity);
       });
     }
+  }, [getUserId, loadShippingInfoForProduct]);
+
+  // Recargar shipping info cuando cambia la dirección
+  useEffect(() => {
+    const handleAddressChanged = () => {
+      const userId = getUserId();
+      if (!userId) return;
+
+      const storedProducts = getStoredProducts();
+      if (storedProducts.length > 0) {
+        storedProducts.forEach(product => {
+          loadShippingInfoForProduct(product.sku, userId, product.quantity);
+        });
+      }
+    };
+
+    window.addEventListener('address-changed', handleAddressChanged);
+    return () => {
+      window.removeEventListener('address-changed', handleAddressChanged);
+    };
   }, [getUserId, loadShippingInfoForProduct]);
 
   // Sincronizar cambios en localStorage
@@ -602,38 +618,34 @@ export function useCart(): UseCartReturn {
 
         setTimeout(async () => {
           try {
-            // Obtener ciudad de la dirección predeterminada
-            let userCity: string | undefined = undefined;
+            // Obtener addressId de la dirección predeterminada
+            let addAddressId: string | undefined = undefined;
             try {
               const savedAddress = localStorage.getItem("checkout-address");
               if (savedAddress) {
                 const parsed = JSON.parse(savedAddress);
-                const city = parsed.ciudad?.toUpperCase();
-                // Solo incluir cities si ES Bogotá
-                if (city && (city === "BOGOTÁ" || city === "BOGOTA")) {
-                  userCity = "BOGOTÁ";
-                }
+                addAddressId = parsed.id;
               }
             } catch (error) {
-              console.error("Error al leer ciudad de dirección:", error);
+              console.error("Error al leer dirección:", error);
             }
 
             const response = await productEndpoints.getCandidateStores({
               products: [{ sku: product.sku, quantity: totalQuantityInCart }],
               user_id: effectiveUserId,
-              ...(userCity && { cities: [userCity] }),
+              ...(addAddressId && { addressId: addAddressId }),
             });
 
             if (response.success && response.data) {
               const responseData = response.data as CandidateStoresResponse & { canPickup?: boolean };
-              const { stores } = responseData;
+              const { stores, default_direction } = responseData;
               // Manejar ambos casos: canPickUp (mayúscula) y canPickup (minúscula)
               const canPickUp = responseData.canPickUp ??
                 responseData.canPickup ??
                 false;
 
               // Obtener la primera ciudad y tienda disponible
-              let shippingCity = "BOGOTÁ"; // default_direction.ciudad || 
+              let shippingCity = default_direction?.ciudad || "BOGOTÁ";
               let shippingStore = "";
 
               // Si stores no está vacío, obtener la primera ciudad y su primera tienda

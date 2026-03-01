@@ -66,6 +66,7 @@ export interface ProductCapacity {
   discount?: string; // Descuento
   sku?: string; // SKU específico
   ean?: string; // SKU específico
+  available?: boolean; // Si está disponible para el color seleccionado
 }
 
 export interface ProductCardProps {
@@ -903,15 +904,14 @@ export default function ProductCard({
               {/* Selector de capacidad - Solo para categorías específicas Y si hay capacidades disponibles */}
               {showCapacitySelector &&
                 (apiProduct
-                  ? productSelection.availableCapacities.length > 0
+                  ? productSelection.allCapacities.length > 0
                   : capacities && capacities.length > 0) && (
                   <div className="min-h-[48px]">
                     <CapacitySelector
                       capacities={
                         apiProduct
-                          ? productSelection.availableCapacities.map(
+                          ? productSelection.allCapacities.map(
                             (capacityName) => {
-                              // Crear un ProductCapacity basado en el nombre de la capacidad
                               const formattedLabel =
                                 formatCapacityLabel(capacityName);
                               const capacityInfo = capacities?.find(
@@ -924,14 +924,17 @@ export default function ProductCard({
                                 sku: "",
                                 ean: "",
                               };
-                              return capacityInfo;
+                              return {
+                                ...capacityInfo,
+                                available: productSelection.availableCapacities.includes(capacityName),
+                              };
                             }
                           )
                           : capacities || []
                       }
                       selectedCapacity={
                         apiProduct
-                          ? productSelection.availableCapacities
+                          ? productSelection.allCapacities
                             .map((capacityName) => {
                               const formattedLabel =
                                 formatCapacityLabel(capacityName);

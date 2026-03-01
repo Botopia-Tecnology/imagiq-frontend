@@ -125,6 +125,7 @@ export interface CapacitySelectorProps {
 
 /**
  * Componente para seleccionar capacidades del producto
+ * Muestra todas las capacidades del dispositivo, con las no disponibles cruzadas con línea diagonal
  */
 export const CapacitySelector = ({
   capacities,
@@ -136,23 +137,42 @@ export const CapacitySelector = ({
   return (
     <div className="space-y-1.5">
       <div className="flex gap-2 flex-wrap">
-        {capacities.map((capacity) => (
-          <button
-            key={capacity.value}
-            onClick={(e) => {
-              e.stopPropagation();
-              onCapacitySelect(capacity);
-            }}
-            className={cn(
-              "px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 cursor-pointer",
-              selectedCapacity?.value === capacity.value
-                ? "border-black bg-black text-white"
-                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-            )}
-          >
-            {capacity.label}
-          </button>
-        ))}
+        {capacities.map((capacity) => {
+          const isAvailable = capacity.available !== false;
+          const isSelected = selectedCapacity?.value === capacity.value;
+
+          return (
+            <button
+              key={capacity.value}
+              disabled={!isAvailable}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isAvailable) {
+                  onCapacitySelect(capacity);
+                }
+              }}
+              className={cn(
+                "relative px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 overflow-hidden",
+                !isAvailable
+                  ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+                  : isSelected
+                    ? "border-black bg-black text-white cursor-pointer"
+                    : "border-gray-300 bg-white text-gray-700 hover:border-gray-400 cursor-pointer"
+              )}
+            >
+              <span className="relative z-10">{capacity.label}</span>
+              {/* Línea diagonal de izquierda a derecha cuando no está disponible */}
+              {!isAvailable && (
+                <span
+                  className="absolute inset-0 pointer-events-none z-0"
+                  style={{
+                    background: "linear-gradient(to top right, transparent calc(50% - 0.5px), #9ca3af calc(50% - 0.5px), #9ca3af calc(50% + 0.5px), transparent calc(50% + 0.5px))",
+                  }}
+                />
+              )}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

@@ -41,10 +41,10 @@ export default function ProductShowcase({ initialProducts }: ProductShowcaseProp
     if (!allProducts || allProducts.length === 0) return [];
 
     const showcaseSKUs = [
-      'SM-S948BLBKLTC',   // Galaxy S26 Ultra 5G
-      'EF-RS948CBEGWW',   // Rugged Magnet Case
-      'EF-ES948CBEGWW',   // Silicone Magnet Case
-      'EF-CS948CTEGWW',   // Clear Magnet Case
+      'SM-S948BZVKLTC',   // Galaxy S26 Ultra 5G
+      'SM-S947BZVJLTC',   // Galaxy S26+ 5G
+      'SM-S942BZVKLTC',   // Galaxy S26 5G
+      'SM-R640NZKALTA',   // Galaxy Buds 4 Pro
     ];
 
     const findBySku = (sku: string) =>

@@ -25,6 +25,8 @@ export interface BundleInfo {
 export interface CartProduct {
   id: string;
   name: string;
+  /** Nombre limpio para mostrar (desDetallada || name, sin colorName "0") */
+  displayName?: string;
   image: string;
   price: number;
   quantity: number;
@@ -547,6 +549,11 @@ export function useCart(): UseCartReturn {
       // Variable para capturar la cantidad final que quedará en el carrito
       let totalQuantityInCart = quantity;
 
+      // Sanitizar producto: computar displayName y limpiar colorName "0"
+      const cleanColorName = product.colorName != null && String(product.colorName) !== '0' && product.colorName !== '' ? String(product.colorName) : undefined;
+      const displayName = product.desDetallada || product.name;
+      const sanitizedProduct = { ...product, displayName, colorName: cleanColorName };
+
       // Agregar producto inmediatamente sin bloquear
       setProducts((currentProducts) => {
         // Solo buscar productos individuales (sin bundleInfo) para evitar mezclar con bundles
@@ -566,7 +573,7 @@ export function useCart(): UseCartReturn {
           };
           wasUpdated = true;
         } else {
-          newProducts = [...currentProducts, { ...product, quantity, shippingFrom: product.shippingFrom, }];
+          newProducts = [...currentProducts, { ...sanitizedProduct, quantity, shippingFrom: product.shippingFrom, }];
           finalQuantity = quantity;
         }
 
@@ -588,7 +595,7 @@ export function useCart(): UseCartReturn {
           toast.success(
             wasUpdated ? `Cantidad actualizada` : `Producto añadido al carrito`,
             {
-              description: `${product.name} - Cantidad: ${finalQuantity}`,
+              description: `${displayName} - Cantidad: ${finalQuantity}`,
               duration: 3000,
               className: "toast-success",
               onAutoClose: () => {
@@ -721,7 +728,7 @@ export function useCart(): UseCartReturn {
       if (toastActiveRef.current[removeKey]) return; // Ya se está procesando
       toastActiveRef.current[removeKey] = true;
 
-      const productName = productToRemove.name;
+      const productName = productToRemove.displayName || productToRemove.desDetallada || productToRemove.name;
 
       // IMPORTANTE: NO limpiar caché aquí - useDelivery lo maneja automáticamente
       // cuando detecta cambios en los productos. Limpiar aquí causa race conditions.

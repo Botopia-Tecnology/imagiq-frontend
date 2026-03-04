@@ -324,14 +324,14 @@ export default function CartPopover({
                       {/* Details */}
                       <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
-                          {product.name}
+                          {product.displayName || product.desDetallada || product.name}
                         </h4>
 
                         {/* Variant info */}
-                        {(product.colorName || product.capacity) && (
+                        {((product.colorName && String(product.colorName) !== '0') || product.capacity) && (
                           <p className="text-xs text-gray-500 mb-2">
-                            {product.colorName && <span>{product.colorName}</span>}
-                            {product.colorName && product.capacity && " • "}
+                            {product.colorName && String(product.colorName) !== '0' && <span>{product.colorName}</span>}
+                            {product.colorName && String(product.colorName) !== '0' && product.capacity && " • "}
                             {product.capacity && <span>{product.capacity}</span>}
                           </p>
                         )}

@@ -12,6 +12,7 @@ export default function VerifyPurchase(props: Readonly<{ params: Readonly<Promis
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const retryCountRef = useRef(0);
+  const fireAndForgetSent = useRef(false);
 
   useEffect(() => {
     params.then(({ id }) => {
@@ -21,6 +22,14 @@ export default function VerifyPurchase(props: Readonly<{ params: Readonly<Promis
       setOrderId(cleanId);
     });
   }, [params]);
+
+  // Fire-and-forget: trigger backend verification immediately so it runs
+  // even if the user closes the tab before the animation finishes.
+  useEffect(() => {
+    if (!orderId || fireAndForgetSent.current) return;
+    fireAndForgetSent.current = true;
+    fetch(`${API_BASE_URL}/api/orders/verify/${orderId}`, { keepalive: true }).catch(() => {});
+  }, [orderId]);
 
   const verifyOrder = useCallback(async () => {
     if (!orderId) return;
@@ -38,8 +47,16 @@ export default function VerifyPurchase(props: Readonly<{ params: Readonly<Promis
       // Verificar primero el status HTTP de la respuesta
       if (!response.ok) {
         console.error("❌ [VERIFY] HTTP error:", response.status, response.statusText);
-        // Mantener animación visible durante la redirección
-        router.push("/error-checkout");
+        // Intentar extraer mensaje de error del body
+        let errorDetail = "";
+        try {
+          const errBody = await response.json();
+          errorDetail = errBody?.message || "";
+        } catch {}
+        const errorUrl = errorDetail
+          ? `/error-checkout?message=${encodeURIComponent(errorDetail)}`
+          : "/error-checkout";
+        router.push(errorUrl);
         return;
       }
 
@@ -66,7 +83,7 @@ export default function VerifyPurchase(props: Readonly<{ params: Readonly<Promis
         if (retryCountRef.current >= MAX_RETRY_ATTEMPTS) {
           console.error("❌ [VERIFY] Timeout: La validación 3DS no se completó en 2 minutos");
           console.error("❌ [VERIFY] Redirigiendo a error-checkout...");
-          router.push("/error-checkout");
+          router.push("/error-checkout?message=" + encodeURIComponent("La validación del pago tardó demasiado. Intenta de nuevo."));
           return;
         }
         
@@ -88,7 +105,10 @@ export default function VerifyPurchase(props: Readonly<{ params: Readonly<Promis
         console.error("❌ [VERIFY] Verification failed with status:", data.status, "- orderStatus:", data.orderStatus);
         console.error("❌ [VERIFY] Message:", data.message);
         console.error("❌ [VERIFY] Redirigiendo a error-checkout...");
-        router.push("/error-checkout");
+        const errorUrl = data.message
+          ? `/error-checkout?message=${encodeURIComponent(data.message)}`
+          : "/error-checkout";
+        router.push(errorUrl);
       }
     } catch (error) {
       console.error("💥 [VERIFY] Error verifying order:", error);

@@ -9,7 +9,8 @@ export type CheckoutErrorOverlayProps = {
   open: boolean;
   onClose?: () => void;
   message?: string;
-  // reloadSrc and autoCloseMs removed (unused)
+  /** Detail text shown below the main error title (e.g. bank rejection reason) */
+  detail?: string;
   className?: string;
   testId?: string;
   locale?: string;
@@ -25,6 +26,7 @@ function CheckoutErrorOverlay({
   open,
   onClose,
   message,
+  detail,
   className = "",
   testId = "checkout-error-overlay",
   locale = "es",
@@ -68,8 +70,8 @@ function CheckoutErrorOverlay({
   // Clase de fondo dinámica
   const expandedBg = isPending
     ? "bg-yellow-400/90 backdrop-blur-sm"
-    : "bg-red-700/90 backdrop-blur-sm";
-  const collapsedBg = isPending ? "bg-yellow-400/0" : "bg-red-700/0";
+    : "bg-red-900/85 backdrop-blur-sm";
+  const collapsedBg = isPending ? "bg-yellow-400/0" : "bg-red-900/0";
   const bgClass = expand ? expandedBg : collapsedBg;
 
   useEffect(() => {
@@ -108,7 +110,7 @@ function CheckoutErrorOverlay({
       {/* Expansión radial premium desde el botón de finalizar pago */}
       <div
         className={`absolute w-24 h-12 rounded-full ${
-          isPending ? "bg-yellow-400" : "bg-red-700"
+          isPending ? "bg-yellow-400" : "bg-red-900"
         } shadow-2xl ${
           expand
             ? "scale-[120] opacity-100 blur-lg"
@@ -120,7 +122,7 @@ function CheckoutErrorOverlay({
           bottom: triggerPosition ? "auto" : "6rem",
           transformOrigin: triggerPosition ? "center center" : "center bottom",
           transitionProperty: "transform,opacity,filter",
-          boxShadow: `0 8px 64px ${isPending ? "#fbbf24" : "#d32f2f"}99`,
+          boxShadow: `0 8px 64px ${isPending ? "#fbbf24" : "#7f1d1d"}99`,
         }}
         aria-hidden="true"
       />
@@ -137,17 +139,17 @@ function CheckoutErrorOverlay({
               xmlns="http://www.w3.org/2000/svg"
               className="rounded-full shadow-2xl border-4 border-white bg-[#fff] animate-svgIcon"
               aria-label="Animación de error"
-              style={{ boxShadow: "0 4px 32px #d32f2f55" }}
+              style={{ boxShadow: "0 4px 32px #7f1d1d55" }}
             >
-              <circle cx="40" cy="40" r="36" fill="#d32f2f" opacity="0.15" />
-              <circle cx="40" cy="40" r="32" fill="#d32f2f" opacity="0.25" />
+              <circle cx="40" cy="40" r="36" fill="#991b1b" opacity="0.15" />
+              <circle cx="40" cy="40" r="32" fill="#991b1b" opacity="0.25" />
               <path
                 d="M40 24v20"
-                stroke="#d32f2f"
+                stroke="#991b1b"
                 strokeWidth="5"
                 strokeLinecap="round"
               />
-              <circle cx="40" cy="54" r="3.5" fill="#d32f2f" />
+              <circle cx="40" cy="54" r="3.5" fill="#991b1b" />
             </svg>
           </div>
           {/* Mensaje de error */}
@@ -159,14 +161,20 @@ function CheckoutErrorOverlay({
           >
             {parseMessage(msg)}
           </div>
+          {/* Detalle de la transacción (ej: razón del rechazo del banco) */}
+          {detail && (
+            <p className="text-white/80 text-base md:text-lg text-center animate-riseFade mt-[-8px]">
+              {detail}
+            </p>
+          )}
           {/* Botón continuar */}
           <button
             ref={closeBtnRef}
             type="button"
             onClick={onClose}
-            className="mt-8 px-8 py-3 rounded-xl bg-white text-[#d32f2f] text-lg font-bold shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d32f2f] transition-all hover:bg-[#ffe6e6]"
+            className="mt-8 px-8 py-3 rounded-xl bg-white text-red-900 text-lg font-bold shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-red-900 transition-all hover:bg-[#ffe6e6]"
             data-testid="checkout-error-continue"
-            style={{ boxShadow: "0 2px 16px #d32f2f33" }}
+            style={{ boxShadow: "0 2px 16px #7f1d1d33" }}
           >
             Continuar
           </button>

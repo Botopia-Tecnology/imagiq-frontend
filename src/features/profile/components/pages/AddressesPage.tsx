@@ -1,7 +1,12 @@
 import React, { useState } from "react";
 import { ArrowLeft, Plus } from "lucide-react";
+import { toast } from "sonner";
 import { useProfile } from "../../hooks/useProfile";
+import { addressesService } from "@/services/addresses.service";
+import { DBAddress } from "../../types";
 import AddressCard from "../addresses/AddressCard";
+import EditAddressModal from "../addresses/EditAddressModal";
+import AddNewAddressForm from "@/app/carrito/components/AddNewAddressForm";
 
 interface AddressesPageProps {
   onBack: () => void;
@@ -9,7 +14,7 @@ interface AddressesPageProps {
 }
 
 const AddressesPage: React.FC<AddressesPageProps> = ({ onBack, className }) => {
-  const { state } = useProfile();
+  const { state, actions } = useProfile();
   const [selectedFilter, setSelectedFilter] = useState<
     "all" | "home" | "work" | "other"
   >("all");
@@ -17,19 +22,26 @@ const AddressesPage: React.FC<AddressesPageProps> = ({ onBack, className }) => {
   // Obtener direcciones del usuario
   const addresses = state.user?.direcciones || [];
 
-  // Filtrar direcciones
-  const filteredAddresses = addresses.filter((addr) => {
-    if (selectedFilter === "all") return true;
+  // Filtrar direcciones y ordenar predeterminada primero
+  const filteredAddresses = addresses
+    .filter((addr) => {
+      if (selectedFilter === "all") return true;
 
-    const tipo = addr.tipo?.toUpperCase();
-    if (selectedFilter === "home") return tipo === "CASA" || tipo === "AMBOS";
-    if (selectedFilter === "work")
-      return tipo === "TRABAJO" || tipo === "AMBOS";
-    if (selectedFilter === "other")
-      return tipo !== "CASA" && tipo !== "TRABAJO" && tipo !== "AMBOS";
+      const tipo = addr.tipo?.toUpperCase();
+      if (selectedFilter === "home") return tipo === "CASA" || tipo === "AMBOS";
+      if (selectedFilter === "work")
+        return tipo === "TRABAJO" || tipo === "AMBOS";
+      if (selectedFilter === "other")
+        return tipo !== "CASA" && tipo !== "TRABAJO" && tipo !== "AMBOS";
 
-    return true;
-  });
+      return true;
+    })
+    .sort((a, b) => {
+      // Predeterminada siempre primero
+      if (a.esPredeterminada && !b.esPredeterminada) return -1;
+      if (!a.esPredeterminada && b.esPredeterminada) return 1;
+      return 0;
+    });
 
   // Contar direcciones por tipo
   const counts = {
@@ -48,24 +60,68 @@ const AddressesPage: React.FC<AddressesPageProps> = ({ onBack, className }) => {
     }).length,
   };
 
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [editingAddress, setEditingAddress] = useState<DBAddress | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+
   const handleAddAddress = () => {
-    console.log("Agregar dirección");
-    // TODO: Implementar modal/navegación para agregar dirección
+    setShowAddModal(true);
   };
 
   const handleEditAddress = (id: string) => {
-    console.log("Editar dirección:", id);
-    // TODO: Implementar edición
+    const address = addresses.find((a) => a.id === id);
+    if (address) setEditingAddress(address);
   };
 
-  const handleDeleteAddress = (id: string) => {
-    console.log("Eliminar dirección:", id);
-    // TODO: Implementar eliminación
+  const handleSaveEdit = async (id: string, data: {
+    nombreDireccion?: string;
+    complemento?: string;
+    instruccionesEntrega?: string;
+    tipo?: string;
+  }) => {
+    try {
+      await addressesService.updateAddress(id, data);
+      toast.success("Dirección actualizada");
+      setEditingAddress(null);
+      await actions.refreshData();
+    } catch (err) {
+      console.error("Error actualizando dirección:", err);
+      toast.error(err instanceof Error ? err.message : "Error al actualizar dirección");
+    }
   };
 
-  const handleSetDefault = (id: string) => {
-    console.log("Establecer como predeterminada:", id);
-    // TODO: Implementar cambio de dirección predeterminada
+  const handleDeleteAddress = async (id: string) => {
+    const address = addresses.find((a) => a.id === id);
+    if (address?.esPredeterminada) {
+      toast.error("No puedes eliminar la dirección predeterminada");
+      return;
+    }
+    if (!confirm("¿Estás seguro de que deseas desactivar esta dirección?")) return;
+    setActionLoading(id);
+    try {
+      await addressesService.deactivateAddress(id);
+      toast.success("Dirección desactivada");
+      await actions.refreshData();
+    } catch (err) {
+      console.error("Error desactivando dirección:", err);
+      toast.error(err instanceof Error ? err.message : "Error al desactivar dirección");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleSetDefault = async (id: string) => {
+    setActionLoading(id);
+    try {
+      await addressesService.setDefaultAddress(id);
+      toast.success("Dirección predeterminada actualizada");
+      await actions.refreshData();
+    } catch (err) {
+      console.error("Error estableciendo predeterminada:", err);
+      toast.error(err instanceof Error ? err.message : "Error al establecer predeterminada");
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   return (
@@ -220,6 +276,55 @@ const AddressesPage: React.FC<AddressesPageProps> = ({ onBack, className }) => {
           </div>
         </div>
       </div>
+
+      {/* Modal de edición */}
+      {editingAddress && (
+        <EditAddressModal
+          address={editingAddress}
+          onSave={handleSaveEdit}
+          onClose={() => setEditingAddress(null)}
+        />
+      )}
+
+      {/* Modal de agregar dirección */}
+      {showAddModal && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/50"
+          onClick={() => setShowAddModal(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Agregar nueva dirección
+              </h2>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                type="button"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto p-6">
+              <AddNewAddressForm
+                onAddressAdded={async () => {
+                  setShowAddModal(false);
+                  await actions.refreshData();
+                  toast.success("Dirección agregada");
+                }}
+                onCancel={() => setShowAddModal(false)}
+                withContainer={false}
+                skipSetDefault
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

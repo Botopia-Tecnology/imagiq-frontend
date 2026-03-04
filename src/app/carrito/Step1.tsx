@@ -987,7 +987,7 @@ export default function Step1({
                     return (
                       <ProductCard
                         key={product.sku}
-                        nombre={product.name}
+                        nombre={product.displayName || product.desDetallada || product.name}
                         imagen={product.image}
                         precio={product.price}
                         precioOriginal={product.originalPrice}

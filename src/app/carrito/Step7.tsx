@@ -666,7 +666,7 @@ export default function Step7({ onBack }: Step7Props) {
         duration: 5000,
       });
     }
-  }, [products]);
+  }, [products, tradeInDataMap]);
 
   // Redirigir a Step3 si la dirección cambia desde el header
   useEffect(() => {
@@ -1348,7 +1348,9 @@ export default function Step7({ onBack }: Step7Props) {
     }
 
     setIsProcessing(true);
+    let waiting3DS = false;
 
+    try {
     // =================================================================================
     // VALIDACIÓN CRÍTICA DE BODEGA Y COBERTURA (Recálculo si es null)
     // =================================================================================
@@ -1465,7 +1467,6 @@ export default function Step7({ onBack }: Step7Props) {
         billingData.nombreRepresentante || billingData.razonSocial,
     };
 
-    try {
       // Helper to build beneficios array
       const buildBeneficios = (): BeneficiosDTO[] => {
         const beneficios: BeneficiosDTO[] = [];
@@ -1618,7 +1619,6 @@ export default function Step7({ onBack }: Step7Props) {
         if (!codigo_bodega) {
           console.error("❌ [Step7] ERROR: Método tienda seleccionado pero no hay codigo_bodega.");
           toast.error("Error: No se ha podido validar la tienda seleccionada. Por favor, selecciona la tienda nuevamente.");
-          setIsProcessing(false);
           return;
         }
       } else {
@@ -1762,23 +1762,21 @@ export default function Step7({ onBack }: Step7Props) {
 
                   // RETONAR AQUÍ PARA EVITAR REDIRECCIÓN AUTOMÁTICA
                   // La redirección ocurrirá en el event listener handle3DSMessage
+                  waiting3DS = true;
                   return;
                 } catch (error) {
                   console.error("❌ [Step7] Error ejecutando validate3ds:", error);
                   setError(`Error ejecutando validación 3DS: ${error}`);
-                  setIsProcessing(false);
                   return;
                 }
               } else {
                 console.error("❌ [Step7] Script de ePayco no cargado");
                 setError("Error: Script de validación 3DS no disponible. Por favor recarga la página.");
-                setIsProcessing(false);
                 return;
               }
             } else {
               console.error("❌ [Step7] requires3DS es true pero falta data3DS");
               setError("Error iniciando seguridad 3D: Datos incompletos del servidor.");
-              setIsProcessing(false);
               return;
             }
           }
@@ -1903,7 +1901,11 @@ export default function Step7({ onBack }: Step7Props) {
       // Redirigir a página de éxito
     } catch (error) {
       console.error("Error processing payment:", error);
-      setIsProcessing(false);
+    } finally {
+      // SIEMPRE resetear isProcessing excepto si estamos esperando validación 3DS
+      if (!waiting3DS) {
+        setIsProcessing(false);
+      }
     }
   };
 

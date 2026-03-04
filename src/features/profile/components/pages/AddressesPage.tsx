@@ -79,7 +79,7 @@ const AddressesPage: React.FC<AddressesPageProps> = ({ onBack, className }) => {
     nombreDireccion?: string;
     complemento?: string;
     instruccionesEntrega?: string;
-    tipo?: string;
+    tipo?: "ENVIO" | "FACTURACION" | "AMBOS";
   }) => {
     try {
       await addressesService.updateAddress(id, data);

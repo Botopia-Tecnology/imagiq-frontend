@@ -145,9 +145,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   // Verificar condiciones para mostrar origen de envío
   const { shouldShowShippingOrigin } = useShippingOrigin();
+  // Si shippingCity es un código numérico (ej: "76001000"), no mostrarlo
+  const displayCity = shippingCity && /^\d+$/.test(shippingCity) ? undefined : shippingCity;
   const mostrarOrigen =
     shouldShowShippingOrigin &&
-    (shippingCity || shippingStore || isLoadingShippingInfo);
+    (displayCity || shippingStore || isLoadingShippingInfo);
   return (
     <>
       {/* Mobile: Layout horizontal compacto estilo Mercado Libre */}
@@ -210,9 +212,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
                     </>
                   ) : (
                     <>
-                      <p className="text-sm text-gray-500">
-                        En {shippingCity}
-                      </p>
+                      {displayCity && (
+                        <p className="text-sm text-gray-500">
+                          En {displayCity}
+                        </p>
+                      )}
                       {shippingStore && (
                         <p className="text-xs text-gray-400 mt-0.5">
                           {shippingStore}
@@ -354,9 +358,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   </>
                 ) : (
                   <>
-                    <p className="text-sm text-gray-500">
-                      En {shippingCity}
-                    </p>
+                    {displayCity && (
+                      <p className="text-sm text-gray-500">
+                        En {displayCity}
+                      </p>
+                    )}
                     {shippingStore && (
                       <p className="text-xs text-gray-400 mt-0.5">
                         {shippingStore}

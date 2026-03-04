@@ -144,8 +144,8 @@ export function CartBundleGroup({
                       <div className="flex-1 min-w-0">
                         {/* Nombre + Color concatenado */}
                         <h4 className="text-xs font-bold text-gray-900 line-clamp-2">
-                          {product.name}
-                          {product.colorName && (
+                          {product.displayName || product.desDetallada || product.name}
+                          {product.colorName && String(product.colorName) !== '0' && (
                             <span> - {product.colorName}</span>
                           )}
                         </h4>

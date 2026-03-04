@@ -21,8 +21,8 @@ export default function ErrorCheckoutPage() {
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(true);
 
-  // Obtener mensaje de error personalizado desde los parámetros de búsqueda
-  const errorMessage = searchParams.get("error") || undefined;
+  // Obtener mensaje de detalle desde los parámetros de búsqueda
+  const errorDetail = searchParams.get("message") || searchParams.get("error") || undefined;
 
   // Coordenadas para el efecto de expansión de la animación (centrado)
   const [triggerPosition, setTriggerPosition] = useState(() => {
@@ -64,11 +64,11 @@ export default function ErrorCheckoutPage() {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#7f1d1d]">
       <CheckoutErrorOverlay
         open={open}
         onClose={handleClose}
-        message={errorMessage}
+        detail={errorDetail}
         triggerPosition={triggerPosition}
       />
     </div>

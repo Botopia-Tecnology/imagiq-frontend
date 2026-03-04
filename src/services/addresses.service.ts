@@ -267,8 +267,16 @@ export class AddressesService {
     addressId: string
   ): Promise<{ message: string }> {
     try {
+      const userInfo = safeGetLocalStorage<{ id?: string; email?: string }>(
+        "imagiq_user",
+        {}
+      );
+      const usuarioId = userInfo.id || userInfo.email || "";
+      if (!usuarioId) {
+        throw new Error("No se encontró información del usuario.");
+      }
       return await apiDelete<{ message: string }>(
-        `/api/addresses/${addressId}`
+        `/api/addresses/${addressId}?usuarioId=${encodeURIComponent(usuarioId)}`
       );
     } catch (error: unknown) {
       const errorMessage =

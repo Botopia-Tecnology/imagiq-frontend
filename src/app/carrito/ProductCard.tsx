@@ -92,6 +92,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   isLoadingCanPickUp = false,
   isLoadingIndRetoma = false,
   indRetoma,
+  desDetallada,
   onQuantityChange,
   onRemove,
   onOpenTradeInModal,
@@ -136,11 +137,19 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const capacityValida = esValorValido(capacity);
   const ramValida = esValorValido(ram);
 
+  // Nombre limpio: usar desDetallada si existe, evitar duplicar colorName
+  const nombreDisplay = desDetallada || nombre;
+  const colorValido = colorName != null && colorName !== '' && String(colorName) !== '0';
+  const colorYaEnNombre = colorValido && nombreDisplay.toLowerCase().includes(String(colorName).toLowerCase());
+  const nombreCompleto = colorValido && !colorYaEnNombre ? `${nombreDisplay} - ${colorName}` : nombreDisplay;
+
   // Verificar condiciones para mostrar origen de envío
   const { shouldShowShippingOrigin } = useShippingOrigin();
+  // Si shippingCity es un código numérico (ej: "76001000"), no mostrarlo
+  const displayCity = shippingCity && /^\d+$/.test(shippingCity) ? undefined : shippingCity;
   const mostrarOrigen =
     shouldShowShippingOrigin &&
-    (shippingCity || shippingStore || isLoadingShippingInfo);
+    (displayCity || shippingStore || isLoadingShippingInfo);
   return (
     <>
       {/* Mobile: Layout horizontal compacto estilo Mercado Libre */}
@@ -166,7 +175,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 <div className="flex-1 min-w-0">
                   {/* Nombre truncado */}
                   <h3 className="text-xs font-bold text-gray-900 line-clamp-2 mb-1">
-                    {nombre} - {colorName && <span>{colorName}</span>}
+                    {nombreCompleto}
                   </h3>
                 </div>
                 <button
@@ -203,9 +212,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
                     </>
                   ) : (
                     <>
-                      <p className="text-sm text-gray-500">
-                        En {shippingCity}
-                      </p>
+                      {displayCity && (
+                        <p className="text-sm text-gray-500">
+                          En {displayCity}
+                        </p>
+                      )}
                       {shippingStore && (
                         <p className="text-xs text-gray-400 mt-0.5">
                           {shippingStore}
@@ -319,7 +330,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {/* Detalles - Centro */}
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-bold text-gray-900 line-clamp-2 mb-1">
-              {nombre} - {colorName && <span>{colorName}</span>}
+              {nombreCompleto}
             </h3>
             {/* Detalles de variante */}
             {(color || capacityValida || ramValida) && (
@@ -347,9 +358,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   </>
                 ) : (
                   <>
-                    <p className="text-sm text-gray-500">
-                      En {shippingCity}
-                    </p>
+                    {displayCity && (
+                      <p className="text-sm text-gray-500">
+                        En {displayCity}
+                      </p>
+                    )}
                     {shippingStore && (
                       <p className="text-xs text-gray-400 mt-0.5">
                         {shippingStore}

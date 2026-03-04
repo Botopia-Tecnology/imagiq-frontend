@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { ArrowLeft, Plus, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useProfile } from "../../hooks/useProfile";
-import { addressesService } from "@/services/addresses.service";
+import { addressesService, type CreateAddressRequest } from "@/services/addresses.service";
 import { DBAddress } from "../../types";
 import AddressCard from "../addresses/AddressCard";
 import EditAddressModal from "../addresses/EditAddressModal";
@@ -79,10 +79,10 @@ const AddressesPage: React.FC<AddressesPageProps> = ({ onBack, className }) => {
     nombreDireccion?: string;
     complemento?: string;
     instruccionesEntrega?: string;
-    tipo?: "ENVIO" | "FACTURACION" | "AMBOS";
+    tipo?: string;
   }) => {
     try {
-      await addressesService.updateAddress(id, data);
+      await addressesService.updateAddress(id, data as Partial<CreateAddressRequest>);
       toast.success("Dirección actualizada");
       setEditingAddress(null);
       await actions.refreshData();

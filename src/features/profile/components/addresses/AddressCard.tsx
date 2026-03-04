@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Building2, MapPin, Edit, Trash2, Check } from "lucide-react";
+import { Home, Building2, MapPin, Trash2, Check } from "lucide-react";
 import { DBAddress } from "../../types";
 
 interface AddressCardProps {
@@ -7,6 +7,7 @@ interface AddressCardProps {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onSetDefault: (id: string) => void;
+  loading?: boolean;
 }
 
 const AddressCard: React.FC<AddressCardProps> = ({
@@ -14,6 +15,7 @@ const AddressCard: React.FC<AddressCardProps> = ({
   onEdit,
   onDelete,
   onSetDefault,
+  loading = false,
 }) => {
   // Determinar el icono según el tipo
   const getIcon = () => {
@@ -35,6 +37,28 @@ const AddressCard: React.FC<AddressCardProps> = ({
 
   // Determinar si es predeterminada
   const isDefault = address.esPredeterminada || false;
+  // Las direcciones de facturación no pueden ser predeterminadas
+  const isBilling = address.tipo?.toUpperCase() === "FACTURACION";
+
+  if (loading) {
+    return (
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg border border-gray-100 flex flex-col justify-between p-4 min-h-[180px] animate-pulse">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 bg-gray-200 rounded-full flex-shrink-0" />
+          <div className="flex-1">
+            <div className="h-4 bg-gray-200 rounded w-2/3 mb-2" />
+            <div className="h-3 bg-gray-200 rounded w-1/3" />
+          </div>
+        </div>
+        <div className="flex-1 flex flex-col justify-center gap-2">
+          <div className="h-3 bg-gray-200 rounded w-full" />
+          <div className="h-3 bg-gray-200 rounded w-3/4" />
+          <div className="h-3 bg-gray-200 rounded w-1/2" />
+        </div>
+        <div className="h-9 bg-gray-200 rounded-lg mt-4" />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg border border-gray-100 flex flex-col justify-between p-4 transition-all hover:shadow-xl min-h-[180px]">
@@ -47,23 +71,16 @@ const AddressCard: React.FC<AddressCardProps> = ({
           <h3 className="font-bold text-base text-gray-900 truncate">
             {address.nombreDireccion || getTypeName()}
           </h3>
-          {isDefault && (
+          {isDefault && !isBilling && (
             <div className="flex items-center gap-1 text-xs text-green-600 font-semibold">
               <Check className="w-3 h-3" />
               Predeterminada
             </div>
           )}
         </div>
-        {/* Botones de acción */}
+        {/* Botón de borrar */}
         <div className="flex gap-1 flex-shrink-0">
-          <button
-            onClick={() => onEdit(address.id)}
-            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-700"
-            title="Editar"
-          >
-            <Edit className="w-4 h-4" />
-          </button>
-          {!isDefault && (
+          {(!isDefault || isBilling) && (
             <button
               onClick={() => onDelete(address.id)}
               className="p-2 bg-gray-100 hover:bg-red-100 rounded-lg transition-colors text-gray-700 hover:text-red-600"
@@ -107,7 +124,7 @@ const AddressCard: React.FC<AddressCardProps> = ({
         )}
       </div>
 
-      {!isDefault && (
+      {!isDefault && !isBilling && (
         <button
           onClick={() => onSetDefault(address.id)}
           className="w-full py-2 border border-gray-200 rounded-lg hover:border-black hover:bg-gray-50 transition-all font-semibold text-sm mt-4"

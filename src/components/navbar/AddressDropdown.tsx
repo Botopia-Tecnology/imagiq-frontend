@@ -380,10 +380,11 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   }
 
   // Determine address to display:
-  // 1. Local saved address (most recent user selection in checkout)
-  // 2. Default address from backend
-  // 3. First address from list
-  const displayAddress = guestAddress || currentAddress || (addresses.length > 0 ? addresses[0] : null);
+  // Authenticated users: prioritize backend default address (source of truth)
+  // Guest users: use localStorage address
+  const displayAddress = isAuthenticated
+    ? (currentAddress || guestAddress || (addresses.length > 0 ? addresses[0] : null))
+    : (guestAddress || currentAddress || (addresses.length > 0 ? addresses[0] : null));
 
   // COMENTADO: Función getShortAddress ya no se usa
   /*

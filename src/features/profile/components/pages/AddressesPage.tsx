@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useProfile } from "../../hooks/useProfile";
 import { addressesService } from "@/services/addresses.service";
@@ -18,9 +18,11 @@ const AddressesPage: React.FC<AddressesPageProps> = ({ onBack, className }) => {
   const [selectedFilter, setSelectedFilter] = useState<
     "all" | "home" | "work" | "other"
   >("all");
+  const [deleteConfirm, setDeleteConfirm] = useState<DBAddress | null>(null);
+  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
 
-  // Obtener direcciones del usuario
-  const addresses = state.user?.direcciones || [];
+  // Obtener direcciones del usuario, excluyendo las recién eliminadas
+  const addresses = (state.user?.direcciones || []).filter(a => !removedIds.has(a.id));
 
   // Filtrar direcciones y ordenar predeterminada primero
   const filteredAddresses = addresses
@@ -90,32 +92,71 @@ const AddressesPage: React.FC<AddressesPageProps> = ({ onBack, className }) => {
     }
   };
 
-  const handleDeleteAddress = async (id: string) => {
+  const handleDeleteAddress = (id: string) => {
     const address = addresses.find((a) => a.id === id);
     if (address?.esPredeterminada) {
       toast.error("No puedes eliminar la dirección predeterminada");
       return;
     }
-    if (!confirm("¿Estás seguro de que deseas desactivar esta dirección?")) return;
-    setActionLoading(id);
+    if (address) setDeleteConfirm(address);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+    const id = deleteConfirm.id;
+    setDeleteConfirm(null);
+    // Ocultar la tarjeta inmediatamente (optimista)
+    setRemovedIds(prev => new Set(prev).add(id));
     try {
       await addressesService.deactivateAddress(id);
-      toast.success("Dirección desactivada");
+      toast.success("Dirección eliminada");
       await actions.refreshData();
+      // Limpiar el ID removido después del refresh (ya no está en los datos)
+      setRemovedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
     } catch (err) {
       console.error("Error desactivando dirección:", err);
-      toast.error(err instanceof Error ? err.message : "Error al desactivar dirección");
-    } finally {
-      setActionLoading(null);
+      toast.error(err instanceof Error ? err.message : "Error al eliminar dirección");
+      // Restaurar la tarjeta si falló
+      setRemovedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
     }
   };
 
   const handleSetDefault = async (id: string) => {
+    const address = addresses.find((a) => a.id === id);
+    // No permitir facturación como predeterminada
+    if (address?.tipo?.toUpperCase() === "FACTURACION") {
+      toast.error("Las direcciones de facturación no pueden ser predeterminadas");
+      return;
+    }
     setActionLoading(id);
     try {
       await addressesService.setDefaultAddress(id);
       toast.success("Dirección predeterminada actualizada");
       await actions.refreshData();
+      // Sincronizar navbar: actualizar localStorage + invalidar caches + disparar eventos
+      if (address) {
+        const navbarAddress = {
+          id: address.id,
+          linea_uno: address.linea_uno,
+          ciudad: address.ciudad || "",
+          pais: address.pais || "Colombia",
+          esPredeterminada: true,
+          direccionFormateada: address.direccionFormateada || address.linea_uno,
+          lineaUno: address.linea_uno,
+          nombreDireccion: address.nombreDireccion || "",
+          complemento: address.complemento || "",
+          instruccionesEntrega: address.instruccionesEntrega || "",
+          departamento: address.departamento || "",
+        };
+        localStorage.setItem("checkout-address", JSON.stringify(navbarAddress));
+        localStorage.setItem("imagiq_default_address", JSON.stringify(navbarAddress));
+      }
+      const { invalidateDefaultAddressCache } = await import("@/hooks/useDefaultAddress");
+      const { invalidateShippingOriginCache } = await import("@/hooks/useShippingOrigin");
+      invalidateDefaultAddressCache();
+      invalidateShippingOriginCache();
+      window.dispatchEvent(new CustomEvent("address-changed", { detail: { address, fromHeader: false } }));
+      window.dispatchEvent(new Event("storage"));
     } catch (err) {
       console.error("Error estableciendo predeterminada:", err);
       toast.error(err instanceof Error ? err.message : "Error al establecer predeterminada");
@@ -236,6 +277,7 @@ const AddressesPage: React.FC<AddressesPageProps> = ({ onBack, className }) => {
                 onEdit={handleEditAddress}
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
+                loading={!!actionLoading}
               />
             ))}
           </div>
@@ -284,6 +326,48 @@ const AddressesPage: React.FC<AddressesPageProps> = ({ onBack, className }) => {
           onSave={handleSaveEdit}
           onClose={() => setEditingAddress(null)}
         />
+      )}
+
+      {/* Modal de confirmación de eliminación */}
+      {deleteConfirm && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/50"
+          onClick={() => setDeleteConfirm(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <AlertTriangle className="w-7 h-7 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                Eliminar dirección
+              </h3>
+              <p className="text-sm text-gray-600 mb-1">
+                ¿Estás seguro de que deseas eliminar esta dirección?
+              </p>
+              <p className="text-sm font-semibold text-gray-800 mb-6">
+                {deleteConfirm.nombreDireccion || deleteConfirm.linea_uno}
+              </p>
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="flex-1 py-2.5 border border-gray-300 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal de agregar dirección */}

@@ -1,8 +1,10 @@
 "use client";
 import LogoReloadAnimation from "@/app/carrito/LogoReloadAnimation";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { apiGet } from "@/lib/api-client";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 interface SupportVerifyResult {
   status?: number | string;
@@ -18,6 +20,7 @@ export default function VerifySupportPurchase(
   const [orderId, setOrderId] = useState<string | null>(null);
   const router = useRouter();
   const [isLoading] = useState(true);
+  const fireAndForgetSent = useRef(false);
 
   useEffect(() => {
     params.then(({ id }) => {
@@ -27,6 +30,14 @@ export default function VerifySupportPurchase(
       setOrderId(cleanId);
     });
   }, [params]);
+
+  // Fire-and-forget: trigger backend verification immediately so it runs
+  // even if the user closes the tab before the animation finishes.
+  useEffect(() => {
+    if (!orderId || fireAndForgetSent.current) return;
+    fireAndForgetSent.current = true;
+    fetch(`${API_BASE_URL}/api/orders/support/verify/${orderId}`, { keepalive: true }).catch(() => {});
+  }, [orderId]);
 
   const verifySupportOrder = useCallback(async () => {
     if (!orderId) return;

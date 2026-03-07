@@ -1090,10 +1090,22 @@ export const useProduct = (productId: string) => {
   const [error, setError] = useState<string | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<ProductCardProps[]>([]);
 
+  // Reset sincrónico durante el render: useEffect corre DESPUÉS del render,
+  // así que sin esto los componentes ven product/loading stale del producto anterior
+  // durante el primer render tras SPA navigation → MPN incorrecto para Flixmedia.
+  const [currentProductId, setCurrentProductId] = useState(productId);
+  if (currentProductId !== productId) {
+    setCurrentProductId(productId);
+    setProduct(null);
+    setLoading(true);
+    setError(null);
+    setRelatedProducts([]);
+  }
+
   useEffect(() => {
     // Flag para evitar actualizaciones después de unmount
     let isMounted = true;
-    
+
     // Resetear estado inmediatamente
     setProduct(null);
     setLoading(true);

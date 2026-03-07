@@ -14,7 +14,8 @@ import { FlixmediaSpecsSkeleton } from "./FlixmediaStates";
 declare global {
   interface Window {
     flixJsCallbacks?: {
-      setLoadCallback: (fn: () => void, type?: string) => void;
+      // Dual API: Flixmedia llama con (type) para notificar, o se registra con (fn, type)
+      setLoadCallback: (typeOrFn: unknown, type?: string) => void;
       loadService: (type: string) => void;
     };
   }
@@ -277,9 +278,10 @@ function FlixmediaDetailsComponent({
 
       // Configurar callbacks ANTES de cargar el script
       window.flixJsCallbacks = {
-        setLoadCallback: (fn: () => void) => {
+        setLoadCallback: (typeOrFn: unknown) => {
+          const fn = typeof typeOrFn === 'function' ? typeOrFn : null;
           setTimeout(() => {
-            fn();
+            if (fn) fn();
             applyStyles();
             if (isMounted) {
               setTimeout(() => {

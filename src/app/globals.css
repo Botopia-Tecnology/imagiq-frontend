@@ -993,7 +993,9 @@ div[style*="text-align: center"][style*="padding"] {
 #flixinpage:empty,
 #flixinpage:has(div[style*="17407A"]),
 .flix-inpage:empty,
-.flix-inpage:has(div[style*="17407A"]) {
+.flix-inpage:has(div[style*="17407A"]),
+[id^="flix-inpage"]:empty,
+[id^="flix-inpage"]:has(div[style*="17407A"]) {
   display: none !important;
   min-height: 0 !important;
   height: 0 !important;

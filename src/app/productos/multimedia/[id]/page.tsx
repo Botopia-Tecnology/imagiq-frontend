@@ -21,7 +21,8 @@ import { useProduct } from "@/features/products/useProducts";
 import FlixmediaPlayer from "@/components/FlixmediaPlayer";
 import MultimediaBottomBar from "@/components/MultimediaBottomBar";
 import { usePrefetchProduct } from "@/hooks/usePrefetchProduct";
-import { hasPremiumContent } from "@/lib/flixmedia";
+import { hasPremiumContent, preloadFlixmediaScriptEarly } from "@/lib/flixmedia";
+import MultimediaQuickNavBar from "./MultimediaQuickNavBar";
 
 // Skeleton de carga mejorado
 function MultimediaPageSkeleton() {
@@ -91,6 +92,17 @@ export default function MultimediaPage({
 
   const { product, loading, error } = useProduct(id);
 
+  // DEBUG: Rastrear estado del producto en cada render
+  console.log('[MULTIMEDIA] Render:', {
+    routeId: id,
+    productId: product?.id,
+    productMatch: product?.id === id,
+    loading,
+    error,
+    hasProduct: !!product,
+    productSkuflixmedia: product?.skuflixmedia,
+  });
+
   // Estado para almacenar la selección del usuario desde localStorage
   // Inicializar como null para evitar hydration mismatch (servidor no tiene acceso a localStorage)
   const [selectedProductData, setSelectedProductData] = useState<{
@@ -110,16 +122,40 @@ export default function MultimediaPage({
     segmento?: string | string[];
   } | null>(null);
 
+  // Track del id actual para detectar cambio de producto sincrónicamente durante el render.
+  // useEffect corre DESPUÉS del render, así que sin esto el primer render post-navegación
+  // usaría selectedProductData stale del producto anterior → MPN incorrecto para Flixmedia.
+  const [currentId, setCurrentId] = useState(id);
+  if (currentId !== id) {
+    console.log('[MULTIMEDIA] ID cambió:', { from: currentId, to: id, resettingSelectedData: true });
+    setCurrentId(id);
+    setSelectedProductData(null);
+  }
+
+  // Precargar DNS + script de Flixmedia lo antes posible
+  useEffect(() => {
+    preloadFlixmediaScriptEarly();
+  }, []);
+
   // Leer localStorage después del mount para evitar hydration mismatch
   useEffect(() => {
     const savedSelection = localStorage.getItem(`product_selection_${id}`);
     if (savedSelection) {
       try {
-        const parsedData = JSON.parse(savedSelection);
-        setSelectedProductData(parsedData);
+        const parsed = JSON.parse(savedSelection);
+        console.log('[MULTIMEDIA] localStorage para', id, ':', {
+          skuflixmedia: parsed?.skuflixmedia,
+          sku: parsed?.sku,
+          productName: parsed?.productName,
+        });
+        setSelectedProductData(parsed);
       } catch (e) {
         console.error("Error parsing saved product selection:", e);
+        setSelectedProductData(null);
       }
+    } else {
+      console.log('[MULTIMEDIA] Sin localStorage para', id);
+      setSelectedProductData(null);
     }
   }, [id]);
 
@@ -167,6 +203,23 @@ export default function MultimediaPage({
 
   // EAN solo como respaldo si hay skuflixmedia pero se necesita EAN
   const productEan = productSku ? (allEans.length > 0 ? allEans[0] : null) : null;
+
+  // DEBUG: Rastrear resolución del SKU
+  console.log('[MULTIMEDIA] SKU resolución:', {
+    routeId: id,
+    productSku,
+    productEan,
+    sources: {
+      'selectedData.skuflixmedia': selectedProductData?.skuflixmedia,
+      'product.skuflixmedia': product?.skuflixmedia,
+      'apiProduct.skuflixmedia[0]': product?.apiProduct?.skuflixmedia?.[0],
+      'selectedData.sku': selectedProductData?.sku,
+      'allSkus[0]': allSkus[0],
+    },
+    selectedProductDataKeys: selectedProductData ? Object.keys(selectedProductData) : null,
+    hasProduct: !!product,
+    loading,
+  });
 
   // Parsear precios a números
   const parsePrice = (price: string | number | undefined): number => {
@@ -280,6 +333,9 @@ export default function MultimediaPage({
         isVisible={true}
       />
 
+      {/* QuickNavBar: Caracteristicas / Especificaciones - detecta secciones de Flixmedia */}
+      <MultimediaQuickNavBar />
+
       {/* Contenido principal - Flixmedia Player con padding para el navbar y el bar fijo */}
       <div
         className="flex-1 pt-[70px] xl:pt-[50px] bg-white"
@@ -292,6 +348,7 @@ export default function MultimediaPage({
           segmento={segmento}
           apiProduct={product?.apiProduct}
           productColors={product?.colors}
+          skipMatchApi={false}
           className=""
         />
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 type SectionId = "caracteristicas" | "especificaciones";
 
@@ -18,6 +18,9 @@ export default function MultimediaQuickNavBar() {
   const [activeSection, setActiveSection] = useState<SectionId>("caracteristicas");
   const [hasCaracteristicas, setHasCaracteristicas] = useState(false);
   const [hasEspecificaciones, setHasEspecificaciones] = useState(false);
+
+  // Ref compartida para cancelar cualquier animación en curso antes de iniciar otra
+  const cancelCurrentAnimation = useRef<(() => void) | null>(null);
 
   // Detectar secciones DENTRO del contenido de Flixmedia en flix-inpage
   useEffect(() => {
@@ -53,45 +56,34 @@ export default function MultimediaQuickNavBar() {
     };
   }, []);
 
-  const scrollToCaracteristicas = useCallback(() => {
-    const flixContainer = document.querySelector<HTMLElement>('[id^="flix-inpage"]');
-    if (flixContainer) {
-      const top = flixContainer.offsetTop - SCROLL_OFFSET;
-      window.scrollTo({ top, behavior: "smooth" });
-    }
-  }, []);
+  // Scroll fluido reutilizable: usa rAF para seguir el target en tiempo real,
+  // se cancela con scroll manual del usuario o al hacer click en otra sección.
+  const smoothScrollTo = useCallback((getTarget: () => HTMLElement | null) => {
+    // Cancelar animación previa si existe
+    cancelCurrentAnimation.current?.();
 
-  const scrollToEspecificaciones = useCallback(() => {
-    const getSpecsTarget = () => {
-      const flixContainer = document.querySelector<HTMLElement>('[id^="flix-inpage"]');
-      if (!flixContainer) return null;
-      return flixContainer.querySelector(
-        '[flixtemplate-key="specifications"], .inpage_spec-list, .inpage_spec-header'
-      ) as HTMLElement | null;
-    };
+    const target = getTarget();
+    if (!target) return;
 
-    const specsElement = getSpecsTarget();
-    if (!specsElement) return;
-
-    // Scroll fluido con requestAnimationFrame: en cada frame recalcula la posición
-    // del target (que puede moverse si Flixmedia carga contenido) y avanza hacia él.
-    // Se cancela si el usuario hace scroll manual (wheel, touch, tecla).
     let rafId: number;
     let stableFrames = 0;
     let cancelled = false;
     const TOLERANCE = 3;
-    const EASE = 0.035; // Cada frame avanza 3.5% de la distancia restante (scroll muy suave)
-    const STABLE_NEEDED = 20; // ~333ms estable = llegamos
+    const EASE = 0.035;
+    const STABLE_NEEDED = 20;
     const startTime = Date.now();
-    const MAX_DURATION = 4000; // Máximo 4 segundos
+    const MAX_DURATION = 4000;
 
     const cancel = () => {
+      if (cancelled) return;
       cancelled = true;
       cancelAnimationFrame(rafId);
       cleanup();
+      if (cancelCurrentAnimation.current === cancel) {
+        cancelCurrentAnimation.current = null;
+      }
     };
 
-    // Cancelar si el usuario interactúa con el scroll manualmente
     const cleanup = () => {
       window.removeEventListener("wheel", cancel);
       window.removeEventListener("touchstart", cancel);
@@ -99,29 +91,27 @@ export default function MultimediaQuickNavBar() {
     };
 
     const onKeyCancel = (e: KeyboardEvent) => {
-      if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(e.key)) {
-        cancel();
-      }
+      if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(e.key)) cancel();
     };
 
     window.addEventListener("wheel", cancel, { once: true });
     window.addEventListener("touchstart", cancel, { once: true });
     window.addEventListener("keydown", onKeyCancel);
 
-    const animate = () => {
-      if (cancelled || Date.now() - startTime > MAX_DURATION) {
-        cleanup();
-        return;
-      }
+    // Registrar esta animación como la activa
+    cancelCurrentAnimation.current = cancel;
 
-      const el = getSpecsTarget();
+    const animate = () => {
+      if (cancelled || Date.now() - startTime > MAX_DURATION) { cleanup(); return; }
+
+      const el = getTarget();
       if (!el) { cleanup(); return; }
 
       const distanceToTarget = el.getBoundingClientRect().top - SCROLL_OFFSET;
 
       if (Math.abs(distanceToTarget) < TOLERANCE) {
         stableFrames++;
-        if (stableFrames >= STABLE_NEEDED) { cleanup(); return; }
+        if (stableFrames >= STABLE_NEEDED) { cancel(); return; }
       } else {
         stableFrames = 0;
         window.scrollBy(0, distanceToTarget * EASE);
@@ -132,6 +122,20 @@ export default function MultimediaQuickNavBar() {
 
     rafId = requestAnimationFrame(animate);
   }, []);
+
+  const scrollToCaracteristicas = useCallback(() => {
+    smoothScrollTo(() => document.querySelector<HTMLElement>('[id^="flix-inpage"]'));
+  }, [smoothScrollTo]);
+
+  const scrollToEspecificaciones = useCallback(() => {
+    smoothScrollTo(() => {
+      const flixContainer = document.querySelector<HTMLElement>('[id^="flix-inpage"]');
+      if (!flixContainer) return null;
+      return flixContainer.querySelector(
+        '[flixtemplate-key="specifications"], .inpage_spec-list, .inpage_spec-header'
+      ) as HTMLElement | null;
+    });
+  }, [smoothScrollTo]);
 
   // Detectar seccion activa al scrollear
   useEffect(() => {

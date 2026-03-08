@@ -4,51 +4,50 @@ import { useState, useEffect, useCallback, useRef } from "react";
 
 type SectionId = "caracteristicas" | "especificaciones";
 
-interface Section {
-  id: SectionId;
-  label: string;
-  visible: boolean;
-  scrollTarget: () => HTMLElement | null;
-}
-
 // Offset para compensar: navbar (~55-100px) + MultimediaBottomBar (~46px) + QuickNavBar (~50px) + padding
 const SCROLL_OFFSET = 210;
 
 export default function MultimediaQuickNavBar() {
   const [activeSection, setActiveSection] = useState<SectionId>("caracteristicas");
-  const [hasCaracteristicas, setHasCaracteristicas] = useState(false);
+  // En multimedia, "Caracteristicas" SIEMPRE se muestra (es la razón de estar en esta página)
+  const [hasCaracteristicas] = useState(true);
   const [hasEspecificaciones, setHasEspecificaciones] = useState(false);
 
   // Ref compartida para cancelar cualquier animación en curso antes de iniciar otra
   const cancelCurrentAnimation = useRef<(() => void) | null>(null);
 
-  // Detectar secciones DENTRO del contenido de Flixmedia en flix-inpage
+  // Detectar sección de Especificaciones DENTRO del contenido de Flixmedia
   useEffect(() => {
+    let observerAttached = false;
+    const observer = new MutationObserver(() => {
+      const flixContainer = document.querySelector<HTMLElement>('[id^="flix-inpage"]');
+      if (!flixContainer) return;
+      const specsElement = flixContainer.querySelector(
+        '[flixtemplate-key="specifications"], .inpage_spec-list, .inpage_spec-header'
+      );
+      setHasEspecificaciones(!!specsElement);
+    });
+
     const checkSections = () => {
       const flixContainer = document.querySelector<HTMLElement>('[id^="flix-inpage"]');
       if (!flixContainer) return;
-
-      // Caracteristicas: el contenido principal de Flixmedia existe
-      const hasContent = flixContainer.children.length > 0 && flixContainer.innerHTML.length > 100;
-      setHasCaracteristicas(hasContent);
 
       // Especificaciones: buscar la seccion de specs DENTRO de flix-inpage
       const specsElement = flixContainer.querySelector(
         '[flixtemplate-key="specifications"], .inpage_spec-list, .inpage_spec-header'
       );
       setHasEspecificaciones(!!specsElement);
+
+      // Atar observer al container cuando aparezca (puede no existir en el primer render)
+      if (!observerAttached) {
+        observer.observe(flixContainer, { childList: true, subtree: true });
+        observerAttached = true;
+      }
     };
 
     // Polling porque Flixmedia carga async y puede tardar
     const interval = setInterval(checkSections, 1500);
     checkSections();
-
-    // MutationObserver para detectar mas rapido
-    const observer = new MutationObserver(checkSections);
-    const flixContainer = document.querySelector<HTMLElement>('[id^="flix-inpage"]');
-    if (flixContainer) {
-      observer.observe(flixContainer, { childList: true, subtree: true });
-    }
 
     return () => {
       clearInterval(interval);
@@ -139,8 +138,6 @@ export default function MultimediaQuickNavBar() {
 
   // Detectar seccion activa al scrollear
   useEffect(() => {
-    if (!hasCaracteristicas) return;
-
     const handleScroll = () => {
       const scrollPosition = window.scrollY + SCROLL_OFFSET + 20;
 
@@ -178,20 +175,14 @@ export default function MultimediaQuickNavBar() {
       window.removeEventListener("scroll", handleScroll);
       clearTimeout(initialCheckTimeout);
     };
-  }, [hasCaracteristicas, hasEspecificaciones]);
-
-  // No renderizar si Flixmedia no tiene contenido
-  if (!hasCaracteristicas) return null;
+  }, [hasEspecificaciones]);
 
   const sections: { id: SectionId; label: string; onClick: () => void; show: boolean }[] = [
-    { id: "caracteristicas", label: "Caracteristicas", onClick: scrollToCaracteristicas, show: hasCaracteristicas },
+    { id: "caracteristicas", label: "Caracteristicas", onClick: scrollToCaracteristicas, show: true },
     { id: "especificaciones", label: "Especificaciones", onClick: scrollToEspecificaciones, show: hasEspecificaciones },
   ];
 
   const visibleSections = sections.filter(s => s.show);
-
-  // No mostrar si no hay secciones visibles
-  if (visibleSections.length === 0) return null;
 
   // Position below MultimediaBottomBar (top-[55px] xl:top-[100px], ~46px height)
   const topClass = "top-[100px] md:top-[100px] xl:top-[146px]";

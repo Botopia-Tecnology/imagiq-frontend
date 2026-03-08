@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface QuickNavBarProps {
   productName?: string;
@@ -16,6 +16,9 @@ export default function QuickNavBar({ productName, isStickyBarVisible = false }:
   const [activeSection, setActiveSection] = useState<SectionId>("comprar");
   const [hasDetalles, setHasDetalles] = useState(false);
   const [hasEspecificaciones, setHasEspecificaciones] = useState(false);
+
+  // Ref compartida para cancelar cualquier animación en curso antes de iniciar otra
+  const cancelCurrentAnimation = useRef<(() => void) | null>(null);
 
   // Detectar si Flixmedia renderizó contenido real dentro de detalles-section
   useEffect(() => {
@@ -55,32 +58,90 @@ export default function QuickNavBar({ productName, isStickyBarVisible = false }:
     };
   }, []);
 
-  const scrollToSection = useCallback((elementId: string) => {
-    // Para especificaciones, buscar dentro del contenido de Flixmedia
-    if (elementId === "especificaciones-flix") {
-      const detallesSection = document.getElementById("detalles-section");
-      if (!detallesSection) return;
+  // Scroll fluido con rAF: sigue el target en tiempo real,
+  // se cancela con scroll manual del usuario o al hacer click en otra sección.
+  const smoothScrollTo = useCallback((getTarget: () => HTMLElement | null, offset: number) => {
+    // Cancelar animación previa si existe
+    cancelCurrentAnimation.current?.();
 
-      const specsElement = detallesSection.querySelector(
-        '[flixtemplate-key="specifications"], .inpage_spec-list, .inpage_spec-header'
-      ) as HTMLElement | null;
+    const target = getTarget();
+    if (!target) return;
 
-      if (specsElement) {
-        // Offset mayor para specs porque esta dentro del contenido de Flixmedia
-        const top = specsElement.getBoundingClientRect().top + window.scrollY - 120;
-        window.scrollTo({ top, behavior: "smooth" });
+    let rafId: number;
+    let stableFrames = 0;
+    let cancelled = false;
+    const TOLERANCE = 3;
+    const EASE = 0.035;
+    const STABLE_NEEDED = 20;
+    const startTime = Date.now();
+    const MAX_DURATION = 4000;
+
+    const cancel = () => {
+      if (cancelled) return;
+      cancelled = true;
+      cancelAnimationFrame(rafId);
+      cleanup();
+      if (cancelCurrentAnimation.current === cancel) {
+        cancelCurrentAnimation.current = null;
       }
-      return;
-    }
+    };
 
-    const element = document.getElementById(elementId);
-    if (element) {
-      // Detalles necesita menos offset para que baje un poco mas
-      const offset = elementId === "detalles-section" ? 110 : SCROLL_OFFSET;
-      const top = element.offsetTop - offset;
-      window.scrollTo({ top, behavior: "smooth" });
-    }
+    const cleanup = () => {
+      window.removeEventListener("wheel", cancel);
+      window.removeEventListener("touchstart", cancel);
+      window.removeEventListener("keydown", onKeyCancel);
+    };
+
+    const onKeyCancel = (e: KeyboardEvent) => {
+      if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(e.key)) cancel();
+    };
+
+    window.addEventListener("wheel", cancel, { once: true });
+    window.addEventListener("touchstart", cancel, { once: true });
+    window.addEventListener("keydown", onKeyCancel);
+
+    // Registrar esta animación como la activa
+    cancelCurrentAnimation.current = cancel;
+
+    const animate = () => {
+      if (cancelled || Date.now() - startTime > MAX_DURATION) { cleanup(); return; }
+
+      const el = getTarget();
+      if (!el) { cleanup(); return; }
+
+      const distanceToTarget = el.getBoundingClientRect().top - offset;
+
+      if (Math.abs(distanceToTarget) < TOLERANCE) {
+        stableFrames++;
+        if (stableFrames >= STABLE_NEEDED) { cancel(); return; }
+      } else {
+        stableFrames = 0;
+        window.scrollBy(0, distanceToTarget * EASE);
+      }
+
+      rafId = requestAnimationFrame(animate);
+    };
+
+    rafId = requestAnimationFrame(animate);
   }, []);
+
+  const scrollToSection = useCallback((elementId: string) => {
+    if (elementId === "comprar-section") {
+      smoothScrollTo(() => document.getElementById("comprar-section"), SCROLL_OFFSET);
+    } else if (elementId === "detalles-section") {
+      // Detalles: scrollear al inicio del contenido Flixmedia
+      smoothScrollTo(() => document.getElementById("detalles-section"), 115);
+    } else if (elementId === "especificaciones-flix") {
+      // Especificaciones: buscar dentro del contenido Flixmedia
+      smoothScrollTo(() => {
+        const detallesSection = document.getElementById("detalles-section");
+        if (!detallesSection) return null;
+        return detallesSection.querySelector(
+          '[flixtemplate-key="specifications"], .inpage_spec-list, .inpage_spec-header'
+        ) as HTMLElement | null;
+      }, 115);
+    }
+  }, [smoothScrollTo]);
 
   // Detectar seccion activa al hacer scroll
   useEffect(() => {

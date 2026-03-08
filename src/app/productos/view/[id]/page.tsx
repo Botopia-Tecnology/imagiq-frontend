@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use, lazy, Suspense } from "react";
+import React, { use } from "react";
 import { useRouter } from "next/navigation";
 import { useProduct } from "@/features/products/useProducts";
 import { notFound } from "next/navigation";
@@ -23,9 +23,8 @@ import QuickNavBar from "../../viewpremium/[id]/components/QuickNavBar";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import BenefitsSection from "../../dispositivos-moviles/detalles-producto/BenefitsSection";
 import TradeInSection from "../../viewpremium/components/sections/TradeInSection";
-
-// Lazy load FlixmediaPlayer
-const FlixmediaPlayer = lazy(() => import("@/components/FlixmediaPlayer"));
+import FlixmediaPlayer from "@/components/FlixmediaPlayer";
+import { preloadFlixmediaScriptEarly } from "@/lib/flixmedia";
 
 // Type for the product selection data passed from DetailsProductSection
 // This is a subset of UseProductSelectionReturn with only the properties passed by the callback
@@ -247,6 +246,11 @@ export default function ProductViewPage({ params }) {
   // Barra sticky superior
   const showStickyBar = useScrollNavbar(150, 50, true);
 
+  // Precargar DNS + script de Flixmedia lo antes posible
+  React.useEffect(() => {
+    preloadFlixmediaScriptEarly();
+  }, []);
+
   // 🚀 Prefetch automático de datos de Trade-In
   useTradeInPrefetch();
 
@@ -439,23 +443,17 @@ export default function ProductViewPage({ params }) {
 
       {/* SECCIÓN: Detalles - Contenido multimedia de Flixmedia */}
       <section id="detalles-section" className="bg-white scroll-mt-[180px]">
-        <Suspense fallback={
-          <div className="w-full min-h-[400px] flex items-center justify-center">
-            <div className="w-12 h-12 border-4 border-gray-200 border-t-[#0066CC] rounded-full animate-spin" />
-          </div>
-        }>
-          <FlixmediaPlayer
-            mpn={productSelectionState?.selectedSkuflixmedia || productSelection.selectedSkuflixmedia || productToUse.skuflixmedia || productToUse.apiProduct?.skuflixmedia?.[0]}
-            ean={productSelectionState?.selectedVariant?.ean || productSelection.selectedVariant?.ean}
-            productName={productToUse.name}
-            productId={productToUse.id}
-            segmento={productToUse.apiProduct?.segmento}
-            apiProduct={productToUse.apiProduct}
-            productColors={productToUse.colors}
-            preventRedirect={true}
-            className="w-full"
-          />
-        </Suspense>
+        <FlixmediaPlayer
+          mpn={productSelectionState?.selectedSkuflixmedia || productSelection.selectedSkuflixmedia || productToUse.skuflixmedia || productToUse.apiProduct?.skuflixmedia?.[0]}
+          ean={productSelectionState?.selectedVariant?.ean || productSelection.selectedVariant?.ean}
+          productName={productToUse.name}
+          productId={productToUse.id}
+          segmento={productToUse.apiProduct?.segmento}
+          apiProduct={productToUse.apiProduct}
+          productColors={productToUse.colors}
+          preventRedirect={true}
+          className="w-full"
+        />
       </section>
 
       {/* Estilos globales para animación de ocultar header */}

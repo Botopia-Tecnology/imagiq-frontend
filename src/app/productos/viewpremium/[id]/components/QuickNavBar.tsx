@@ -20,18 +20,25 @@ export default function QuickNavBar({ productName, isStickyBarVisible = false }:
   // Ref compartida para cancelar cualquier animación en curso antes de iniciar otra
   const cancelCurrentAnimation = useRef<(() => void) | null>(null);
 
+  // Ref para leer isStickyBarVisible en tiempo real dentro de animaciones rAF
+  const isStickyRef = useRef(isStickyBarVisible);
+  useEffect(() => { isStickyRef.current = isStickyBarVisible; }, [isStickyBarVisible]);
+
   // Detectar si Flixmedia renderizó contenido real dentro de detalles-section
   useEffect(() => {
     const checkFlixContent = () => {
       const detallesSection = document.getElementById("detalles-section");
       if (!detallesSection) return;
 
-      // Verificar si hay contenido real de Flixmedia (iframes, imágenes, videos, elementos flix)
-      const hasContent = detallesSection.querySelector('iframe') !== null ||
+      // Verificar si hay contenido real de Flixmedia
+      const flixContainer = detallesSection.querySelector('[id^="flix-inpage"]');
+      const hasContent = (flixContainer && flixContainer.children.length > 0) ||
+                        detallesSection.querySelector('iframe') !== null ||
                         detallesSection.querySelectorAll('img').length > 1 ||
                         detallesSection.querySelector('video') !== null ||
                         detallesSection.querySelector('[class*="flix-"]') !== null ||
-                        detallesSection.querySelector('[class*="flix_"]') !== null;
+                        detallesSection.querySelector('[class*="flix_"]') !== null ||
+                        detallesSection.querySelector('[class*="inpage_"]') !== null;
       setHasDetalles(hasContent);
 
       // Buscar specs dentro del contenido renderizado por Flixmedia
@@ -41,15 +48,26 @@ export default function QuickNavBar({ productName, isStickyBarVisible = false }:
       setHasEspecificaciones(!!specsElement);
     };
 
-    // Polling porque Flixmedia carga async
-    const interval = setInterval(checkFlixContent, 1500);
+    // Polling rápido porque Flixmedia carga async
+    const interval = setInterval(checkFlixContent, 500);
     checkFlixContent();
 
-    // MutationObserver para detectar mas rapido
+    // MutationObserver para detectar cambios en el DOM inmediatamente
     const observer = new MutationObserver(checkFlixContent);
     const detallesSection = document.getElementById("detalles-section");
     if (detallesSection) {
       observer.observe(detallesSection, { childList: true, subtree: true });
+    } else {
+      // Si detalles-section aún no existe, observar el body hasta que aparezca
+      const bodyObserver = new MutationObserver(() => {
+        const section = document.getElementById("detalles-section");
+        if (section) {
+          observer.observe(section, { childList: true, subtree: true });
+          bodyObserver.disconnect();
+          checkFlixContent();
+        }
+      });
+      bodyObserver.observe(document.body, { childList: true, subtree: true });
     }
 
     return () => {
@@ -60,7 +78,7 @@ export default function QuickNavBar({ productName, isStickyBarVisible = false }:
 
   // Scroll fluido con rAF: sigue el target en tiempo real,
   // se cancela con scroll manual del usuario o al hacer click en otra sección.
-  const smoothScrollTo = useCallback((getTarget: () => HTMLElement | null, offset: number) => {
+  const smoothScrollTo = useCallback((getTarget: () => HTMLElement | null, getOffset: () => number) => {
     // Cancelar animación previa si existe
     cancelCurrentAnimation.current?.();
 
@@ -71,8 +89,8 @@ export default function QuickNavBar({ productName, isStickyBarVisible = false }:
     let stableFrames = 0;
     let cancelled = false;
     const TOLERANCE = 3;
-    const EASE = 0.035;
-    const STABLE_NEEDED = 20;
+    const EASE = 0.12;
+    const STABLE_NEEDED = 10;
     const startTime = Date.now();
     const MAX_DURATION = 4000;
 
@@ -109,7 +127,7 @@ export default function QuickNavBar({ productName, isStickyBarVisible = false }:
       const el = getTarget();
       if (!el) { cleanup(); return; }
 
-      const distanceToTarget = el.getBoundingClientRect().top - offset;
+      const distanceToTarget = el.getBoundingClientRect().top - getOffset();
 
       if (Math.abs(distanceToTarget) < TOLERANCE) {
         stableFrames++;
@@ -125,23 +143,26 @@ export default function QuickNavBar({ productName, isStickyBarVisible = false }:
     rafId = requestAnimationFrame(animate);
   }, []);
 
+  // Offset dinámico: cuando el sticky bar está activo los headers son más pequeños
+  const getDynamicOffset = useCallback(() => {
+    return isStickyRef.current ? 115 : SCROLL_OFFSET;
+  }, []);
+
   const scrollToSection = useCallback((elementId: string) => {
     if (elementId === "comprar-section") {
-      smoothScrollTo(() => document.getElementById("comprar-section"), SCROLL_OFFSET);
+      smoothScrollTo(() => document.getElementById("comprar-section"), () => SCROLL_OFFSET);
     } else if (elementId === "detalles-section") {
-      // Detalles: scrollear al inicio del contenido Flixmedia
-      smoothScrollTo(() => document.getElementById("detalles-section"), 115);
+      smoothScrollTo(() => document.getElementById("detalles-section"), getDynamicOffset);
     } else if (elementId === "especificaciones-flix") {
-      // Especificaciones: buscar dentro del contenido Flixmedia
       smoothScrollTo(() => {
         const detallesSection = document.getElementById("detalles-section");
         if (!detallesSection) return null;
         return detallesSection.querySelector(
           '[flixtemplate-key="specifications"], .inpage_spec-list, .inpage_spec-header'
         ) as HTMLElement | null;
-      }, 115);
+      }, getDynamicOffset);
     }
-  }, [smoothScrollTo]);
+  }, [smoothScrollTo, getDynamicOffset]);
 
   // Detectar seccion activa al hacer scroll
   useEffect(() => {
@@ -198,8 +219,8 @@ export default function QuickNavBar({ productName, isStickyBarVisible = false }:
 
   // Posicion dinamica:
   const topClass = isStickyBarVisible
-    ? "top-[46px] md:top-[52px] xl:top-[52px]"
-    : "top-[122px] md:top-[112px] xl:top-[152px]";
+    ? "top-[56px] md:top-[58px] xl:top-[52px]"
+    : "top-[125px] md:top-[115px] xl:top-[152px]";
 
   return (
     <div

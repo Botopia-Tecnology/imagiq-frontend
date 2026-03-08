@@ -19,6 +19,7 @@ export function useScrollNavbar(
   const ticking = useRef(false);
   const currentShowNavbar = useRef(false);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const pendingValue = useRef<boolean | null>(null);
   const isScrollingDown = useRef(false);
 
   useEffect(() => {
@@ -26,15 +27,22 @@ export function useScrollNavbar(
   }, [showNavbar]);
 
   // Función debounced para cambio de estado (previene toggles rápidos)
+  // No resetea el timer si el mismo valor ya está pendiente (evita que scroll
+  // continuo bloquee el cambio de estado indefinidamente)
   const debouncedSetShowNavbar = useCallback((shouldShow: boolean) => {
     if (debounceTimer.current) {
+      // Si el mismo valor ya está pendiente, dejar que el timer existente complete
+      if (pendingValue.current === shouldShow) return;
       clearTimeout(debounceTimer.current);
     }
 
+    pendingValue.current = shouldShow;
     debounceTimer.current = setTimeout(() => {
       if (shouldShow !== currentShowNavbar.current) {
         setShowNavbar(shouldShow);
       }
+      pendingValue.current = null;
+      debounceTimer.current = null;
     }, 50); // Debounce de 50ms para suavizar cambios
   }, []);
 

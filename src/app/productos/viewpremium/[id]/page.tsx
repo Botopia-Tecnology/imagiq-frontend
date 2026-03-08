@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use, lazy, Suspense } from "react";
+import React, { use } from "react";
 import { useProduct } from "@/features/products/useProducts";
 import { notFound } from "next/navigation";
 import ViewPremiumSkeleton from "./ViewPremiumSkeleton";
@@ -25,8 +25,8 @@ import BenefitsSection from "../../dispositivos-moviles/detalles-producto/Benefi
 import AddToCartButton from "../components/AddToCartButton";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 
-// Lazy load FlixmediaPlayer para la sección de detalles multimedia (carga TODO el contenido de Flixmedia)
-const FlixmediaPlayer = lazy(() => import("@/components/FlixmediaPlayer"));
+import FlixmediaPlayer from "@/components/FlixmediaPlayer";
+import { preloadFlixmediaScriptEarly } from "@/lib/flixmedia";
 
 // Componente de navegación rápida
 import QuickNavBar from "./components/QuickNavBar";
@@ -261,6 +261,11 @@ export default function ProductViewPage({ params }) {
   // Barra sticky superior con la misma animación/estilo de la vista normal
   const showStickyBar = useScrollNavbar(150, 50, true);
 
+  // Precargar DNS + script de Flixmedia lo antes posible
+  React.useEffect(() => {
+    preloadFlixmediaScriptEarly();
+  }, []);
+
   // Efecto para ocultar/mostrar el header principal exactamente igual que en view normal
   React.useEffect(() => {
     if (typeof document === "undefined") return;
@@ -475,23 +480,17 @@ export default function ProductViewPage({ params }) {
 
       {/* SECCIÓN: Detalles - Contenido multimedia de Flixmedia (sin márgenes para mejor presentación) */}
       <section id="detalles-section" className="bg-white scroll-mt-[180px]">
-        <Suspense fallback={
-          <div className="w-full min-h-[400px] flex items-center justify-center">
-            <div className="w-12 h-12 border-4 border-gray-200 border-t-[#0066CC] rounded-full animate-spin" />
-          </div>
-        }>
-          <FlixmediaPlayer
-            mpn={productSelection.selectedSkuflixmedia || productToUse.skuflixmedia || productToUse.apiProduct?.skuflixmedia?.[0]}
-            ean={productSelection.selectedVariant?.ean}
-            productName={productToUse.name}
-            productId={productToUse.id}
-            segmento={productToUse.apiProduct?.segmento}
-            apiProduct={productToUse.apiProduct}
-            productColors={productToUse.colors}
-            preventRedirect={true}
-            className="w-full"
-          />
-        </Suspense>
+        <FlixmediaPlayer
+          mpn={productSelection.selectedSkuflixmedia || productToUse.skuflixmedia || productToUse.apiProduct?.skuflixmedia?.[0]}
+          ean={productSelection.selectedVariant?.ean}
+          productName={productToUse.name}
+          productId={productToUse.id}
+          segmento={productToUse.apiProduct?.segmento}
+          apiProduct={productToUse.apiProduct}
+          productColors={productToUse.colors}
+          preventRedirect={true}
+          className="w-full"
+        />
       </section>
 
       {/* Botón de añadir al carrito al final de la página */}

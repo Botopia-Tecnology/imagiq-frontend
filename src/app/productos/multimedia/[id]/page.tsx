@@ -336,9 +336,9 @@ export default function MultimediaPage({
       {/* QuickNavBar: Caracteristicas / Especificaciones - detecta secciones de Flixmedia */}
       <MultimediaQuickNavBar />
 
-      {/* Contenido principal - Flixmedia Player con padding para el navbar y el bar fijo */}
+      {/* Contenido principal - Flixmedia Player con padding para navbar + BottomBar + QuickNavBar */}
       <div
-        className="flex-1 pt-[70px] xl:pt-[50px] bg-white"
+        className="flex-1 pt-[55px] xl:pt-[70px] bg-white"
       >
         <FlixmediaPlayer
           mpn={productSku}

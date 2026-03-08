@@ -62,17 +62,75 @@ export default function MultimediaQuickNavBar() {
   }, []);
 
   const scrollToEspecificaciones = useCallback(() => {
-    const flixContainer = document.querySelector<HTMLElement>('[id^="flix-inpage"]');
-    if (!flixContainer) return;
+    const getSpecsTarget = () => {
+      const flixContainer = document.querySelector<HTMLElement>('[id^="flix-inpage"]');
+      if (!flixContainer) return null;
+      return flixContainer.querySelector(
+        '[flixtemplate-key="specifications"], .inpage_spec-list, .inpage_spec-header'
+      ) as HTMLElement | null;
+    };
 
-    const specsElement = flixContainer.querySelector(
-      '[flixtemplate-key="specifications"], .inpage_spec-list, .inpage_spec-header'
-    ) as HTMLElement | null;
+    const specsElement = getSpecsTarget();
+    if (!specsElement) return;
 
-    if (specsElement) {
-      const top = specsElement.getBoundingClientRect().top + window.scrollY - SCROLL_OFFSET;
-      window.scrollTo({ top, behavior: "smooth" });
-    }
+    // Scroll fluido con requestAnimationFrame: en cada frame recalcula la posición
+    // del target (que puede moverse si Flixmedia carga contenido) y avanza hacia él.
+    // Se cancela si el usuario hace scroll manual (wheel, touch, tecla).
+    let rafId: number;
+    let stableFrames = 0;
+    let cancelled = false;
+    const TOLERANCE = 3;
+    const EASE = 0.035; // Cada frame avanza 3.5% de la distancia restante (scroll muy suave)
+    const STABLE_NEEDED = 20; // ~333ms estable = llegamos
+    const startTime = Date.now();
+    const MAX_DURATION = 4000; // Máximo 4 segundos
+
+    const cancel = () => {
+      cancelled = true;
+      cancelAnimationFrame(rafId);
+      cleanup();
+    };
+
+    // Cancelar si el usuario interactúa con el scroll manualmente
+    const cleanup = () => {
+      window.removeEventListener("wheel", cancel);
+      window.removeEventListener("touchstart", cancel);
+      window.removeEventListener("keydown", onKeyCancel);
+    };
+
+    const onKeyCancel = (e: KeyboardEvent) => {
+      if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(e.key)) {
+        cancel();
+      }
+    };
+
+    window.addEventListener("wheel", cancel, { once: true });
+    window.addEventListener("touchstart", cancel, { once: true });
+    window.addEventListener("keydown", onKeyCancel);
+
+    const animate = () => {
+      if (cancelled || Date.now() - startTime > MAX_DURATION) {
+        cleanup();
+        return;
+      }
+
+      const el = getSpecsTarget();
+      if (!el) { cleanup(); return; }
+
+      const distanceToTarget = el.getBoundingClientRect().top - SCROLL_OFFSET;
+
+      if (Math.abs(distanceToTarget) < TOLERANCE) {
+        stableFrames++;
+        if (stableFrames >= STABLE_NEEDED) { cleanup(); return; }
+      } else {
+        stableFrames = 0;
+        window.scrollBy(0, distanceToTarget * EASE);
+      }
+
+      rafId = requestAnimationFrame(animate);
+    };
+
+    rafId = requestAnimationFrame(animate);
   }, []);
 
   // Detectar seccion activa al scrollear
@@ -137,7 +195,7 @@ export default function MultimediaQuickNavBar() {
   return (
     <div
       className={`fixed ${topClass} left-0 right-0 z-[1600]
-                 bg-white/95 backdrop-blur-xl border-b border-gray-100
+                 bg-white border-b border-gray-100
                  transition-[top] duration-300 ease-out`}
       style={{ fontFamily: "SamsungSharpSans" }}
     >

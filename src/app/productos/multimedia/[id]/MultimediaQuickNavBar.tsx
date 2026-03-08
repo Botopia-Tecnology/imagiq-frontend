@@ -23,7 +23,7 @@ export default function MultimediaQuickNavBar() {
       const flixContainer = document.querySelector<HTMLElement>('[id^="flix-inpage"]');
       if (!flixContainer) return;
       const specsElement = flixContainer.querySelector(
-        '[flixtemplate-key="specifications"], .inpage_spec-list, .inpage_spec-header'
+        '[flixtemplate-key="specifications"], .inpage_spec-list, .inpage_spec-header, [class*="inpage_spec"]'
       );
       setHasEspecificaciones(!!specsElement);
     });
@@ -34,7 +34,7 @@ export default function MultimediaQuickNavBar() {
 
       // Especificaciones: buscar la seccion de specs DENTRO de flix-inpage
       const specsElement = flixContainer.querySelector(
-        '[flixtemplate-key="specifications"], .inpage_spec-list, .inpage_spec-header'
+        '[flixtemplate-key="specifications"], .inpage_spec-list, .inpage_spec-header, [class*="inpage_spec"]'
       );
       setHasEspecificaciones(!!specsElement);
 
@@ -45,9 +45,24 @@ export default function MultimediaQuickNavBar() {
       }
     };
 
-    // Polling porque Flixmedia carga async y puede tardar
-    const interval = setInterval(checkSections, 1500);
+    // Polling rápido porque Flixmedia carga async
+    const interval = setInterval(checkSections, 500);
     checkSections();
+
+    // Si flix-inpage aún no existe, observar el body hasta que aparezca
+    const flixContainer = document.querySelector<HTMLElement>('[id^="flix-inpage"]');
+    if (!flixContainer) {
+      const bodyObserver = new MutationObserver(() => {
+        const container = document.querySelector<HTMLElement>('[id^="flix-inpage"]');
+        if (container) {
+          observer.observe(container, { childList: true, subtree: true });
+          observerAttached = true;
+          bodyObserver.disconnect();
+          checkSections();
+        }
+      });
+      bodyObserver.observe(document.body, { childList: true, subtree: true });
+    }
 
     return () => {
       clearInterval(interval);
@@ -68,8 +83,8 @@ export default function MultimediaQuickNavBar() {
     let stableFrames = 0;
     let cancelled = false;
     const TOLERANCE = 3;
-    const EASE = 0.035;
-    const STABLE_NEEDED = 20;
+    const EASE = 0.12;
+    const STABLE_NEEDED = 10;
     const startTime = Date.now();
     const MAX_DURATION = 4000;
 
@@ -185,7 +200,7 @@ export default function MultimediaQuickNavBar() {
   const visibleSections = sections.filter(s => s.show);
 
   // Position below MultimediaBottomBar (top-[55px] xl:top-[100px], ~46px height)
-  const topClass = "top-[100px] md:top-[100px] xl:top-[146px]";
+  const topClass = "top-[120px] md:top-[120px] xl:top-[146px]";
 
   return (
     <div

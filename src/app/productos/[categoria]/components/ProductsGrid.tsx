@@ -20,6 +20,7 @@ import type { Banner } from "@/types/banner";
 import type { BundleCardProps, MixedProductItem } from "@/lib/productMapper";
 import { useCeroInteresSku } from "@/hooks/useCeroInteresSku";
 import type { ZeroInterestSkuResult } from "@/services/cero-interes-sku.service";
+import type { ActiveFilterHints } from "@/hooks/useProductSelection";
 
 // Tipos para items con flag interno de bundle
 type ProductWithFlag = ProductCardProps & { __isBundle: false };
@@ -41,6 +42,7 @@ interface CategoryProductsGridProps {
   hasLoadedOnce?: boolean;
   banner?: Banner | null; // Banner a mostrar en el grid (legacy)
   banners?: Banner[]; // Array de banners para carrusel
+  activeFilterHints?: ActiveFilterHints; // Hints de filtros activos del catálogo
 }
 
 
@@ -63,6 +65,7 @@ export const CategoryProductsGrid = forwardRef<
       hasLoadedOnce = false,
       banner = null,
       banners = [],
+      activeFilterHints,
     },
     ref
   ) => {
@@ -283,6 +286,7 @@ export const CategoryProductsGrid = forwardRef<
                         <ProductCard
                           key={product.id}
                           {...product}
+                          activeFilterHints={activeFilterHints}
                           ceroInteresData={ceroInteresData}
                           isFavorite={isFavorite(product.id)}
                           onToggleFavorite={(productId: string) => {

@@ -51,6 +51,12 @@ export interface StorageOption {
   variants: ProductVariant[];
 }
 
+export interface ActiveFilterHints {
+  capacidad?: string[];
+  color?: string[];
+  memoriaram?: string[];
+}
+
 export interface UseProductSelectionReturn {
   // Estado de selección
   selection: SelectionState;
@@ -94,7 +100,7 @@ export interface UseProductSelectionReturn {
 
 }
 
-export function useProductSelection(apiProduct: ProductApiData, productColors?: Array<{ label: string, hex: string }>): UseProductSelectionReturn {
+export function useProductSelection(apiProduct: ProductApiData, productColors?: Array<{ label: string, hex: string }>, activeFilterHints?: ActiveFilterHints): UseProductSelectionReturn {
   // Crear todas las variantes del producto basadas en los arrays indexados
   const allVariants = useMemo((): ProductVariant[] => {
     const variants: ProductVariant[] = [];
@@ -156,18 +162,32 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
    *    - Características más comunes (capacidad, RAM)
    * 3. Si NO hay ninguna variante con stock, fallback a la primera variante
    */
-  const findBestVariantToDisplay = (variants: ProductVariant[]): ProductVariant | null => {
+  const findBestVariantToDisplay = (variants: ProductVariant[], hints?: ActiveFilterHints): ProductVariant | null => {
     if (variants.length === 0) return null;
 
+    // Si hay hints de filtro del catálogo, preferir variantes que coincidan
+    let candidateVariants = variants;
+    if (hints) {
+      const matching = variants.filter(v => {
+        const capMatch = !hints.capacidad?.length || hints.capacidad.some(h => h.trim().toLowerCase() === v.capacity.trim().toLowerCase());
+        const colorMatch = !hints.color?.length || hints.color.some(h => h.trim().toLowerCase() === v.color.trim().toLowerCase());
+        const ramMatch = !hints.memoriaram?.length || hints.memoriaram.some(h => h.trim().toLowerCase() === v.memoriaram.trim().toLowerCase());
+        return capMatch && colorMatch && ramMatch;
+      });
+      if (matching.length > 0) {
+        candidateVariants = matching;
+      }
+    }
+
     // FILTRO CRÍTICO: Solo considerar variantes con stock disponible > 0
-    const variantsWithStock = variants.filter(v => v.stockDisponible > 0);
+    const variantsWithStock = candidateVariants.filter(v => v.stockDisponible > 0);
 
 
-    // Si NO hay variantes con stock, retornar la primera como fallback
+    // Si NO hay variantes con stock, retornar la primera candidata como fallback
     // (esto solo debería pasar si el producto completo está agotado)
     if (variantsWithStock.length === 0) {
       console.warn('⚠️ No variants with available stock found, falling back to first variant');
-      return variants[0];
+      return candidateVariants[0];
     }
 
     // Si solo hay una variante con stock, retornarla inmediatamente
@@ -259,11 +279,14 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
   const [activeCapacityFilter, setActiveCapacityFilter] = useState<string | undefined>();
   const [activeRamFilter, setActiveRamFilter] = useState<string | undefined>();
 
+  // Serializar hints para estabilidad en dependencias de useEffect
+  const activeFilterHintsSerialized = useMemo(() => JSON.stringify(activeFilterHints || null), [activeFilterHints]);
+
   // Estado de selección - inicializar con la mejor variante disponible
   const [selection, setSelection] = useState<SelectionState>(() => {
     // Si hay variantes disponibles, seleccionar la mejor (stock > 0, mejor precio, características comunes)
     if (allVariants.length > 0) {
-      const bestVariant = findBestVariantToDisplay(allVariants);
+      const bestVariant = findBestVariantToDisplay(allVariants, activeFilterHints);
       if (bestVariant) {
         return {
           selectedColor: bestVariant.color || null,
@@ -285,7 +308,7 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
   useEffect(() => {
     // Si no hay selección actual y hay variantes disponibles, seleccionar la mejor
     if (!selection.selectedColor && allVariants.length > 0) {
-      const bestVariant = findBestVariantToDisplay(allVariants);
+      const bestVariant = findBestVariantToDisplay(allVariants, activeFilterHints);
       if (bestVariant) {
         setSelection({
           selectedColor: bestVariant.color || null,
@@ -297,6 +320,22 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
     }
   }, [allVariants, selection.selectedColor]);
 
+  // Re-seleccionar variante cuando cambien los filtros del catálogo
+  useEffect(() => {
+    if (allVariants.length > 0) {
+      const bestVariant = findBestVariantToDisplay(allVariants, activeFilterHints);
+      if (bestVariant) {
+        setSelection({
+          selectedColor: bestVariant.color || null,
+          selectedCapacity: bestVariant.capacity || null,
+          selectedMemoriaram: bestVariant.memoriaram || null,
+          selectedVariant: bestVariant
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeFilterHintsSerialized]);
+
   // Colores disponibles basado en SOLO los filtros activos (no en la selección actual)
   const availableColorsFiltered = useMemo(() => {
     const colors = new Set<string>();
@@ -305,14 +344,17 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
       // Filtrado cruzado: solo mostrar colores que tengan la capacidad y RAM activos
       const capacityMatch = !activeCapacityFilter || variant.capacity === activeCapacityFilter;
       const memoriaramMatch = !activeRamFilter || variant.memoriaram === activeRamFilter;
+      // Si hay filtro de color del catálogo, solo mostrar esos colores
+      const hintColorMatch = !activeFilterHints?.color?.length ||
+        activeFilterHints.color.some(h => h.trim().toLowerCase() === variant.color?.trim().toLowerCase());
 
-      if (capacityMatch && memoriaramMatch && variant.color && variant.color.trim() !== '') {
+      if (capacityMatch && memoriaramMatch && hintColorMatch && variant.color && variant.color.trim() !== '') {
         colors.add(variant.color);
       }
     }
 
     return Array.from(colors);
-  }, [allVariants, activeCapacityFilter, activeRamFilter]);
+  }, [allVariants, activeCapacityFilter, activeRamFilter, activeFilterHints]);
 
   // Capacidades disponibles basado en el color seleccionado y RAM activo
   const availableCapacitiesFiltered = useMemo(() => {
@@ -322,6 +364,9 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
       // Filtrado cruzado: solo mostrar capacidades que tengan el color seleccionado y RAM activo
       const colorMatch = !selection.selectedColor || variant.color === selection.selectedColor;
       const memoriaramMatch = !activeRamFilter || variant.memoriaram === activeRamFilter;
+      // Si hay filtro de capacidad del catálogo, solo mostrar esas capacidades
+      const hintCapMatch = !activeFilterHints?.capacidad?.length ||
+        activeFilterHints.capacidad.some(h => h.trim().toLowerCase() === variant.capacity?.trim().toLowerCase());
 
       // Filtrar valores inválidos de capacidad
       // Excluir: vacíos, "no aplica", guiones solos, "N/A", etc.
@@ -334,13 +379,13 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
         capacityValue.toLowerCase() !== 'no especifica' &&
         capacityValue.toLowerCase() !== 'no especificado';
 
-      if (colorMatch && memoriaramMatch && isValidCapacity) {
+      if (colorMatch && memoriaramMatch && hintCapMatch && isValidCapacity) {
         capacities.add(variant.capacity);
       }
     }
 
     return Array.from(capacities);
-  }, [allVariants, selection.selectedColor, activeRamFilter]);
+  }, [allVariants, selection.selectedColor, activeRamFilter, activeFilterHints]);
 
   // Memoria RAM disponible basado en el color seleccionado y capacidad activa
   const availableMemoriaramFiltered = useMemo(() => {
@@ -350,6 +395,9 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
       // Filtrado cruzado: solo mostrar RAM que tengan el color seleccionado y capacidad activa
       const colorMatch = !selection.selectedColor || variant.color === selection.selectedColor;
       const capacityMatch = !activeCapacityFilter || variant.capacity === activeCapacityFilter;
+      // Si hay filtro de RAM del catálogo, solo mostrar esas opciones
+      const hintRamMatch = !activeFilterHints?.memoriaram?.length ||
+        activeFilterHints.memoriaram.some(h => h.trim().toLowerCase() === variant.memoriaram?.trim().toLowerCase());
 
       // Filtrar valores inválidos de memoria RAM
       // Excluir: vacíos, "no aplica", guiones solos, "N/A", etc.
@@ -362,13 +410,13 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
         memoriaramValue.toLowerCase() !== 'no especifica' &&
         memoriaramValue.toLowerCase() !== 'no especificado';
 
-      if (colorMatch && capacityMatch && isValidMemoriaram) {
+      if (colorMatch && capacityMatch && hintRamMatch && isValidMemoriaram) {
         memoriaram.add(variant.memoriaram);
       }
     }
 
     return Array.from(memoriaram);
-  }, [allVariants, selection.selectedColor, activeCapacityFilter]);
+  }, [allVariants, selection.selectedColor, activeCapacityFilter, activeFilterHints]);
 
   // Todas las capacidades únicas del producto (sin filtrar por color/RAM)
   const allCapacitiesUnfiltered = useMemo(() => {

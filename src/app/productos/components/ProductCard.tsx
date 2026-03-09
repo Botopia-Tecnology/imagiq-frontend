@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useAnalytics } from "@/lib/analytics/hooks/useAnalytics";
 import { useCloudinaryImage } from "@/hooks/useCloudinaryImage";
-import { useProductSelection } from "@/hooks/useProductSelection";
+import { useProductSelection, type ActiveFilterHints } from "@/hooks/useProductSelection";
 import { useChatbot } from "@/contexts/ChatbotContext";
 import {
   calculateDynamicPrices,
@@ -92,6 +92,7 @@ export interface ProductCardProps {
   skuflixmedia?: string; // SKU específico para Flixmedia
   ceroInteresData?: ZeroInterestSkuResult[]; // Datos de cero interés para este producto
   forceNuevo?: boolean; // Forzar ribbon "Nuevo" sin depender de gama
+  activeFilterHints?: ActiveFilterHints; // Hints de filtros activos del catálogo
 }
 
 export default function ProductCard({
@@ -115,6 +116,7 @@ export default function ProductCard({
   acceptsTradeIn, // Indica si el producto acepta retoma
   ceroInteresData, // Datos de cero interés desde el parent
   forceNuevo = false, // Forzar ribbon "Nuevo"
+  activeFilterHints, // Hints de filtros activos del catálogo
 }: ProductCardProps & { puntos_q?: number }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -157,7 +159,9 @@ export default function ProductCard({
       indRetoma: [],
       indcerointeres: [],
       skuPostback: [],
-    }
+    },
+    undefined,
+    activeFilterHints
   );
 
   // Determinar si debe mostrar selectores de color/capacidad basándose en la categoría

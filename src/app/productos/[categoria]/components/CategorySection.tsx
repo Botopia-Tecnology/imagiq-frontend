@@ -41,6 +41,8 @@ import {
 import { useDynamicFilters } from "@/hooks/useDynamicFilters";
 import { useStockFilter } from "@/hooks/useStockFilter";
 import type { DynamicFilterState } from "@/types/filters";
+import { convertDynamicFiltersToApi } from "../utils/dynamicFilterUtils";
+import type { ActiveFilterHints } from "@/hooks/useProductSelection";
 
 interface CategorySectionProps {
   readonly categoria: CategoriaParams; // Slug de la URL para mapear filtros
@@ -233,6 +235,27 @@ export default function CategorySection({
     }
     return result;
   }, [isStockFilterEnabled]);
+
+  // Calcular hints de filtros activos para que ProductCard seleccione la variante correcta
+  const activeFilterHints = useMemo((): ActiveFilterHints | undefined => {
+    if (!dynamicFilterState || !dynamicFilters || dynamicFilters.length === 0) return undefined;
+    const converted = convertDynamicFiltersToApi(dynamicFilterState, dynamicFilters);
+    const hints: ActiveFilterHints = {};
+    for (const [key, value] of Object.entries(converted)) {
+      const lower = key.toLowerCase();
+      if (value == null || typeof value === 'object' && !Array.isArray(value)) continue;
+      const values = Array.isArray(value) ? value.map(String) : [String(value)];
+      if (values.length === 0) continue;
+      if (lower.startsWith('capacidad')) {
+        hints.capacidad = values;
+      } else if (lower.startsWith('color')) {
+        hints.color = values;
+      } else if (lower.startsWith('memoriaram')) {
+        hints.memoriaram = values;
+      }
+    }
+    return Object.keys(hints).length > 0 ? hints : undefined;
+  }, [dynamicFilterState, dynamicFilters]);
 
   const {
     products,
@@ -451,6 +474,7 @@ export default function CategorySection({
             hasLoadedOnce={hasLoadedOnce}
             banner={bannerConfig}
             banners={bannerConfigs}
+            activeFilterHints={activeFilterHints}
           />
 
           {/* Elemento invisible para detectar scroll */}

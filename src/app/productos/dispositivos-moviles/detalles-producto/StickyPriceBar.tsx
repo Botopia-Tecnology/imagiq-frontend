@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FiShoppingCart } from "react-icons/fi";
 import { useCeroInteres } from "@/hooks/useCeroInteres";
 import { cleanProductName } from "@/lib/utils";
+import ShareButtons from "@/components/ShareButtons";
 
 interface StickyPriceBarProps {
   deviceName: string;
@@ -19,6 +20,7 @@ interface StickyPriceBarProps {
   isVisible?: boolean;
   hasStock?: boolean;
   onNotifyStock?: () => void;
+  showShareButton?: boolean;
 }
 
 /**
@@ -41,6 +43,7 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
   isVisible = false,
   hasStock = true,
   onNotifyStock,
+  showShareButton = false,
 }) => {
   // Hook para cuotas sin interés (solo cuando indcerointeres === 1)
   const ceroInteres = useCeroInteres(
@@ -202,8 +205,9 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
             {renderPriceInfoDesktop()}
           </div>
 
-          {/* DERECHA: CTA (mismo para móvil y desktop) */}
-          <div className="flex-shrink-0">
+          {/* DERECHA: Share + CTA (mismo para móvil y desktop) */}
+          <div className="flex-shrink-0 flex items-center gap-1">
+            {showShareButton && <ShareButtons />}
             {hasStock ? (
               <motion.button
                 onClick={onBuyClick}
@@ -256,7 +260,7 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
       {/* Versión inicial: siempre visible debajo del navbar principal */}
       {!isVisible && (
         <div
-          className="fixed top-[60px] md:top-[78px] xl:top-[100px] left-0 right-0 z-[1500] bg-white/95 backdrop-blur-xl"
+          className="fixed top-[60px] md:top-[78px] xl:top-[100px] left-0 right-0 z-[1500] bg-white/95 backdrop-blur-xl overflow-visible"
           style={{ fontFamily: "SamsungSharpSans" }}
         >
           <BarContent />
@@ -288,7 +292,7 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
                 duration: 0.3,
               },
             }}
-            className="fixed top-0 left-0 right-0 z-[9999] bg-white/95 backdrop-blur-xl"
+            className="fixed top-0 left-0 right-0 z-[9999] bg-white/95 backdrop-blur-xl overflow-visible"
             style={{
               fontFamily: "SamsungSharpSans",
             }}

@@ -798,6 +798,7 @@ export interface ProductApiData {
   visibleStaging?: boolean[]; // Visibilidad en staging (por variante)
   visibleProduction?: boolean[]; // Visibilidad en producción (por variante)
   gama?: string[]; // Gama del producto (ej: "Nuevo", "Linea", "N-1")
+  agrupamiento?: string[]; // Campo de agrupamiento alternativo para accesorios (categoría IM)
 }
 
 // Tipo unión para productos y bundles

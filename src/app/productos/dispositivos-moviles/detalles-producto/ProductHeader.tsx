@@ -1,6 +1,7 @@
 import React from "react";
 import { Heart } from "lucide-react";
 import { cleanProductName } from "@/lib/utils";
+import ShareButtons from "@/components/ShareButtons";
 
 interface ProductHeaderProps {
   readonly name: string;
@@ -43,20 +44,24 @@ export default function ProductHeader({
         >
           {cleanProductName(name)}
         </h1>
-        {/* Botón de favoritos */}
-        <button
-          onClick={onToggleFavorite}
-          className="flex-shrink-0 p-1 rounded-full hover:bg-gray-100 transition-all duration-200 relative z-10"
-          aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
-        >
-          <Heart
-            className={`w-6 h-6 transition-all duration-200 ${
-              isFavorite
-                ? "fill-red-500 text-red-500"
-                : "text-gray-400 hover:text-red-500"
-            }`}
-          />
-        </button>
+        <div className="flex items-center gap-1 flex-shrink-0 mt-2">
+          {/* Botón de favoritos */}
+          <button
+            onClick={onToggleFavorite}
+            className="p-2 rounded-full hover:bg-gray-100 transition-all duration-200"
+            aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
+          >
+            <Heart
+              className={`w-5 h-5 transition-all duration-200 ${
+                isFavorite
+                  ? "fill-red-500 text-red-500"
+                  : "text-gray-400 hover:text-red-500"
+              }`}
+            />
+          </button>
+          {/* Botón de compartir */}
+          <ShareButtons />
+        </div>
       </div>
 
       {/* Información del producto */}

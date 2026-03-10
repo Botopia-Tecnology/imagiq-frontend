@@ -398,6 +398,7 @@ export default function ProductViewPage({ params }) {
         onBuyClick={handleBuyNow}
         hasStock={hasStock()}
         onNotifyStock={stockNotification.openModal}
+        showShareButton={true}
       />
 
       {/* Barra de navegación rápida entre secciones - siempre visible */}

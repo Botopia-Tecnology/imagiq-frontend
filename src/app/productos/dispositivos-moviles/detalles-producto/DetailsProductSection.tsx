@@ -25,6 +25,7 @@ import AddiFinancing from "./AddiFinancing";
 import ARExperienceHandler from "../../electrodomesticos/components/ARExperienceHandler";
 import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
+import GuestDataModal from "@/app/productos/components/GuestDataModal";
 
 const DetailsProductSection: React.FC<{
   product: ProductCardProps;
@@ -132,6 +133,7 @@ const DetailsProductSection: React.FC<{
   // State
   const [loading, setLoading] = React.useState(false);
   const isFavorite = checkIsFavorite(product.id);
+  const [showGuestModal, setShowGuestModal] = React.useState(false);
   const [estrenoYEntrego, setEstrenoYEntrego] = React.useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false);
   const [galleryImages, setGalleryImages] = React.useState<
@@ -149,10 +151,30 @@ const DetailsProductSection: React.FC<{
   // Handlers
   const handleToggleFavorite = () => {
     if (isFavorite) {
-      removeFromFavorites(product.id);
+      const rawUser = localStorage.getItem("imagiq_user");
+      const parsed = rawUser ? JSON.parse(rawUser) : null;
+      if (parsed?.id) {
+        removeFromFavorites(product.id, parsed);
+      }
     } else {
-      addToFavorites(product.id);
+      const rawUser = localStorage.getItem("imagiq_user");
+      const parsed = rawUser ? JSON.parse(rawUser) : null;
+      if (parsed?.id) {
+        addToFavorites(product.id, parsed);
+      } else {
+        setShowGuestModal(true);
+      }
     }
+  };
+
+  const handleGuestSubmit = async (guestUserData: {
+    nombre: string;
+    apellido: string;
+    email: string;
+    telefono: string;
+  }) => {
+    setShowGuestModal(false);
+    await addToFavorites(product.id, guestUserData);
   };
 
   // Funciones de manejo de selección compatibles con el diseño actual
@@ -383,6 +405,12 @@ const DetailsProductSection: React.FC<{
         productName={product.name}
         skuPostback={productSelection.selectedSkuPostback || undefined}
       />
+      <GuestDataModal
+        isOpen={showGuestModal}
+        onSubmit={handleGuestSubmit}
+        onClose={() => setShowGuestModal(false)}
+      />
+
       <StockNotificationModal
         isOpen={stockNotification.isModalOpen}
         onClose={stockNotification.closeModal}

@@ -11,6 +11,7 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiShoppingCart } from "react-icons/fi";
 import { useCeroInteres } from "@/hooks/useCeroInteres";
+import ShareButtons from "@/components/ShareButtons";
 
 interface MultimediaBottomBarProps {
   productName: string;
@@ -214,8 +215,9 @@ export default function MultimediaBottomBar({
                 {renderPriceInfo()}
               </div>
 
-              {/* DERECHA: CTA minimalista */}
-              <div className="flex-shrink-0">
+              {/* DERECHA: Share + CTA */}
+              <div className="flex-shrink-0 flex items-center gap-1">
+                <ShareButtons />
                 <motion.button
                   onClick={onViewDetailsClick}
                   whileHover={{ scale: 1.02 }}

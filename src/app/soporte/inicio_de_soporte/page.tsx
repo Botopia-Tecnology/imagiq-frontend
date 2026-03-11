@@ -297,7 +297,7 @@ export default function InicioDeSoportePage() {
     const e: { cedula?: string; orden?: string } = {};
     const cedulaDigits = cedula.replaceAll(/\D/g, "");
     if (!cedulaDigits) e.cedula = "La cédula es requerida.";
-    else if (cedulaDigits.length < 7) e.cedula = "Ingresa al menos 7 dígitos.";
+    else if (cedulaDigits.length < 5) e.cedula = "Ingresa al menos 5 dígitos.";
     else if (cedulaDigits.length > 12) e.cedula = "Demasiados dígitos.";
 
     if (!orden.trim()) e.orden = "El número de orden es requerido.";

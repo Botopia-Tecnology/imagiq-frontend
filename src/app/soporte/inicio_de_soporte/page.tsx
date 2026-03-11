@@ -727,7 +727,7 @@ export default function InicioDeSoportePage() {
                     onChange={(ev) => setCedula(ev.target.value.replace(/\D/g, ""))}
                     type="tel"
                     inputMode="numeric"
-                    placeholder="Ej: 12345678"
+                    placeholder="Ej: 12345"
                     aria-label="Número de cédula"
                     aria-describedby={
                       errors.cedula ? "cedula-error" : undefined

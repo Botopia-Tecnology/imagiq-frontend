@@ -68,6 +68,11 @@ export function ProductBannerCard({ config }: Readonly<ProductBannerCardProps>) 
   const positionStyle = positionToCSS(position);
   const textStyles = parseTextStyles(currentBanner['text_styles']);
 
+  // Reset videoEnded al cambiar de slide
+  useEffect(() => {
+    setVideoEnded(false);
+  }, [controller.currentIndex]);
+
   const handleVideoEnd = () => {
     setVideoEnded(true);
     if (isCarousel) {
@@ -125,6 +130,7 @@ export function ProductBannerCard({ config }: Readonly<ProductBannerCardProps>) 
                 imageUrl={banner.desktop_image_url}
                 videoEnded={index === controller.currentIndex ? videoEnded : false}
                 onVideoEnd={index === controller.currentIndex ? handleVideoEnd : undefined}
+                isActive={index === controller.currentIndex}
               />
             </div>
           ))}

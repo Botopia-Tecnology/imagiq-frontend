@@ -12,6 +12,7 @@ interface BannerMediaProps {
   imageUrl: string | null;
   videoEnded: boolean;
   onVideoEnd?: () => void;
+  isActive?: boolean;
 }
 
 export function BannerMedia({
@@ -19,6 +20,7 @@ export function BannerMedia({
   imageUrl,
   videoEnded,
   onVideoEnd,
+  isActive = true,
 }: Readonly<BannerMediaProps>) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hasVideo = Boolean(videoUrl);
@@ -44,6 +46,19 @@ export function BannerMedia({
       video.play().catch(() => {});
     }
   }, [videoUrl]);
+
+  // Reiniciar video cuando este slide se vuelve activo en el carrusel
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !videoUrl) return;
+
+    if (isActive) {
+      video.currentTime = 0;
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [isActive, videoUrl]);
 
   // Renderizar imagen original SIN transformaciones de Cloudinary
   // para evitar 404 en imágenes que Cloudinary no puede procesar

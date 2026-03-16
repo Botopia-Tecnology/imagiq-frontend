@@ -284,8 +284,8 @@ export function BundlePreviewImages({
   if (imageCount === 2) {
     return (
       <div className="relative w-full h-full overflow-visible">
-        {/* Imagen 1: esquina superior-izquierda, se sale del contenedor */}
-        <div className="absolute -top-6 -left-6 w-[65%] h-[65%] z-10">
+        {/* Imagen 1: esquina superior-izquierda */}
+        <div className="absolute -top-4 left-0 w-[65%] h-[65%] z-10">
           <Image
             src={transformedImages[0]}
             alt={`${bundleName} - producto 1`}
@@ -294,8 +294,8 @@ export function BundlePreviewImages({
             sizes="(max-width: 768px) 40vw, 25vw"
           />
         </div>
-        {/* Imagen 2: esquina inferior-derecha, se sale del contenedor */}
-        <div className="absolute -bottom-6 right-0 w-[60%] h-[60%] z-20">
+        {/* Imagen 2: esquina inferior-derecha */}
+        <div className="absolute -bottom-4 right-2 w-[60%] h-[60%] z-20">
           <Image
             src={transformedImages[1]}
             alt={`${bundleName} - producto 2`}

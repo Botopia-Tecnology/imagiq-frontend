@@ -193,7 +193,7 @@ export const CategoryProductsGrid = forwardRef<
     return (
       <div
         ref={ref}
-        className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6 items-stretch" : "flex flex-wrap"}
+        className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6 items-start" : "flex flex-wrap"}
       >
         {/* Mostrar skeletons cuando loading es true (incluyendo cambio de página) */}
         {loading ? (
@@ -260,7 +260,7 @@ export const CategoryProductsGrid = forwardRef<
                     return (
                       <div
                         key={item.key}
-                        className="w-full h-full"
+                        className="w-full"
                       >
                         <BundleCard
                           {...bundleProps}
@@ -273,15 +273,15 @@ export const CategoryProductsGrid = forwardRef<
                     // Renderizar ProductCard
                     const { __isBundle: __, ...productProps } = itemData;
                     const product = productProps as ProductCardProps;
-                    
+
                     // Obtener datos de cero interés para este producto
                     const currentSku = product.selectedColor?.sku || product.colors[0]?.sku;
                     const ceroInteresData = currentSku ? ceroInteresMap.get(currentSku) : undefined;
-                    
+
                     return (
                       <div
                         key={item.key}
-                        className="w-full h-full"
+                        className="w-full"
                       >
                         <ProductCard
                           key={product.id}

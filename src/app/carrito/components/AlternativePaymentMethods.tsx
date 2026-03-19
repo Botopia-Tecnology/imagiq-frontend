@@ -70,7 +70,7 @@ export default function AlternativePaymentMethods({
             value={selectedBank || ""}
             onChange={(e) => {
               const code = e.target.value;
-              const bank = banks.find((b) => b.bankCode === code);
+              const bank = banks.find((b) => String(b.bankCode) === code);
               onBankChange?.(code, bank?.bankName);
             }}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
